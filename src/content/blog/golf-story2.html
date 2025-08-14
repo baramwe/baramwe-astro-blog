@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2025 삿포로 골프 투어</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutrals -->
+    <!-- Application Structure Plan: The application is designed as a vertical "scrollytelling" experience to guide the user through the narrative of the golf match. This structure was chosen because it best suits a story-based report, creating a cinematic and immersive flow. The user journey starts with a hero section, introduces the teams, unfolds the story scene by scene as the user scrolls, presents a final scoreboard visualization, and ends with the story's conclusion. Key interactions include a "start" button to initiate the journey and scroll-triggered animations for text, enhancing engagement. -->
+    <!-- Visualization & Content Choices: Report Info: Team competition story. Goal: Immersive narrative. Viz/Method: A sequence of full-screen sections with background images and text overlays. Interaction: Scrolling drives the narrative forward. Justification: Creates a more engaging and emotional experience than static text. Library/Method: HTML/CSS/JS. Report Info: Final match result. Goal: Summarize the outcome. Viz/Method: Horizontal bar chart. Interaction: Animated display on scroll, tooltips on hover. Justification: Provides a clear, quantitative summary of the competition. Library/Method: Chart.js (Canvas). -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #F5F5F4; /* stone-100 */
+            color: #292524; /* stone-800 */
+        }
+        .scene {
+            min-height: 100vh;
+            scroll-snap-align: start;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+        }
+        .scene.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .scroll-container {
+            scroll-snap-type: y mandatory;
+            overflow-y: scroll;
+            height: 100vh;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+    </style>
+</head>
+<body class="overflow-x-hidden">
+
+    <div id="app">
+        <header id="hero" class="h-screen w-screen flex flex-col justify-center items-center bg-cover bg-center text-white text-center p-4" style="background-image: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://placehold.co/1200x800/6b8e23/ffffff?text=Sapporo+Golf+Course');">
+            <h1 class="text-4xl md:text-6xl font-bold mb-4 drop-shadow-lg">삿포로의 여름, 우리들의 필드</h1>
+            <p class="text-lg md:text-2xl mb-8 drop-shadow-md">잊지 못할 승부와 우정의 기록</p>
+            <button id="start-button" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-8 rounded-full transition duration-300 transform hover:scale-105">
+                이야기 시작하기
+            </button>
+        </header>
+
+        <main id="story-content" class="bg-stone-100">
+            <section class="scene min-h-screen flex flex-col justify-center items-center p-8">
+                <div class="text-center max-w-4xl mx-auto">
+                    <h2 class="text-3xl md:text-4xl font-bold mb-4 text-emerald-800">오늘의 도전자들</h2>
+                    <p class="text-lg mb-8 text-stone-600">오랜 친구이자 숙명의 라이벌! 오늘은 두 팀으로 나뉘어 삿포로의 푸른 필드 위에서 실력을 겨룹니다. 각 팀의 멤버들을 소개하며, 이들의 뜨거운 대결이 어떻게 펼쳐질지 기대해 보세요.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 w-full">
+                        <div class="bg-white p-6 rounded-xl shadow-lg border-t-4 border-sky-500">
+                            <h3 class="text-2xl font-bold mb-4 text-sky-600">👑 짱 팀</h3>
+                            <ul class="text-left space-y-2 text-lg text-stone-700">
+                                <li>🏌️‍♂️ <strong>쭌</strong> (팀 리더)</li>
+                                <li>🏌️‍♂️ <strong>민</strong></li>
+                                <li>🏌️‍♂️ <strong>코지</strong></li>
+                                <li>🏌️‍♂️ <strong>딜런</strong></li>
+                            </ul>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-lg border-t-4 border-red-500">
+                            <h3 class="text-2xl font-bold mb-4 text-red-600">🔥 조밥 팀</h3>
+                            <ul class="text-left space-y-2 text-lg text-stone-700">
+                                <li>🏌️‍♂️ <strong>라파엘</strong> (팀 리더)</li>
+                                <li>🏌️‍♂️ <strong>탑숩</strong></li>
+                                <li>🏌️‍♂️ <strong>블루와인</strong></li>
+                                <li>🏌️‍♂️ <strong>홉</strong> (최종 우승자)</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="scene flex items-center justify-center bg-cover bg-center" style="background-image: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('https://placehold.co/1200x800/8fbc8f/ffffff?text=First+Tee-off');">
+                <div class="text-center text-white p-8 max-w-3xl">
+                    <h3 class="text-3xl font-bold mb-4">대결의 서막</h3>
+                    <p class="text-xl leading-relaxed">삿포로의 청명한 여름 아침, '짱' 팀의 리더 쭌과 '조밥' 팀의 리더 라파엘이 악수를 나누며 장난기 어린 승부욕을 불태웠습니다. "오늘 저녁은 자네가 사는 거지?" 쭌의 농담과 함께, '짱' 팀의 민이 호쾌한 티샷으로 치열한 승부의 포문을 열었습니다.</p>
+                </div>
+            </section>
+            
+            <section class="scene flex items-center justify-center bg-cover bg-center" style="background-image: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('https://placehold.co/1200x800/98fb98/ffffff?text=Fairway+Battle');">
+                <div class="text-center text-white p-8 max-w-3xl">
+                    <h3 class="text-3xl font-bold mb-4">팽팽한 접전</h3>
+                    <p class="text-xl leading-relaxed">'조밥' 팀의 탑숩도 질 수 없다는 듯, 민의 공을 훌쩍 넘는 장타로 응수했습니다. 이어진 파3 홀에서는 '짱' 팀의 딜런이 홀컵에 붙이는 환상적인 아이언 샷을 선보이자, '조밥' 팀의 홉이 긴 거리의 퍼팅을 성공시키며 막상막하의 경기가 이어졌습니다.</p>
+                </div>
+            </section>
+
+            <section class="scene flex items-center justify-center bg-cover bg-center" style="background-image: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('https://placehold.co/1200x800/add8e6/ffffff?text=Pond+at+16th+Hole');">
+                <div class="text-center text-white p-8 max-w-3xl">
+                    <h3 class="text-3xl font-bold mb-4">승부처, 16번 홀</h3>
+                    <p class="text-xl leading-relaxed">아름다운 연못이 그린을 감싸고 있는 16번 홀. 안타깝게도 '짱' 팀 코지의 공은 벙커에 빠지고 말았습니다. 반면, '조밥' 팀의 블루와인은 자신감 넘치는 샷으로 공을 그린 위에 안착시키며, 팀에 결정적인 리드를 안겨주었습니다.</p>
+                </div>
+            </section>
+
+            <section class="scene flex items-center justify-center bg-cover bg-center" style="background-image: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('https://placehold.co/1200x800/ffdab9/ffffff?text=Final+Putt+at+Sunset');">
+                <div class="text-center text-white p-8 max-w-3xl">
+                    <h3 class="text-3xl font-bold mb-4">최후의 순간</h3>
+                    <p class="text-xl leading-relaxed">해가 뉘엿뉘엿 지는 마지막 18번 홀. 모든 것은 '조밥' 팀의 에이스, 홉의 마지막 퍼팅에 달려 있었습니다. 모두가 숨죽인 가운데, 그의 퍼터를 떠난 공은 부드럽게 굴러가 홀컵 안으로 정확히 떨어졌습니다. 그가 바로 오늘의 최종 우승자였습니다!</p>
+                </div>
+            </section>
+
+            <section class="scene min-h-screen flex flex-col justify-center items-center p-8 bg-white">
+                <div class="text-center max-w-4xl mx-auto w-full">
+                    <h2 class="text-3xl md:text-4xl font-bold mb-4 text-emerald-800">최종 스코어</h2>
+                    <p class="text-lg mb-8 text-stone-600">치열했던 승부의 최종 결과를 확인해 보세요. 한 타 한 타에 모두의 희비가 엇갈렸지만, 결과는 단 한 타 차이였습니다. '조밥' 팀이 짜릿한 역전승을 거두었습니다!</p>
+                    <div class="chart-container">
+                        <canvas id="scoreChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <footer class="scene flex flex-col justify-center items-center text-center p-8 bg-stone-800 text-white">
+                <div class="max-w-3xl">
+                    <h2 class="text-3xl md:text-4xl font-bold mb-4">진정한 승리</h2>
+                    <p class="text-xl leading-relaxed mb-8">결과는 '조밥' 팀의 승리. 하지만 승패는 중요하지 않았습니다. 삿포로의 아름다운 노을 아래, 여덟 명의 친구들은 오늘의 즐거웠던 순간을 추억하며 다음 대결을 기약했습니다. 진정한 승리는 바로 이 우정 그 자체였습니다.</p>
+                    <p class="text-lg font-bold">2025 삿포로 골프 투어</p>
+                </div>
+            </footer>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const startButton = document.getElementById('start-button');
+            const storyContent = document.getElementById('story-content');
+            
+            startButton.addEventListener('click', () => {
+                storyContent.scrollIntoView({ behavior: 'smooth' });
+            });
+
+            const scenes = document.querySelectorAll('.scene');
+            const chartSection = document.querySelector('#scoreChart').closest('.scene');
+            let chartRendered = false;
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('is-visible');
+                        if (entry.target === chartSection && !chartRendered) {
+                            renderChart();
+                            chartRendered = true;
+                        }
+                    }
+                });
+            }, { threshold: 0.2 });
+
+            scenes.forEach(scene => {
+                observer.observe(scene);
+            });
+
+            function renderChart() {
+                const ctx = document.getElementById('scoreChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['조밥 팀', '짱 팀'],
+                        datasets: [{
+                            label: '최종 스코어 (언더파)',
+                            data: [5, 4],
+                            backgroundColor: [
+                                'rgba(239, 68, 68, 0.7)', // red-500
+                                'rgba(59, 130, 246, 0.7)'  // sky-500
+                            ],
+                            borderColor: [
+                                'rgba(239, 68, 68, 1)',
+                                'rgba(59, 130, 246, 1)'
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return '-' + value;
+                                    }
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.dataset.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        if (context.parsed.x !== null) {
+                                            label += '-' + context.parsed.x;
+                                        }
+                                        return label;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+
+</body>
+</html>

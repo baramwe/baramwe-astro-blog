@@ -1,0 +1,52 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<!doctype html>
+<html lang="ko">
+	<head>
+		<BaseHead title="Hotel" description="몽환적이고 평온한 숙소에서의 특별한 하루를 소개합니다." />
+		<style>
+			main.page { width: 100%; max-width: 100%; margin: 0; padding: 0; }
+
+			.hero {
+				position: relative;
+				min-height: 100vh;
+				display: grid;
+				place-items: center;
+				background: linear-gradient(180deg, rgba(0,0,0,0.45), rgba(0,0,0,0.35)), url('/hotel1.png') center / cover no-repeat;
+				color: #fff;
+			}
+			.hero-inner {
+				width: 960px; max-width: calc(100% - 2em); padding: 2.5em 2em; text-align: center;
+				border-radius: 16px; background: rgba(255,255,255,0.08);
+				box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+				backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+				border: 1px solid rgba(255,255,255,0.15);
+			}
+			h1 { margin: 0 0 .6em 0; font-size: clamp(1.375rem, 2.8vw, 1.875rem); letter-spacing: -0.02em; }
+			p.lead { margin: 0 auto 1.1em auto; max-width: 46ch; font-size: clamp(1rem, 2vw, 1.125rem); line-height: 1.9; color: rgba(255,255,255,0.95); }
+			.meta { margin-top: 1.25em; font-size: .95rem; color: rgba(255,255,255,0.9); }
+			.meta a { color: rgba(255,255,255,0.95); text-decoration: underline; }
+			.meta a:hover { color: #fff; }
+		</style>
+	</head>
+	<body>
+		<Header />
+		<main class="page">
+			<section class="hero">
+				<div class="hero-inner">
+					<h1>Hotel · 머무는 순간이 여행이 되는 곳</h1>
+					<p class="lead">아름답고 평온한 공간에서, 라운드의 여운을 길게 즐겨보세요.</p>
+					<p>자연과 어우러진 뷰, 깊은 수면을 돕는 조도, 포근한 텍스타일.</p>
+					<p>미니멀한 디자인 속 디테일, 가벼운 스낵과 웰컴 드링크.</p>
+					<p>라운지의 잔잔한 플레이리스트와 향기로운 어메니티.</p>
+					<p>머무는 시간 자체가 힐링이 되는, 우리만의 숙소 셀렉션.</p>
+				</div>
+			</section>
+		</main>
+		<Footer />
+	</body>
+</html> 

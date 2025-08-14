@@ -1,0 +1,315 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<!doctype html>
+<html lang="ko">
+	<head>
+		<BaseHead title="골프 여행 소개" description="편안하고 세련된 프리미엄 골프 투어를 소개합니다." />
+		<style>
+			/* 페이지 전역 오버라이드 */
+			main.page {
+				width: 100%;
+				max-width: 100%;
+				margin: 0;
+				padding: 0;
+			}
+
+			/* HERO */
+			.hero {
+				position: relative;
+				min-height: 100vh;
+				display: grid;
+				place-items: center;
+				background: linear-gradient(180deg, rgba(0,0,0,0.45), rgba(0,0,0,0.35)), url('/golf2.png') center / cover no-repeat;
+				color: #fff;
+			}
+			.hero-inner {
+				width: 960px;
+				max-width: calc(100% - 2em);
+				padding: 2.5em 2em;
+				text-align: center;
+			}
+			.glass {
+				border-radius: 16px;
+				background: rgba(255, 255, 255, 0.08);
+				box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+				backdrop-filter: blur(6px);
+				-webkit-backdrop-filter: blur(6px);
+				border: 1px solid rgba(255, 255, 255, 0.15);
+			}
+			.hero h1 {
+				margin: 0 0 0.4em 0;
+				font-size: clamp(1.375rem, 2.8vw, 1.875rem);
+				letter-spacing: -0.02em;
+			}
+			.hero p.lead {
+				margin: 0 auto 1.25em auto;
+				max-width: 40ch;
+				font-size: clamp(1rem, 2.2vw, 1.25rem);
+				line-height: 1.9;
+				color: rgba(255,255,255,0.95);
+			}
+			.cta {
+				display: flex;
+				gap: 0.75em;
+				justify-content: center;
+				flex-wrap: wrap;
+			}
+			.btn {
+				display: inline-block;
+				padding: 0.85em 1.25em;
+				border-radius: 999px;
+				text-decoration: none;
+				transition: transform .15s ease, box-shadow .2s ease, background-color .2s ease, color .2s ease;
+				will-change: transform;
+			}
+			.btn.primary {
+				background: rgb(var(--accent));
+				color: #fff;
+				box-shadow: 0 10px 20px rgba(35,55,255,0.25);
+			}
+			.btn.primary:hover {
+				transform: translateY(-2px);
+				box-shadow: 0 14px 28px rgba(35,55,255,0.35);
+			}
+			.btn.secondary {
+				background: rgba(255,255,255,0.12);
+				color: #fff;
+				border: 1px solid rgba(255,255,255,0.2);
+			}
+			.btn.secondary:hover {
+				transform: translateY(-2px);
+				background: rgba(255,255,255,0.18);
+			}
+
+			/* 특징 섹션 */
+			.features {
+				padding: 4rem 1rem;
+				background: #fff;
+			}
+			.features .wrap {
+				width: 1100px;
+				max-width: calc(100% - 2em);
+				margin: 0 auto;
+			}
+			.section-title {
+				margin: 0 0 1rem 0;
+				text-align: center;
+				font-size: clamp(1.375rem, 2.8vw, 1.875rem);
+			}
+			main.page h1,
+			main.page h3 {
+				font-size: clamp(1.375rem, 2.8vw, 1.875rem);
+			}
+			.section-desc {
+				margin: 0 auto 2rem auto;
+				max-width: 60ch;
+				text-align: center;
+				color: rgb(var(--gray));
+			}
+			.feature-grid {
+				display: grid;
+				grid-template-columns: repeat(12, 1fr);
+				gap: 1rem;
+				list-style: none;
+				padding: 0;
+				margin: 0;
+			}
+			.feature-card {
+				grid-column: span 4;
+				border-radius: 14px;
+				background: #fff;
+				box-shadow: 0 6px 24px rgba(15,18,25,0.06);
+				border: 1px solid rgba(34,41,57,0.06);
+				padding: 1.25rem;
+			}
+			.feature-card h3 {
+				margin: 0 0 .35rem 0;
+			}
+			.feature-card p {
+				margin: 0;
+				color: rgb(var(--gray));
+			}
+			.icon {
+				font-size: 1.6rem;
+				margin-right: .35rem;
+			}
+			@media (max-width: 960px) {
+				.feature-card { grid-column: span 6; }
+			}
+			@media (max-width: 640px) {
+				.feature-card { grid-column: span 12; }
+			}
+
+			/* 목적지 섹션 */
+			.destinations {
+				background: linear-gradient(var(--gray-gradient)) no-repeat;
+				padding: 4rem 1rem;
+			}
+			.destinations .wrap {
+				width: 1100px;
+				max-width: calc(100% - 2em);
+				margin: 0 auto;
+			}
+			.dest-grid {
+				display: grid;
+				grid-template-columns: repeat(12, 1fr);
+				gap: 1rem;
+				margin: 0;
+				padding: 0;
+				list-style: none;
+			}
+			.dest-card {
+				grid-column: span 4;
+				background: #fff;
+				border-radius: 14px;
+				box-shadow: var(--box-shadow);
+				overflow: hidden;
+			}
+			.dest-card img { display: block; width: 100%; height: auto; }
+			.dest-card .meta { padding: .85rem 1rem; }
+			.dest-card .meta h4 { margin: 0 0 .25rem 0; }
+			.dest-card .meta p { margin: 0; color: rgb(var(--gray)); }
+			@media (max-width: 960px) { .dest-card { grid-column: span 6; } }
+			@media (max-width: 640px) { .dest-card { grid-column: span 12; } }
+
+			/* 일정 섹션 */
+			.itinerary { padding: 4rem 1rem; background: #fff; }
+			.itinerary .wrap { width: 900px; max-width: calc(100% - 2em); margin: 0 auto; }
+			.timeline { margin: 0; padding: 0; list-style: none; }
+			.timeline li { position: relative; padding: 1rem 1rem 1rem 2.5rem; border-left: 2px solid rgba(34,41,57,0.1); }
+			.timeline li::before { content: ''; position: absolute; left: -6px; top: 1.25rem; width: 12px; height: 12px; border-radius: 50%; background: rgb(var(--accent)); box-shadow: 0 0 0 4px rgba(35,55,255,0.15); }
+			.timeline h5 { margin: 0 0 .25rem 0; }
+			.timeline p { margin: 0; color: rgb(var(--gray)); }
+
+			/* CTA BAND */
+			.cta-band {
+				padding: 3rem 1rem;
+				text-align: center;
+				background: linear-gradient(90deg, rgba(35,55,255,0.08), rgba(35,55,255,0));
+			}
+			.cta-band .wrap { width: 900px; max-width: calc(100% - 2em); margin: 0 auto; }
+			.cta-band h3 { margin: 0 0 .75rem 0; }
+		</style>
+	</head>
+	<body>
+		<Header />
+		<main class="page">
+			<section class="hero">
+				<div class="hero-inner glass">
+					<h1>골프 여행, 품격 있게 즐기다</h1>
+					<p class="lead">편안함과 즐거움, 그리고 라운드의 완성도를 높이는 프리미엄 해외 골프 투어를 만나보세요.</p>
+					<div class="cta">
+						<a class="btn primary" href="/blog">투어 후기 보기</a>
+						<a class="btn secondary" href="/about">맞춤 상담 문의</a>
+					</div>
+				</div>
+			</section>
+
+			<section class="features">
+				<div class="wrap">
+					<h2 class="section-title">왜 우리의 골프 여행인가요?</h2>
+					<p class="section-desc">검증된 코스, 여유로운 동선, 세심한 케어. 여행의 본질에 집중한 구성으로 라운드의 만족을 높입니다.</p>
+					<ul class="feature-grid">
+						<li class="feature-card">
+							<h3><span class="icon">🟢</span>라운드 최적화 일정</h3>
+							<p>이동을 최소화하고 휴식과 라운드의 균형을 맞춘 하루 구성.</p>
+						</li>
+						<li class="feature-card">
+							<h3><span class="icon">⭐</span>명문 코스 큐레이션</h3>
+							<p>실력과 취향에 맞춘 코스 추천과 보장된 티타임.</p>
+						</li>
+						<li class="feature-card">
+							<h3><span class="icon">🧭</span>전담 매니저 동행</h3>
+							<p>언어/교통/예약 걱정 없이 라운드에만 집중할 수 있도록 케어.</p>
+						</li>
+						<li class="feature-card">
+							<h3><span class="icon">🏨</span>리조트형 동선</h3>
+							<p>클럽 하우스와 인접한 숙소로 피로는 줄이고 여유는 더합니다.</p>
+						</li>
+						<li class="feature-card">
+							<h3><span class="icon">🛡️</span>안전/보험 포함</h3>
+							<p>필수 보험과 안전 가이드로 안심할 수 있는 여행.</p>
+						</li>
+						<li class="feature-card">
+							<h3><span class="icon">🎥</span>스냅 기록 서비스</h3>
+							<p>라운드의 순간을 사진/영상으로 담아 특별함을 남깁니다.</p>
+						</li>
+					</ul>
+				</div>
+			</section>
+
+			<section class="destinations">
+				<div class="wrap">
+					<h2 class="section-title">추천 목적지</h2>
+					<p class="section-desc">시즌별 기후와 코스 컨디션을 고려해 선별한 인기 여행지.</p>
+					<ul class="dest-grid">
+						<li class="dest-card">
+							<img src="/asia-1.png" width="720" height="360" alt="아시아 명문 코스" />
+							<div class="meta">
+								<h4>아시아</h4>
+								<p>접근성 좋은 명문 코스와 합리적인 구성</p>
+							</div>
+						</li>
+						<li class="dest-card">
+							<img src="/europe-1.png" width="720" height="360" alt="유럽 해변 코스" />
+							<div class="meta">
+								<h4>유럽</h4>
+								<p>천혜의 해변 코스와 낭만적인 투어</p>
+							</div>
+						</li>
+						<li class="dest-card">
+							<img src="/america-1.png" width="720" height="360" alt="미국 사막 코스" />
+							<div class="meta">
+								<h4>미주</h4>
+								<p>세계적인 챔피언십 코스와 다채로운 기후</p>
+							</div>
+						</li>
+					</ul>
+				</div>
+			</section>
+
+			<section class="itinerary">
+				<div class="wrap">
+					<h2 class="section-title">샘플 일정(3박 5일)</h2>
+					<ul class="timeline">
+						<li>
+							<h5>Day 1</h5>
+							<p>현지 도착 · 전용 차량 이동 · 리조트 체크인 · 휴식</p>
+						</li>
+						<li>
+							<h5>Day 2</h5>
+							<p>명문 코스 라운드 · 스파/수영장 휴식 · 미식 투어</p>
+						</li>
+						<li>
+							<h5>Day 3</h5>
+							<p>전략 코스 라운드 · 자유 일정(옵션: 스냅 촬영)</p>
+						</li>
+						<li>
+							<h5>Day 4</h5>
+							<p>시그니처 홀 라운드 · 선물 쇼핑 · 석양 포토 스팟</p>
+						</li>
+						<li>
+							<h5>Day 5</h5>
+							<p>체크아웃 · 공항 이동 · 귀국</p>
+						</li>
+					</ul>
+				</div>
+			</section>
+
+			<section class="cta-band">
+				<div class="wrap">
+					<h3>나만의 맞춤 골프 여행, 지금 시작해보세요.</h3>
+					<div class="cta">
+						<a class="btn primary" href="/about">상담 요청</a>
+						<a class="btn secondary" href="/blog">후기 보기</a>
+					</div>
+				</div>
+			</section>
+		</main>
+		<Footer />
+	</body>
+</html> 

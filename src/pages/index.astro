@@ -6,44 +6,68 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="ko">
 	<head>
 		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
+		<style>
+			main.page {
+				width: 100%;
+				max-width: 100%;
+				margin: 0;
+				padding: 0;
+			}
+			.hero {
+				position: relative;
+				min-height: 100vh;
+				display: grid;
+				place-items: center;
+				background: linear-gradient(180deg, rgba(0,0,0,0.45), rgba(0,0,0,0.35)), url('/golf.png') center / cover no-repeat;
+				color: #fff;
+			}
+			.hero-inner {
+				width: 960px;
+				max-width: calc(100% - 2em);
+				padding: 2.5em 2em;
+				text-align: center;
+				border-radius: 16px;
+				background: rgba(255, 255, 255, 0.08);
+				box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+				backdrop-filter: blur(6px);
+				-webkit-backdrop-filter: blur(6px);
+				border: 1px solid rgba(255, 255, 255, 0.15);
+			}
+			.hero h1 {
+				margin: 0 0 0.6em 0;
+				font-size: clamp(1.375rem, 2.8vw, 1.875rem);
+				letter-spacing: -0.02em;
+			}
+			.hero p.lead {
+				margin: 0 auto 1.1em auto;
+				max-width: 42ch;
+				font-size: clamp(1rem, 2vw, 1.125rem);
+				line-height: 1.9;
+				color: rgba(255,255,255,0.95);
+			}
+			.hero p { margin: 0.3em 0; line-height: 1.8; }
+		</style>
 	</head>
 	<body>
 		<Header />
-		<main>
-			<h1>🧑‍🚀 Hello, Astronaut!</h1>
-			<p>
-				Welcome to the official <a href="https://astro.build/">Astro</a> blog starter template. This
-				template serves as a lightweight, minimally-styled starting point for anyone looking to build
-				a personal website, blog, or portfolio with Astro.
-			</p>
-			<p>
-				This template comes with a few integrations already configured in your
-				<code>astro.config.mjs</code> file. You can customize your setup with
-				<a href="https://astro.build/integrations">Astro Integrations</a> to add tools like Tailwind,
-				React, or Vue to your project.
-			</p>
-			<p>Here are a few ideas on how to get started with the template:</p>
-			<ul>
-				<li>Edit this page in <code>src/pages/index.astro</code></li>
-				<li>Edit the site header items in <code>src/components/Header.astro</code></li>
-				<li>Add your name to the footer in <code>src/components/Footer.astro</code></li>
-				<li>Check out the included blog posts in <code>src/content/blog/</code></li>
-				<li>Customize the blog post page layout in <code>src/layouts/BlogPost.astro</code></li>
-			</ul>
-			<p>
-				Have fun! If you get stuck, remember to <a href="https://docs.astro.build/"
-					>read the docs
-				</a> or <a href="https://astro.build/chat">join us on Discord</a> to ask questions.
-			</p>
-			<p>
-				Looking for a blog template with a bit more personality? Check out <a
-					href="https://github.com/Charca/astro-blog-template"
-					>astro-blog-template
-				</a> by <a href="https://twitter.com/Charca">Maxi Ferreira</a>.
-			</p>
+		<main class="page">
+			<section class="hero">
+				<div class="hero-inner">
+					<h1>골프 여행, 더 가볍고 더 여유롭게</h1>
+					<p class="lead">필요한 것만 담아 더욱 세련된 해외 골프 투어를 소개합니다.</p>
+					<p>라운드 중심 일정으로 이동 피로를 줄입니다.</p>
+					<p>취향과 실력에 맞춘 명문 코스를 선별합니다.</p>
+					<p>전담 매니저 동행으로 예약과 이동을 모두 케어합니다.</p>
+					<p>리조트형 동선으로 휴식과 라운드를 조화롭게.</p>
+					<p>유연한 대체 일정으로 변수에도 안심할 수 있습니다.</p>
+					<p>스냅 기록 서비스로 순간을 특별하게 남깁니다.</p>
+					<p>필수 보험 포함으로 안전까지 꼼꼼하게 챙깁니다.</p>
+					<p>간결하지만 만족스러운, 프리미엄 골프 여행.</p>
+				</div>
+			</section>
 		</main>
 		<Footer />
 	</body>
