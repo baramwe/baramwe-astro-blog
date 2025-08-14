@@ -31,9 +31,8 @@
     main.scrolly { position: relative; }
 
     /* 스티키 백그라운드 레이어 */
-    .sticky {
-      position: sticky; top: 0; height: 100vh; overflow: hidden;
-    }
+    .sticky { position: sticky; top: 0; height: 100dvh; overflow: hidden; contain: layout paint size; }
+    .backdrops img.bg { will-change: opacity; }
     .backdrops { position: absolute; inset: 0; }
     .backdrops img.bg {
       position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
@@ -53,7 +52,7 @@
     .caption p.lead { margin: 0 auto; max-width: 48ch; line-height: 1.9; color: rgba(255,255,255,.96); font-size: clamp(1rem, 2vw, 1.125rem); }
 
     /* 장면 섹션(트리거+텍스트) */
-    section.scene { min-height: 120vh; display: grid; place-items: end center; padding: 10vh 1rem; }
+    section.scene { min-height: 110vh; padding: 9vh 1rem; }
     .step {
       width: min(760px, calc(100% - 2rem));
       color: #fff;
@@ -61,7 +60,7 @@
       border: 1px solid rgba(255,255,255,.14);
       backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
       box-shadow: 0 10px 30px rgba(0,0,0,.25);
-      border-radius: 14px; padding: 1.25rem 1.25rem;
+      border-radius: 14px; padding: 1.1rem 1rem;
       opacity: .12; transform: translateY(12px);
       transition: opacity 500ms ease, transform 500ms ease;
     }
@@ -73,6 +72,12 @@
     @media (prefers-reduced-motion: reduce) {
       .backdrops img.bg { transition: none; }
       .step { transition: none; }
+    }
+    @media (max-width: 700px) {
+      .caption h1 { font-size: clamp(1.15rem, 4vw, 1.5rem); }
+      .caption p.lead { font-size: clamp(0.95rem, 2.6vw, 1.05rem); }
+      .step h3 { font-size: clamp(1rem, 2.6vw, 1.125rem); }
+      .step { padding: 1rem 0.9rem; }
     }
   </style>
 </head>

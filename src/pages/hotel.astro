@@ -13,24 +13,27 @@ import Footer from '../components/Footer.astro';
 
 			.hero {
 				position: relative;
-				min-height: 100vh;
+				min-height: 100dvh;
 				display: grid;
 				place-items: center;
 				background: linear-gradient(180deg, rgba(0,0,0,0.45), rgba(0,0,0,0.35)), url('/hotel1.png') center / cover no-repeat;
 				color: #fff;
 			}
 			.hero-inner {
-				width: 960px; max-width: calc(100% - 2em); padding: 2.5em 2em; text-align: center;
+				width: 960px; max-width: calc(100% - 2em); padding: 2.25em 1.5em; text-align: center;
 				border-radius: 16px; background: rgba(255,255,255,0.08);
 				box-shadow: 0 10px 30px rgba(0,0,0,0.25);
 				backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
 				border: 1px solid rgba(255,255,255,0.15);
 			}
-			h1 { margin: 0 0 .6em 0; font-size: clamp(1.375rem, 2.8vw, 1.875rem); letter-spacing: -0.02em; }
-			p.lead { margin: 0 auto 1.1em auto; max-width: 46ch; font-size: clamp(1rem, 2vw, 1.125rem); line-height: 1.9; color: rgba(255,255,255,0.95); }
+			h1 { margin: 0 0 .5em 0; font-size: clamp(1.25rem, 3vw, 1.75rem); letter-spacing: -0.02em; }
+			p.lead { margin: 0.2em auto 1em auto; max-width: 44ch; font-size: clamp(0.95rem, 2.2vw, 1.0625rem); line-height: 1.9; color: rgba(255,255,255,0.95); }
 			.meta { margin-top: 1.25em; font-size: .95rem; color: rgba(255,255,255,0.9); }
 			.meta a { color: rgba(255,255,255,0.95); text-decoration: underline; }
 			.meta a:hover { color: #fff; }
+			@supports(padding: max(0px)) {
+				.hero-inner { padding-bottom: max(1.5em, env(safe-area-inset-bottom)); }
+			}
 		</style>
 	</head>
 	<body>

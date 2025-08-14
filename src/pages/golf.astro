@@ -86,10 +86,7 @@ import Footer from '../components/Footer.astro';
 			}
 
 			/* 특징 섹션 */
-			.features {
-				padding: 4rem 1rem;
-				background: #fff;
-			}
+			.features { padding: 3.5rem 1rem; background: #fff; }
 			.features .wrap {
 				width: 1100px;
 				max-width: calc(100% - 2em);
@@ -113,7 +110,7 @@ import Footer from '../components/Footer.astro';
 			.feature-grid {
 				display: grid;
 				grid-template-columns: repeat(12, 1fr);
-				gap: 1rem;
+				gap: 1.25rem;
 				list-style: none;
 				padding: 0;
 				margin: 0;
@@ -137,18 +134,11 @@ import Footer from '../components/Footer.astro';
 				font-size: 1.6rem;
 				margin-right: .35rem;
 			}
-			@media (max-width: 960px) {
-				.feature-card { grid-column: span 6; }
-			}
-			@media (max-width: 640px) {
-				.feature-card { grid-column: span 12; }
-			}
+			@media (max-width: 1024px) { .feature-card { grid-column: span 6; } }
+			@media (max-width: 700px) { .feature-card { grid-column: span 12; } }
 
 			/* 목적지 섹션 */
-			.destinations {
-				background: linear-gradient(var(--gray-gradient)) no-repeat;
-				padding: 4rem 1rem;
-			}
+			.destinations { background: linear-gradient(var(--gray-gradient)) no-repeat; padding: 3.5rem 1rem; }
 			.destinations .wrap {
 				width: 1100px;
 				max-width: calc(100% - 2em);
@@ -157,7 +147,7 @@ import Footer from '../components/Footer.astro';
 			.dest-grid {
 				display: grid;
 				grid-template-columns: repeat(12, 1fr);
-				gap: 1rem;
+				gap: 1.25rem;
 				margin: 0;
 				padding: 0;
 				list-style: none;
@@ -173,8 +163,8 @@ import Footer from '../components/Footer.astro';
 			.dest-card .meta { padding: .85rem 1rem; }
 			.dest-card .meta h4 { margin: 0 0 .25rem 0; }
 			.dest-card .meta p { margin: 0; color: rgb(var(--gray)); }
-			@media (max-width: 960px) { .dest-card { grid-column: span 6; } }
-			@media (max-width: 640px) { .dest-card { grid-column: span 12; } }
+			@media (max-width: 1024px) { .dest-card { grid-column: span 6; } }
+			@media (max-width: 700px) { .dest-card { grid-column: span 12; } }
 
 			/* 일정 섹션 */
 			.itinerary { padding: 4rem 1rem; background: #fff; }
