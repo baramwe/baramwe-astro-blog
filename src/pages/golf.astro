@@ -20,17 +20,21 @@ import Footer from '../components/Footer.astro';
 			/* HERO */
 			.hero {
 				position: relative;
-				min-height: 100vh;
+				min-height: 100svh;
 				display: grid;
 				place-items: center;
+				place-content: center;
+				padding: 6vh 1rem;
 				background: linear-gradient(180deg, rgba(0,0,0,0.45), rgba(0,0,0,0.35)), url('/golf2.png') center / cover no-repeat;
 				color: #fff;
+				box-sizing: border-box;
 			}
 			.hero-inner {
-				width: 960px;
-				max-width: calc(100% - 2em);
-				padding: 2.5em 2em;
+				width: min(720px, calc(100% - 2rem));
+				max-width: 100%;
+				padding: 2.25em 1.5em;
 				text-align: center;
+				margin: 0 auto;
 			}
 			.glass {
 				border-radius: 16px;

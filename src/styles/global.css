@@ -15,6 +15,8 @@
   --box-shadow:
     0 2px 6px rgba(var(--gray), 25%), 0 8px 24px rgba(var(--gray), 33%),
     0 16px 32px rgba(var(--gray), 33%);
+  /* 전역 본문 텍스트 크기 (lead와 동일 적용) */
+  --p-size: clamp(0.95rem, 2.2vw, 1.0625rem);
 }
 @font-face {
   font-family: "Atkinson";
@@ -86,9 +88,15 @@ a:hover {
 }
 p {
   margin-bottom: 1em;
+  font-size: var(--p-size);
 }
 .prose p {
   margin-bottom: 2em;
+  font-size: var(--p-size);
+}
+/* 페이지 개별 스타일에서 .lead 폰트 크기를 오버라이드하더라도 전역으로 동일하게 맞춤 */
+.lead {
+  font-size: var(--p-size) !important;
 }
 textarea {
   width: 100%;
