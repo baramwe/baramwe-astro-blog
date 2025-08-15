@@ -2,7 +2,6 @@
 import BaseHead from '../components/BaseHead.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
-import GolfMbtiApp from "../components/GolfMbtiApp.jsx";
 ---
 
 <!doctype html>
@@ -26,7 +25,7 @@ import GolfMbtiApp from "../components/GolfMbtiApp.jsx";
 				place-items: center;
 				place-content: center;
 				padding: 6vh 1rem;
-				background: linear-gradient(180deg, rgba(0,0,0,0.45), rgba(0,0,0,0.35)), url('/golf2.png') center / cover no-repeat;
+				background: url('/golf2.png') center / cover no-repeat;
 				color: #fff;
 				box-sizing: border-box;
 			}
@@ -292,14 +291,6 @@ import GolfMbtiApp from "../components/GolfMbtiApp.jsx";
 							<p>체크아웃 · 공항 이동 · 귀국</p>
 						</li>
 					</ul>
-				</div>
-			</section>
-
-			<section class="features">
-				<div class="wrap">
-					<h2 class="section-title">골프 MBTI 테스트</h2>
-					<p class="section-desc">나의 라운드 성향을 가볍게 체크해 보세요. 결과는 링크로 공유할 수 있어요.</p>
-					<GolfMbtiApp client:only="react" />
 				</div>
 			</section>
 

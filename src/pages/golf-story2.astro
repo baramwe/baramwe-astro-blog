@@ -1,0 +1,101 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<!doctype html>
+<html lang="ko">
+	<head>
+		<BaseHead title="Golf Story 2 · Scrollytelling" description="스크롤에 따라 장면이 전환되는 골프 스토리." />
+		<style>
+			:root { --accent:#2337ff; --gray-dark:34,41,57; }
+			html, body { height: 100%; margin: 0; }
+			body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Noto Sans KR, Ubuntu, Cantarell, Helvetica, Arial, Apple SD Gothic Neo, "맑은 고딕", sans-serif; color: rgb(var(--gray-dark)); background: #000; overflow-x: hidden; overscroll-behavior-y: contain; }
+			.progress { position: fixed; top:0; left:0; height:3px; width:0%; background: var(--accent); z-index:2000; transition: width .1s linear; }
+			main.scrolly { position: relative; }
+			.sticky { position: sticky; top:0; height:100dvh; overflow:hidden; contain: layout paint size; }
+			.backdrops { position:absolute; inset:0; }
+			.backdrops img.bg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:0; transition:opacity 800ms ease; filter:saturate(1.02) contrast(1.02); will-change:opacity; }
+			.backdrops img.bg.active { opacity:1; }
+			.overlay { position:absolute; inset:0; background: linear-gradient(180deg, rgba(0,0,0,.45), rgba(0,0,0,.35)); pointer-events:none; }
+			.caption { position:absolute; left:50%; top:12vh; transform:translateX(-50%); width:min(960px, calc(100% - 2rem)); color:#fff; text-align:center; }
+			.caption h1 { margin:0 0 .5rem 0; font-size: clamp(1.375rem, 3.2vw, 1.875rem); letter-spacing:-0.02em; }
+			.caption p.lead { margin:0 auto; max-width:48ch; line-height:1.9; color:rgba(255,255,255,.96); font-size: clamp(1rem, 2vw, 1.125rem); }
+			section.scene { min-height:110vh; padding:9vh 1rem; display:grid; place-items:end center; }
+			.step { width:min(760px, calc(100% - 2rem)); color:#fff; background: rgba(0,0,0,.35); border:1px solid rgba(255,255,255,.14); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); box-shadow:0 10px 30px rgba(0,0,0,.25); border-radius:14px; padding:1.1rem 1rem; opacity:.12; transform:translateY(12px); transition:opacity 500ms ease, transform 500ms ease; }
+			.step.visible { opacity:1; transform:translateY(0); }
+			.step h3 { margin:0 0 .35rem 0; font-size: clamp(1.1rem, 2.2vw, 1.25rem); }
+			.step p { margin:0; line-height:1.85; }
+			@media (max-width:700px){ .caption h1{font-size:clamp(1.15rem,4vw,1.5rem);} .caption p.lead{font-size:clamp(.95rem,2.6vw,1.05rem);} .step h3{font-size:clamp(1rem,2.6vw,1.125rem);} .step{padding:1rem .9rem;} }
+		</style>
+	</head>
+	<body>
+		<Header />
+		<div class="progress" aria-hidden="true"></div>
+		<main class="scrolly">
+			<div class="sticky" aria-hidden="true">
+				<div class="backdrops">
+					<img class="bg active" src="/golf.png" alt="페어웨이 새벽 안개" decoding="async" fetchpriority="high" />
+					<img class="bg" src="/asia-1.png" alt="아시아 명문 코스" decoding="async" />
+					<img class="bg" src="/europe-1.png" alt="유럽 해변 코스" decoding="async" />
+					<img class="bg" src="/america-1.png" alt="미국 사막 코스" decoding="async" />
+					<img class="bg" src="/hotel1.png" alt="평온한 숙소" decoding="async" />
+				</div>
+				<div class="overlay"></div>
+				<div class="caption">
+					<h1>Golf Story 2 · 여유의 라운드</h1>
+					<p class="lead">스크롤에 따라 장면이 전환되는 여정. 새벽의 첫 샷부터 밤의 휴식까지, 여유와 몰입으로 채워진 하루.</p>
+				</div>
+			</div>
+
+			<section class="scene" data-scene="0" data-title="새벽의 기척">
+				<div class="step">
+					<h3>새벽의 기척</h3>
+					<p>라이트가 꺼진 페어웨이에 얇은 안개가 내려앉는다. 따뜻한 커피 한 잔을 쥐고, 잔디 향이 스며드는 순간을 깊게 들이마신다.</p>
+				</div>
+			</section>
+			<section class="scene" data-scene="1" data-title="첫 티샷">
+				<div class="step">
+					<h3>첫 티샷</h3>
+					<p>드라이빙 레인지에서 루틴을 확인한 뒤, 첫 티잉 그라운드에 선다. 호흡을 가다듬고 간결한 스윙. 볼은 부드럽게 곡선을 그린다.</p>
+				</div>
+			</section>
+			<section class="scene" data-scene="2" data-title="바다와 바람">
+				<div class="step">
+					<h3>바다와 바람</h3>
+					<p>해변을 따라 이어지는 파3. 바람은 변수지만 리듬은 일정하다. 미스 샷에도 마음은 고요하다. 오늘의 목표는 스코어가 아닌 여유다.</p>
+				</div>
+			</section>
+			<section class="scene" data-scene="3" data-title="함께 걷는 페어웨이">
+				<div class="step">
+					<h3>함께 걷는 페어웨이</h3>
+					<p>동행의 한마디에 웃음이 번지고, 캐디의 노련한 조언이 다음 샷의 답이 된다. 라운드의 순간들이 여행을 완성한다.</p>
+				</div>
+			</section>
+			<section class="scene" data-scene="4" data-title="밤의 휴식">
+				<div class="step">
+					<h3>밤의 휴식</h3>
+					<p>숙소로 돌아와 잔잔한 플레이리스트를 켠다. 오늘의 하이라이트를 곱씹으며, 내일의 시그니처 홀을 마음속에 펼쳐본다.</p>
+				</div>
+			</section>
+		</main>
+		<Footer />
+		<script>
+		(function(){
+			const scenes=[...document.querySelectorAll('section.scene')];
+			const bgs=[...document.querySelectorAll('.backdrops img.bg')];
+			const steps=[...document.querySelectorAll('.step')];
+			const progress=document.querySelector('.progress');
+			function setActiveBackground(i){ bgs.forEach((img,idx)=> img.classList.toggle('active', idx===i)); }
+			const sceneObserver=new IntersectionObserver((entries)=>{ entries.forEach((e)=>{ if(e.isIntersecting){ const idx=Number(e.target.getAttribute('data-scene'))||0; setActiveBackground(idx); } }); }, { threshold:0.5, rootMargin:'-20% 0px -20% 0px' });
+			scenes.forEach((sec)=>sceneObserver.observe(sec));
+			const stepObserver=new IntersectionObserver((entries)=>{ entries.forEach((e)=>{ const el=e.target; if(e.intersectionRatio>0.2) el.classList.add('visible'); else el.classList.remove('visible'); }); }, { threshold:[0,0.2,0.4] });
+			steps.forEach((s)=>stepObserver.observe(s));
+			function onScroll(){ const t=window.scrollY||document.documentElement.scrollTop; const h=document.documentElement.scrollHeight - window.innerHeight; const r=h>0?(t/h):0; if(progress) progress.style.width=(r*100)+'%'; }
+			window.addEventListener('scroll', onScroll, { passive:true }); onScroll();
+			['/golf.png','/asia-1.png','/europe-1.png','/america-1.png','/hotel1.png'].forEach(src=>{ const i=new Image(); i.src=src; });
+		})();
+		</script>
+	</body>
+</html>

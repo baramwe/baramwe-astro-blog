@@ -19,19 +19,27 @@ import Footer from '../components/Footer.astro';
 				place-items: center;
 				place-content: center;
 				padding: 6vh 1rem;
-				background: linear-gradient(180deg, rgba(0,0,0,0.45), rgba(0,0,0,0.35)), url('/hotel1.png') center / cover no-repeat;
+				background: url('/hotel1.png') center / cover no-repeat;
 				color: #fff;
 				box-sizing: border-box;
 			}
 			.hero-inner {
-				width: min(720px, calc(100% - 2rem)); max-width: 100%; padding: 2.25em 1.5em; text-align: center; margin: 0 auto;
+				width: min(1200px, calc(100% - 2rem)); max-width: 100%; padding: 2.25em 1.5em; text-align: center; margin: 0 auto;
 				border-radius: 16px; background: rgba(255,255,255,0.08);
 				box-shadow: 0 10px 30px rgba(0,0,0,0.25);
 				backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
 				border: 1px solid rgba(255,255,255,0.15);
 			}
+			.hero-inner, .hero-inner p { word-break: keep-all; }
+			.hero p.lead { white-space: nowrap; display: inline-block; }
+			@media (min-width: 1200px) {
+				.hero-inner { width: min(1280px, calc(100% - 2rem)); }
+			}
 			h1 { margin: 0 0 .5em 0; font-size: clamp(1.25rem, 3vw, 1.75rem); letter-spacing: -0.02em; }
 			p.lead { margin: 0.2em auto 1em auto; max-width: 44ch; font-size: clamp(0.95rem, 2.2vw, 1.0625rem); line-height: 1.9; color: rgba(255,255,255,0.95); }
+			@media (min-width: 0px) {
+				p.lead { max-width: 80ch; }
+			}
 			.meta { margin-top: 1.25em; font-size: .95rem; color: rgba(255,255,255,0.9); }
 			.meta a { color: rgba(255,255,255,0.95); text-decoration: underline; }
 			.meta a:hover { color: #fff; }
@@ -41,14 +49,17 @@ import Footer from '../components/Footer.astro';
 			/* 모바일에서 배경 이미지가 잘리지 않도록 전체(Contain) 표시 */
 			@media (max-width: 700px) {
 				.hero {
-					background-position: center, center;
-					background-size: auto, contain;
-					background-repeat: no-repeat, no-repeat;
+					background-position: center;
+					background-size: contain;
+					background-repeat: no-repeat;
 				}
 			}
 			@media (max-width: 480px) {
 				.hero { padding: 5vh 0.75rem; }
-				.hero-inner { width: min(640px, calc(100% - 1.5rem)); padding: 1.75em 1.25em; }
+				.hero-inner { width: min(660px, calc(100% - 1.5rem)); padding: 1.75em 1.25em; }
+			}
+			@media (min-width: 1200px) {
+				p.lead { max-width: none; }
 			}
 		</style>
 	</head>
@@ -57,11 +68,11 @@ import Footer from '../components/Footer.astro';
 		<main class="page">
 			<section class="hero">
 				<div class="hero-inner">
-					<h1>Hotel · 머무는 순간이 여행이 되는 곳</h1>
-					<p class="lead">아름답고 평온한 공간에서, 라운드의 여운을 길게 즐겨보세요.</p>
-					<p class="lead">자연과 어우러진 뷰, 깊은 수면을 돕는 조도, 포근한 텍스타일.</p>
-					<p class="lead">미니멀한 디자인 속 디테일, 가벼운 스낵과 웰컴 드링크.</p>
-					<p class="lead">라운지의 잔잔한 플레이리스트와 향기로운 어메니티.</p>
+					<h1>머무는 순간이 여행이 되는 곳</h1>
+					<p class="lead" style="max-width:100ch">아름답고 평온한 공간에서, 라운드의 여운을 길게 즐겨보세요.</p><br>
+					<p class="lead">자연과 어우러진 뷰, 깊은 수면을 돕는 조도, 포근한 텍스타일.</p><br>
+					<p class="lead">미니멀한 디자인 속 디테일, 가벼운 스낵과 웰컴 드링크.</p><br>
+					<p class="lead">라운지의 잔잔한 플레이리스트와 향기로운 어메니티.</p><br>
 					<p class="lead">머무는 시간 자체가 힐링이 되는, 우리만의 숙소 셀렉션.</p>
 				</div>
 			</section>

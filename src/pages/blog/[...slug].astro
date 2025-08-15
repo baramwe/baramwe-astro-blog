@@ -2,6 +2,8 @@
 import { type CollectionEntry, getCollection } from 'astro:content';
 import BlogPost from '../../layouts/BlogPost.astro';
 import { render } from 'astro:content';
+import GolfStory from '../../pages/golf-story2.astro';
+import StoryBook from '../../components/StoryBook.tsx';
 
 export async function getStaticPaths() {
 	const posts = await getCollection('blog');
@@ -16,6 +18,14 @@ const post = Astro.props;
 const { Content } = await render(post);
 ---
 
-<BlogPost {...post.data}>
-	<Content />
-</BlogPost>
+{post.id === 'second-post' ? (
+	<GolfStory />
+) : post.id === 'first-post' ? (
+	<BlogPost {...post.data}>
+		<StoryBook client:only="react" />
+	</BlogPost>
+) : (
+	<BlogPost {...post.data}>
+		<Content />
+	</BlogPost>
+)}
