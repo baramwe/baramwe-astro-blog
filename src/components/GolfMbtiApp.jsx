@@ -67,31 +67,31 @@ function wrapText(ctx, text, x, y, maxW, lh) {
 
 // ===== 질문 정의 (25문항) =====
 const QUESTIONS = [
-  { id: 1, axis: "EI", text: "라운드 시작 전, 팀원들과 금방 친해져 농담을 주고받는다 🤝" },
+  { id: 1, axis: "EI", text: "라운드 시작 전, 처음 보는 동반자와도 금방 친해져 농담을 주고받는다 🤝" },
   { id: 2, axis: "JP", text: "전날 미리 티업 시간표, 이동 동선, 캐디피까지 꼼꼼히 체크한다 📋" },
-  { id: 3, axis: "TF", text: "동반자의 OB에 진심으로 안타까워하고 위로한다 😢" },
-  { id: 4, axis: "SN", text: "그린에서 읽을 때, 감(느낌)으로 라인을 결정하는 편이다 ✨" },
+  { id: 3, axis: "TF", text: "동반자의 OB에 진심으로 안타까워하고 위로한다 (이건 땡큔데) 😢" },
+  { id: 4, axis: "SN", text: "그린을 읽을 때, 감(느낌)으로 라인을 결정하는 편이다 ✨" },
   { id: 5, axis: "TF", text: "상대가 벙커에서 모래에 채를 댄 걸 봤다면, 규정을 들어 조용히 지적한다 📏" },
-  { id: 6, axis: "EI", text: "골프장에 오면 스태프, 캐디, 옆팀과도 자연스레 인사를 건넨다 👋" },
+  { id: 6, axis: "EI", text: "골프장에 오면 기분이 좋아서 스태프, 캐디와 자연스레 인사를 건넨다 👋" },
   { id: 7, axis: "JP", text: "비 예보가 있으면 레인기어, 여벌 장갑, 타월까지 완벽 준비한다 ☔️" },
-  { id: 8, axis: "SN", text: "평소 샷은 루틴, 템포, 체크리스트처럼 구체적으로 관리한다 📝" },
-  { id: 9, axis: "TF", text: "스코어카드 오기 하나도 용납 못 한다. 정확함이 최우선이다 🧮" },
-  { id: 10, axis: "EI", text: "라운드 중간중간 동반자들과 수다에 에너지를 얻는다 💬" },
+  { id: 8, axis: "SN", text: "샷 전에 루틴, 템포, 체크리스트를 다시한번 점검한다 📝" },
+  { id: 9, axis: "TF", text: "일파만파는 없다. 스코어카드는 정확해야 한다 🧮" },
+  { id: 10, axis: "EI", text: "라운드 중간중간 동반자들과 야부리와 수다로 에너지를 얻는다 💬" },
   { id: 11, axis: "SN", text: "새 장비를 고를 때 스펙보다 ‘필드에서 느낌’이 더 중요하다 🪄" },
-  { id: 12, axis: "JP", text: "티샷 순서, 벌타 처리 등 진행 규칙을 깔끔하게 지키는 걸 선호한다 ⛳️" },
-  { id: 13, axis: "TF", text: "동반자가 버디 퍼팅을 성공하면 크게 축하하고 기쁨을 공유한다 🎉" },
-  { id: 14, axis: "EI", text: "연습장에서도 모르는 사람과 스윙 이야기를 나누며 금세 친해진다 🗣️" },
+  { id: 12, axis: "JP", text: "티샷 순서, 벌타 처리 등 진행 규칙을 야박하게 지키는 걸 선호한다 ⛳️" },
+  { id: 13, axis: "TF", text: "동반자가 버디 퍼팅을 성공하면 크게 축하하고 기쁨을 공유한다 (진짜로??)🎉" },
+  { id: 14, axis: "EI", text: "연습장에서도 모르는 사람과 스윙 이야기를 나누며 친해진 경험이 있다 🗣️" },
   { id: 15, axis: "SN", text: "거리 측정은 숫자보다 지형/바람/체감 난도를 더 중시한다 🌬️", reverse: true },
-  { id: 16, axis: "JP", text: "캐디의 플레이 진행 요청에 민첩하게 응답해 페이스를 유지한다 ⏱️" },
+  { id: 16, axis: "JP", text: "캐디의 플레이 진행 요청에 최대한 민첩하게 빠른 진행을 유도한다 ⏱️" },
   { id: 17, axis: "TF", text: "동반자가 규칙을 모르면 친절히 알려주며 상황을 원만히 정리한다 🫱🫲" },
   { id: 18, axis: "EI", text: "긴 퍼팅을 남기면 동반자들과 장난스러운 내기 제안을 한다 😏" },
   { id: 19, axis: "SN", text: "샷 전 체크 포인트(그립/얼라인/볼 위치 등)를 체계적으로 점검한다 ✅" },
   { id: 20, axis: "JP", text: "스코어가 망가져도 계획대로 플레이 흐름을 정리해 다음 홀을 준비한다 🧭" },
-  { id: 21, axis: "TF", text: "팀 분위기를 해치는 반칙은 단호히 제지해야 한다고 생각한다 🚫" },
-  { id: 22, axis: "SN", text: "핀 위치를 과감히 공략하는 모험을 즐긴다(리스크 감수) 🎯" },
-  { id: 23, axis: "EI", text: "라운드 후 19홀(뒤풀이)에서 사람들과 어울리며 피드백을 나눈다 🍻" },
+  { id: 21, axis: "TF", text: "컨디션 난조로 동반자의 표정이 좋지 않으면 가급적 유쾌함을 유지하려고 유도한다 🚫" },
+  { id: 22, axis: "SN", text: "핀 위치를 과감히 공략하는 모험을 즐긴다(펑커따윈 두렵지 않다) 🎯" },
+  { id: 23, axis: "EI", text: "라운드 후 뒤풀이로 사람들과 어울리며 피드백을 나눈다 🍻" },
   { id: 24, axis: "JP", text: "필드에서도 연습 루틴처럼 일정한 템포와 순서를 유지한다 🔁" },
-  { id: 25, axis: "TF", text: "팀원 실수엔 이해와 격려가 먼저다. 게임은 즐거워야 한다 💚", reverse: true },
+  { id: 25, axis: "TF", text: "동반자의 실수엔 이해와 격려가 먼저다. 게임은 즐거워야 한다 💚", reverse: true },
 ];
 
 // ===== 결과 맵핑 =====
@@ -153,18 +153,48 @@ export default function GolfMbtiApp() {
   }, [result]);
 
   return (
-    <div className="min-h-screen grid place-items-center bg-gradient-to-b from-emerald-50 to-sky-50 text-slate-800" style={{ display: 'grid', placeItems: 'center', minHeight: '100vh' }}>
-      <div className="max-w-3xl mx-auto px-4 py-6 sm:py-10" style={{ width: '100%', maxWidth: '768px' }}>
+    <div className="min-h-screen grid bg-gradient-to-b from-emerald-50 to-sky-50 text-slate-800" style={{ display: 'grid', justifyItems: 'center', alignItems: 'start', minHeight: '100vh', paddingTop: '24px' }}>
+      <div className="max-w-3xl mx-auto px-4 py-6 sm:py-10" style={{ width: '100%', maxWidth: '768px', paddingTop: '8px' }}>
         <header className="mb-6 sm:mb-10">
-          <h1 className="text-2xl sm:text-4xl font-bold tracking-tight">⛳️ 골프 MBTI 테스트</h1>
-          <p className="text-sm sm:text-base mt-2 text-slate-600">5문항씩 답하고 다음으로 넘어가세요. 진행 상황은 자동 저장됩니다.</p>
-          <div className="w-full h-3 bg-white/60 rounded-xl mt-4 shadow-inner"><div className="h-3 rounded-xl bg-emerald-400 transition-all" style={{ width: `${progress}%` }} /></div>
-          <div className="mt-2 text-xs text-slate-500">진행률 {progress}%</div>
+          <h2 className="text-2xl sm:text-4xl font-bold tracking-tight" style={{ textAlign: 'center', marginBottom: '8px' }}>⛳️ 당신의 골프 MBTI 확인하세요</h2>
+          <p className="text-sm sm:text-base mt-2 text-slate-600" style={{ textAlign: 'center' }}>5문항씩 답하고 다음으로 넘어가세요. 진행 상황은 자동 저장됩니다.</p>
+          <div style={{ marginTop: '12px' }}>
+            <div
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={progress}
+              style={{
+                position: 'relative',
+                width: '100%',
+                height: '14px',
+                background: 'linear-gradient(180deg,#f7fafc,#eef2f7)',
+                border: '1px solid #e5e7eb',
+                borderRadius: '9999px',
+                boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.06)'
+              }}
+            >
+              <div
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  top: 0,
+                  height: '100%',
+                  width: `${progress}%`,
+                  background: 'linear-gradient(90deg,#10b981,#22d3ee)',
+                  borderRadius: '9999px',
+                  boxShadow: '0 2px 6px rgba(16,185,129,0.35)',
+                  transition: 'width 300ms ease'
+                }}
+              />
+            </div>
+            <div style={{ marginTop: '6px', fontSize: '12px', color: '#64748b', textAlign: 'right' }}>진행률 {progress}%</div>
+          </div>
         </header>
 
         {!result ? (
           <section className="space-y-4">
-            <div className="grid gap-6" style={{ gap: '1.5rem' }}>
+            <div className="grid gap-8" style={{ gap: '2.0rem' }}>
               {pageQuestions.map((q) => (
                 <QuestionCard key={q.id} q={q} value={answers[q.id] || 0} onChange={(v) => setAnswer(q.id, v)} />
               ))}
@@ -178,7 +208,28 @@ export default function GolfMbtiApp() {
                 <button className="justify-self-end shrink-0 px-4 py-2 rounded-2xl bg-emerald-600 text-white shadow hover:shadow-md disabled:opacity-40" onClick={() => { if (canNext) window.scrollTo({ top: 0, behavior: 'smooth' }); }} disabled={!canNext} style={{ justifySelf: 'end' }}>결과 보기 🎯</button>
               )}
             </div>
-            <div className="pt-4 flex gap-3 justify-end"><button className="px-3 py-2 rounded-xl bg-white shadow hover:shadow-md" onClick={reset}>초기화</button></div>
+            <div className="pt-4" style={{ display: 'flex', justifyContent: 'center' }}>
+              <button
+                type="button"
+                onClick={reset}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  padding: '10px 16px',
+                  borderRadius: '9999px',
+                  border: '1px solid #e5e7eb',
+                  background: '#ffffff', color: '#111827',
+                  fontSize: '14px',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.06), 0 1px 1px rgba(0,0,0,0.04)',
+                  transition: 'transform 120ms ease, box-shadow 150ms ease'
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.boxShadow = '0 4px 10px rgba(0,0,0,0.12)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.06), 0 1px 1px rgba(0,0,0,0.04)'; e.currentTarget.style.transform = 'translateY(0)'; }}
+                onMouseDown={(e) => { e.currentTarget.style.transform = 'translateY(1px)'; }}
+                onMouseUp={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
+              >
+                초기화
+              </button>
+            </div>
           </section>
         ) : (
           <ResultView result={result} reset={reset} ogUrl={ogUrl} onShare={() => {
@@ -194,20 +245,33 @@ export default function GolfMbtiApp() {
 
 function QuestionCard({ q, value, onChange }) {
   return (
-    <div className="rounded-2xl p-4 sm:p-5 bg-white shadow-sm hover:shadow transition">
+    <div className="rounded-2xl p-4 sm:p-5 bg-white shadow-sm hover:shadow transition" style={{ marginBottom: '1.5rem' }}>
       <div className="flex items-start gap-3" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
         <span className="text-lg sm:text-xl font-semibold bg-emerald-100 text-emerald-800 rounded-lg px-2 py-1 w-10 text-center" style={{ display: 'inline-flex', justifyContent: 'center', alignItems: 'center', minWidth: '2.5rem' }}>{q.id}</span>
-        <p className="text-sm sm:text-base leading-relaxed" style={{ margin: 0 }}>{q.text}</p>
+        <p className="leading-relaxed" style={{ margin: 0, fontSize: '16px' }}>{q.text}</p>
       </div>
-      <div className="mt-3 grid grid-cols-5 gap-3 sm:gap-4" style={{ columnGap: '1rem', rowGap: '0.75rem' }}>
-        {LIKERT.map((opt) => (
-          <button key={opt.value} onClick={() => onChange(opt.value)} className={clsx("rounded-xl px-2 py-2 sm:px-3 sm:py-3 border text-xs sm:text-sm", value === opt.value ? "bg-emerald-500 text-white border-emerald-600 shadow" : "bg-white hover:bg-emerald-50 border-slate-200")} aria-pressed={value === opt.value}>
-            <div className="inline-flex items-center gap-2" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
-              <span className="text-lg sm:text-xl">{opt.emoji}</span>
+      <div className="mt-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: '14px' }}>
+        {LIKERT.map((opt) => {
+          const active = value === opt.value;
+          return (
+            <button
+              key={opt.value}
+              onClick={() => onChange(opt.value)}
+              aria-pressed={active}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                padding: '10px 12px', width: '100%',
+                borderRadius: '12px', border: active ? '1px solid #059669' : '1px solid #e5e7eb',
+                background: active ? '#10b981' : '#ffffff', color: active ? '#ffffff' : '#111827',
+                fontSize: '14px', lineHeight: 1.4, whiteSpace: 'nowrap', cursor: 'pointer',
+                boxShadow: active ? '0 4px 10px rgba(16,185,129,0.3)' : '0 1px 2px rgba(0,0,0,0.04)'
+              }}
+            >
+              <span style={{ fontSize: '18px' }}>{opt.emoji}</span>
               <span>{opt.label}</span>
-            </div>
-          </button>
-        ))}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -227,22 +291,28 @@ function ResultView({ result, reset, ogUrl, onShare }) {
       <div className="rounded-3xl p-6 bg-white shadow">
         <div className="text-sm text-slate-500">당신의 골프 MBTI</div>
         <div className="mt-1 text-4xl sm:text-5xl font-extrabold tracking-tight">{type}</div>
-        <div className="mt-3 text-xl sm:text-2xl font-semibold">{meta.title}</div>
-        <div className="text-slate-600">{meta.subtitle}</div>
-        <p className="mt-3 text-slate-700 leading-relaxed">{meta.desc}</p>
+        <div className="mt-3 text-xl sm:text-2xl font-semibold" style={{ color: '#0ea5e9' }}>{meta.title}</div>
+        <div style={{ color: '#10b981', fontSize: '18px', fontWeight: 600 }}>{meta.subtitle}</div>
+        <p className="mt-3 leading-relaxed" style={{ color: '#6366f1', fontSize: '18px' }}>{meta.desc}</p>
         <div className="mt-4 flex flex-wrap gap-3">
-          <button className="px-4 py-2 rounded-2xl bg-emerald-600 text-white shadow hover:shadow-md" onClick={onShare}>결과 링크 복사 🔗</button>
-          {ogUrl && <a className="px-4 py-2 rounded-2xl bg-white border border-slate-200 shadow hover:shadow-md" href={ogUrl} download={`golf-mbti-${type}.png`}>썸네일 다운로드 🖼️</a>}
+           {ogUrl && <a className="px-4 py-2 rounded-2xl bg-white border border-slate-200 shadow hover:shadow-md" href={ogUrl} download={`golf-mbti-${type}.png`}>썸네일 다운로드 🖼️</a>}
         </div>
         {ogUrl && (
-          <div className="mt-4"><div className="text-sm text-slate-500 mb-1">미리보기(OG 썸네일)</div><img src={ogUrl} alt="OG Thumbnail" className="w-full rounded-xl border" /></div>
+          <div className="mt-4">
+            <img src={ogUrl} alt="OG Thumbnail" className="w-full rounded-xl border" />
+            <div style={{ height: '1rem' }}></div>
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <button className="px-4 py-2 rounded-2xl bg-emerald-600 text-white shadow hover:shadow-md" onClick={reset}>다시 하기 🔄</button>
+            </div>
+          </div>
         )}
       </div>
-      <div className="grid gap-3">{bars.map((b) => (<AxisBar key={b.k} {...b} />))}</div>
-      <div className="flex flex-wrap gap-3 justify-end">
-        <button className="px-4 py-2 rounded-2xl bg-white shadow hover:shadow-md" onClick={() => { navigator.clipboard?.writeText(type + " - " + meta.title + "\n" + meta.subtitle + "\n" + meta.desc); alert("결과 텍스트를 복사했어요!"); }}>결과 복사 📋</button>
-        <button className="px-4 py-2 rounded-2xl bg-emerald-600 text-white shadow hover:shadow-md" onClick={reset}>다시 하기 🔄</button>
-      </div>
+      
+      {!ogUrl && (
+        <div className="flex flex-wrap gap-3 justify-center" style={{ marginTop: '1rem' }}>
+          <button className="px-4 py-2 rounded-2xl bg-emerald-600 text-white shadow hover:shadow-md" onClick={reset}>다시 하기 🔄</button>
+        </div>
+      )}
     </div>
   );
 }

@@ -24,6 +24,7 @@ const mbtiImage = '/mbti.png';
 			.mbti { margin-top: .75rem; }
 			.mbti a { display: inline-block; }
 			.mbti img { width: 100%; max-width: 480px; border-radius: 12px; box-shadow: var(--box-shadow); }
+			.mbti .caption { margin-top: .5rem; font-size: 1rem; color: rgb(var(--gray)); }
 			ul {
 				display: flex;
 				flex-wrap: wrap;
@@ -57,8 +58,9 @@ const mbtiImage = '/mbti.png';
 			<section class="hero">
 				<div class="mbti">
 					<a href="/mbti" aria-label="골프 MBTI 테스트로 이동">
-						<img src={mbtiImage} width="480" height="240" alt="골프 MBTI" />
+						<img src={mbtiImage} width="680" height="340" alt="골프 MBTI" />
 					</a>
+					<div class="caption">당신의 골프 스타일을 확인하세요</div><br>
 				</div>
 			</section>
 			<section>
