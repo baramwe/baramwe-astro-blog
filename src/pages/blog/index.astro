@@ -9,6 +9,8 @@ import FormattedDate from '../../components/FormattedDate.astro';
 const posts = (await getCollection('blog')).sort(
 	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
 );
+const heroImage = '/asia-1.png';
+const mbtiImage = '/mbti.png';
 ---
 
 <!doctype html>
@@ -16,9 +18,12 @@ const posts = (await getCollection('blog')).sort(
 	<head>
 		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
 		<style>
-			main {
-				width: 960px;
-			}
+			main { width: 960px; }
+			.hero { text-align: center; margin: 0 0 1rem 0; }
+			.hero img { width: 100%; border-radius: 12px; box-shadow: var(--box-shadow); }
+			.mbti { margin-top: .75rem; }
+			.mbti a { display: inline-block; }
+			.mbti img { width: 100%; max-width: 480px; border-radius: 12px; box-shadow: var(--box-shadow); }
 			ul {
 				display: flex;
 				flex-wrap: wrap;
@@ -27,67 +32,35 @@ const posts = (await getCollection('blog')).sort(
 				margin: 0;
 				padding: 0;
 			}
-			ul li {
-				width: calc(50% - 1rem);
-			}
-			ul li * {
-				text-decoration: none;
-				transition: 0.2s ease;
-			}
-			ul li:first-child {
-				width: 100%;
-				margin-bottom: 1rem;
-				text-align: center;
-			}
-			ul li:first-child img {
-				width: 100%;
-			}
-			ul li:first-child .title {
-				font-size: 2.369rem;
-			}
-			ul li img {
-				margin-bottom: 0.5rem;
-				border-radius: 12px;
-			}
-			ul li a {
-				display: block;
-			}
-			.title {
-				margin: 0;
-				color: rgb(var(--black));
-				line-height: 1;
-			}
-			.date {
-				margin: 0;
-				color: rgb(var(--gray));
-			}
-			ul li a:hover h4,
-			ul li a:hover .date {
-				color: rgb(var(--accent));
-			}
-			ul a:hover img {
-				box-shadow: var(--box-shadow);
-			}
+			ul li { width: calc(50% - 1rem); }
+			ul li * { text-decoration: none; transition: 0.2s ease; }
+			ul li:first-child { width: 100%; margin-bottom: 1rem; text-align: center; }
+			ul li:first-child img { width: 100%; }
+			ul li:first-child .title { font-size: 2.369rem; }
+			ul li img { margin-bottom: 0.5rem; border-radius: 12px; }
+			ul li a { display: block; }
+			.title { margin: 0; color: rgb(var(--black)); line-height: 1; }
+			.date { margin: 0; color: rgb(var(--gray)); }
+			ul li a:hover h4, ul li a:hover .date { color: rgb(var(--accent)); }
+			ul a:hover img { box-shadow: var(--box-shadow); }
 			@media (max-width: 720px) {
-				ul {
-					gap: 0.5em;
-				}
-				ul li {
-					width: 100%;
-					text-align: center;
-				}
-				ul li:first-child {
-					margin-bottom: 0;
-				}
-				ul li:first-child .title {
-					font-size: 1.563em;
-				}
+				ul { gap: 0.5em; }
+				ul li { width: 100%; text-align: center; }
+				ul li:first-child { margin-bottom: 0; }
+				ul li:first-child .title { font-size: 1.563em; }
 			}
 		</style>
 	</head>
 	<body>
 		<Header />
 		<main>
+			<section class="hero">
+				<div class="mbti">
+					<a href="/mbti" aria-label="골프 MBTI 테스트로 이동">
+						<img src={mbtiImage} width="480" height="240" alt="골프 MBTI" />
+					</a>
+				</div>
+			</section>
 			<section>
 				<ul>
 					{

@@ -1,0 +1,28 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import GolfMbtiApp from "../components/GolfMbtiApp.jsx";
+---
+
+<!doctype html>
+<html lang="ko">
+	<head>
+		<BaseHead title="골프 MBTI 테스트" description="나의 라운드 성향을 체크해 보세요." />
+		<style>
+			main {
+				width: 100%;
+				max-width: 1100px;
+				margin: 0 auto;
+				padding: 2rem 1rem;
+			}
+		</style>
+	</head>
+	<body>
+		<Header />
+		<main>
+			<GolfMbtiApp client:only="react" />
+		</main>
+		<Footer />
+	</body>
+</html>
