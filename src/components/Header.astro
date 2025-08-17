@@ -55,7 +55,9 @@ import { SITE_TITLE } from '../consts';
 					  </g>
 					</svg>
 				</span>
-				<span class="brand-text">{SITE_TITLE}</span>
+				<span class="brand-text" aria-label={SITE_TITLE}>
+					<span class="bt-blue">블루</span><span class="bt-wine">와인</span>
+				</span>
 			</a>
 		</h2>
 		<div class="internal-links">
@@ -101,7 +103,12 @@ import { SITE_TITLE } from '../consts';
 		text-decoration: none;
 	}
 	.brand-mark { display: inline-flex; vertical-align: middle; margin-right: .35rem; }
-	.brand-text { vertical-align: middle; }
+	.brand-text { vertical-align: middle; display:inline-flex; gap:.05rem; align-items:center; font-weight:1000; font-size:1.08rem; letter-spacing:.2px; font-family: ui-sans-serif, system-ui, -apple-system, "Inter", "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; }
+	.bt-blue, .bt-wine { -webkit-background-clip:text; background-clip:text; color:transparent; text-shadow: 0 1px 0 rgba(0,0,0,0.06); }
+	.bt-blue, .bt-wine { color:#0f172a; text-shadow: 0 1px 0 rgba(0,0,0,0.06); background:none; -webkit-background-clip: initial; background-clip: initial; }
+	.bt-blue { background:none; }
+	.bt-wine { background:none; }
+	@media (max-width: 720px) { .brand-text { font-size:1rem; } }
 	nav {
 		display: flex;
 		align-items: center;
