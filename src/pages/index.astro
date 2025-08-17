@@ -89,7 +89,133 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 					<img class="ref-image" src="/golf.png" alt="골프 여행 참고 이미지" loading="lazy" decoding="async" />
 				</div>
 			</section>
+
+			<!-- Golf Life 확장 본문(상단 메뉴 제거 버전) -->
+			<section class="glife" aria-label="Golf Life 확장 콘텐츠">
+				<div class="glife-container">
+					<section class="gl-hero gl-reveal">
+						<div>
+							<div class="gl-badge gl-pulse">💚 평생 골프 프로젝트</div>
+							<h2 class="gl-h1">오늘도 내일도,<br> <strong>마지막 퍼팅까지!</strong> ⛳️</h2>
+							<p class="gl-sub">
+								“일하고 쉬고 또 골프!”<br>
+								페어웨이에서 해 뜨고 지는 날까지, 위트와 여유로 채우는 <b>골프 라이프</b>를 소개합니다.
+							</p>
+							<div class="gl-cta">
+								<a class="gl-btn gl-primary" href="#gl-join">라운드 예약하기 🏌️‍♂️</a>
+								<a class="gl-btn gl-ghost" href="#gl-features">분위기 구경하기 🌤️</a>
+							</div>
+
+							<div class="gl-marquee gl-float">✨ “드라이버는 우정, 퍼팅은 사랑, 벙커는 인내.”  |  🧃 19홀에서는 칭찬만 가능  |  📒 스코어는 기록하고, 추억은 저장!</div>
+
+							<div id="gl-why" class="gl-grid">
+								<div class="gl-card gl-feature gl-reveal">
+									<div>🌞</div>
+									<h3>해 뜨면 티샷</h3>
+									<p class="gl-muted">아침 햇살에 비타민D 충전. “내 비거리도 10야드 충전된 느낌!”</p>
+								</div>
+								<div class="gl-card gl-feature gl-reveal">
+									<div>🫶</div>
+									<h3>친구는 페어웨이에서</h3>
+									<p class="gl-muted">버디보다 값진 건 ‘나이스!’ 한마디. 칭찬이 곧 멘탈 케어.</p>
+								</div>
+								<div class="gl-card gl-feature gl-reveal">
+									<div>📈</div>
+									<h3>매일 1% 상향</h3>
+									<p class="gl-muted">루틴·템포·마인드셋, 소소하게 쌓이면 핸디는 내려갑니다.</p>
+								</div>
+							</div>
+						</div>
+
+						<div class="gl-illust gl-float" aria-hidden="true" title="따뜻한 골프 라이프 일러스트">
+							<div class="gl-golfman">🏡⛳️🌿</div>
+						</div>
+					</section>
+
+					<section id="gl-features" class="gl-card gl-reveal" style="margin-top:8px">
+						<div class="gl-row">
+							<div class="gl-pill">☕️ 새벽 티타임</div>
+							<div class="gl-pill">🎶 버디 브금</div>
+							<div class="gl-pill">🍀 멘탈 세이프존</div>
+							<div class="gl-pill">🧑‍🍳 19홀 브런치</div>
+						</div>
+						<p class="gl-quote" style="margin-top:12px">
+							“골프는 인생의 축소판. 가끔 러프에 들어가도, 웃으며 레이업하면 다시 페어웨이!” 😄
+						</p>
+					</section>
+
+					<section id="gl-join" class="gl-card gl-reveal" style="margin-top:18px">
+						<h3 style="margin:0 0 8px">함께 칠까요? 🎯</h3>
+						<p class="gl-sub">초보도, 싱글도, ‘천재 백돌이’도 환영합니다. 드레스코드는 웃음! 😆</p>
+						<form onsubmit="event.preventDefault(); alert('환영해요! 라운드 소식 보내드릴게요 ⛳️');">
+							<div class="gl-formgrid">
+								<input aria-label="이메일" type="email" placeholder="이메일 입력" required class="gl-input">
+								<button class="gl-btn gl-primary" type="submit">소식 받기 📬</button>
+							</div>
+						</form>
+					</section>
+
+					<section class="gl-mini-footer gl-reveal">
+						⛳️ Golf Life — Fairway, Friends & Fun.<br>
+						<small>※ 유머는 진지하게, 플레이는 즐겁게! 건강과 안전을 항상 우선해요.</small>
+					</section>
+				</div>
+			</section>
 		</main>
+
+		<!-- 스크롤 리빌 스크립트 -->
+		<script>
+		(function(){
+			const revealItems = document.querySelectorAll('.gl-reveal');
+			const io = new IntersectionObserver((entries)=>{
+				entries.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('is-visible'); }});
+			},{ threshold: 0.15 });
+			revealItems.forEach(n=> io.observe(n));
+		})();
+		</script>
+
+		<!-- Golf Life 전용 스타일(네임스페이스 적용) -->
+		<style>
+			.glife{ padding: 24px 16px 12px 16px; background:
+				radial-gradient(1200px 600px at 10% -10%, #eaf6ff, transparent 50%),
+				radial-gradient(1000px 600px at 100% 0%, #f0fbf7, transparent 60%),
+				#ffffff; }
+			.glife-container{ max-width:1100px; margin:0 auto; }
+			.gl-hero{ display:grid; grid-template-columns:1.15fr .85fr; gap:28px; align-items:center; padding: 20px 0; }
+			.gl-badge{ display:inline-flex; align-items:center; gap:8px; background:linear-gradient(90deg,#10b981,#38bdf8); color:#fff; border-radius:999px; padding:8px 14px; font-weight:700; box-shadow:0 8px 24px #0000001a }
+			.gl-h1{ font-size: clamp(32px, 5vw, 48px); line-height:1.08; margin:16px 0 12px }
+			.gl-sub{ color:#64748b; font-size: clamp(16px, 2.2vw, 18px) }
+			.gl-cta{ display:flex; gap:12px; margin-top:18px; flex-wrap:wrap }
+			.gl-btn{ padding:14px 18px; border-radius:14px; border:0; font-weight:800; cursor:pointer }
+			.gl-primary{ background:#10b981; color:#fff; box-shadow:0 10px 20px #10b98140 }
+			.gl-ghost{ background:#fff; color:#0f172a; border:2px solid #e2e8f0 }
+			.gl-card{ background:#ffffffcc; backdrop-filter:saturate(140%) blur(6px); border-radius:20px; padding:20px; box-shadow:0 10px 30px #00000010 }
+			.gl-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:18px; margin-top:26px }
+			.gl-feature h3{ margin:8px 0 6px }
+			.gl-illust{ aspect-ratio:1.1/1; border-radius:24px; background:linear-gradient(160deg,#fff, #f7fffb); border:1px solid #e2e8f0; box-shadow:0 20px 60px #00000012; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden }
+			.gl-illust:before{ content:""; position:absolute; inset:-30% -20% auto auto; height:70%; width:70%; background:radial-gradient(closest-side,#c7f9e5 0,#c7f9e500 70%); filter:blur(30px); transform:rotate(15deg) }
+			.gl-golfman{ font-size: clamp(72px, 10vw, 96px); transform:translateY(-6px) }
+			.gl-marquee{ overflow:hidden; white-space:nowrap; border-radius:14px; border:1px dashed #d1fae5; background:#f0fdf4; color:#065f46; padding:10px; margin-top:18px; font-weight:700 }
+			.gl-row{ display:flex; gap:14px; align-items:center; flex-wrap:wrap }
+			.gl-quote{ font-size: clamp(16px, 2.2vw, 18px) }
+			.gl-pill{ padding:8px 12px; border-radius:999px; background:#fff; border:1px solid #e2e8f0 }
+			.gl-formgrid{ display:grid; grid-template-columns:2fr 1fr; gap:10px; margin-top:14px }
+			.gl-input{ padding:14px 16px; border:1.5px solid #dbeafe; border-radius:14px; font-size:16px }
+			.gl-mini-footer{ margin-top:32px; padding: 12px 0 6px; color:#64748b; text-align:center; font-size:14px }
+			@media (max-width:960px){
+				.gl-hero{ grid-template-columns:1fr; gap:18px }
+				.gl-grid{ grid-template-columns:1fr }
+			}
+			/* micro-animations */
+			.gl-float{ animation:gl-float 5s ease-in-out infinite }
+			@keyframes gl-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+			.gl-pulse{ animation:gl-pulse 2.2s ease-in-out infinite }
+			@keyframes gl-pulse{0%,100%{box-shadow:0 0 0 0 #10b98140}50%{box-shadow:0 0 0 10px #10b98110}}
+			/* reveal */
+			.gl-reveal{ opacity:0; transform: translateY(12px); transition: opacity .5s ease, transform .5s ease }
+			.gl-reveal.is-visible{ opacity:1; transform: translateY(0) }
+		</style>
+
 		<Footer />
 	</body>
 </html>
