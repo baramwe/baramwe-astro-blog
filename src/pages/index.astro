@@ -86,7 +86,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 					<p>스냅 기록 서비스로 순간을 특별하게 남깁니다.</p><br>
 					<p>필수 보험 포함으로 안전까지 꼼꼼하게 챙깁니다.</p><br>
 					<p>간결하지만 만족스러운, 프리미엄 골프 여행.</p>
-					<img class="ref-image" src="/golf.png" alt="골프 여행 참고 이미지" loading="lazy" decoding="async" />
+					<img class="ref-image" src="/golf2.png" alt="골프 여행 참고 이미지" loading="lazy" decoding="async" />
 				</div>
 			</section>
 
@@ -106,31 +106,39 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 								<a class="gl-btn gl-ghost" href="#gl-features">분위기 구경하기 🌤️</a>
 							</div>
 
-							<div class="gl-marquee gl-float">✨ “드라이버는 우정, 퍼팅은 사랑, 벙커는 인내.”  |  🧃 19홀에서는 칭찬만 가능  |  📒 스코어는 기록하고, 추억은 저장!</div>
+							<!-- 마퀴는 전체 컨테이너 폭과 일치하도록 gl-hero 밖(그리드 단위)으로 이동 -->
 
-							<div id="gl-why" class="gl-grid">
-								<div class="gl-card gl-feature gl-reveal">
-									<div>🌞</div>
-									<h3>해 뜨면 티샷</h3>
-									<p class="gl-muted">아침 햇살에 비타민D 충전. “내 비거리도 10야드 충전된 느낌!”</p>
-								</div>
-								<div class="gl-card gl-feature gl-reveal">
-									<div>🫶</div>
-									<h3>친구는 페어웨이에서</h3>
-									<p class="gl-muted">버디보다 값진 건 ‘나이스!’ 한마디. 칭찬이 곧 멘탈 케어.</p>
-								</div>
-								<div class="gl-card gl-feature gl-reveal">
-									<div>📈</div>
-									<h3>매일 1% 상향</h3>
-									<p class="gl-muted">루틴·템포·마인드셋, 소소하게 쌓이면 핸디는 내려갑니다.</p>
-								</div>
-							</div>
-						</div>
-
-						<div class="gl-illust gl-float" aria-hidden="true" title="따뜻한 골프 라이프 일러스트">
-							<div class="gl-golfman">🏡⛳️🌿</div>
 						</div>
 					</section>
+
+					<!-- gl-why: 컨테이너 전체 폭으로 확장 -->
+					<section class="gl-card gl-reveal" style="margin-top:8px">
+						<div id="gl-why" class="gl-grid">
+							<div class="gl-card gl-feature gl-reveal">
+								<div>🌞</div>
+								<h3>해 뜨면 티샷</h3>
+								<p class="gl-muted">아침 햇살에 비타민D 충전. “내 비거리도 10야드 충전된 느낌!”</p>
+							</div>
+							<div class="gl-card gl-feature gl-reveal">
+								<div>🫶</div>
+								<h3>친구는 페어웨이에서</h3>
+								<p class="gl-muted">버디보다 값진 건 ‘나이스!’ 한마디. 칭찬이 곧 멘탈 케어.</p>
+							</div>
+							<div class="gl-card gl-feature gl-reveal">
+								<div>📈</div>
+								<h3>매일 1% 상향</h3>
+								<p class="gl-muted">루틴·템포·마인드셋, 소소하게 쌓이면 핸디는 내려갑니다.</p>
+							</div>
+						</div>
+					</section>
+
+					<!-- 컨테이너 폭과 동일하게 펼쳐지는 마퀴 -->
+					<div class="gl-marquee gl-float gl-span" aria-label="골프 라이프 티커">
+						<div class="gl-track">
+							<span>✨ “드라이버는 우정, 퍼팅은 사랑, 벙커는 인내.”  |  🧃 19홀에서는 칭찬만 가능  |  📒 스코어는 기록하고, 추억은 저장!</span>
+							<span aria-hidden="true">✨ “드라이버는 우정, 퍼팅은 사랑, 벙커는 인내.”  |  🧃 19홀에서는 칭찬만 가능  |  📒 스코어는 기록하고, 추억은 저장!</span>
+						</div>
+					</div>
 
 					<section id="gl-features" class="gl-card gl-reveal" style="margin-top:8px">
 						<div class="gl-row">
@@ -180,7 +188,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 				radial-gradient(1200px 600px at 10% -10%, #eaf6ff, transparent 50%),
 				radial-gradient(1000px 600px at 100% 0%, #f0fbf7, transparent 60%),
 				#ffffff; }
-			.glife-container{ max-width:1100px; margin:0 auto; }
+			.glife-container{ max-width:1100px; margin:0 auto; padding-left: 0; padding-right: 0; }
 			.gl-hero{ display:grid; grid-template-columns:1.15fr .85fr; gap:28px; align-items:center; padding: 20px 0; }
 			.gl-badge{ display:inline-flex; align-items:center; gap:8px; background:linear-gradient(90deg,#10b981,#38bdf8); color:#fff; border-radius:999px; padding:8px 14px; font-weight:700; box-shadow:0 8px 24px #0000001a }
 			.gl-h1{ font-size: clamp(32px, 5vw, 48px); line-height:1.08; margin:16px 0 12px }
@@ -195,7 +203,12 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 			.gl-illust{ aspect-ratio:1.1/1; border-radius:24px; background:linear-gradient(160deg,#fff, #f7fffb); border:1px solid #e2e8f0; box-shadow:0 20px 60px #00000012; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden }
 			.gl-illust:before{ content:""; position:absolute; inset:-30% -20% auto auto; height:70%; width:70%; background:radial-gradient(closest-side,#c7f9e5 0,#c7f9e500 70%); filter:blur(30px); transform:rotate(15deg) }
 			.gl-golfman{ font-size: clamp(72px, 10vw, 96px); transform:translateY(-6px) }
-			.gl-marquee{ overflow:hidden; white-space:nowrap; border-radius:14px; border:1px dashed #d1fae5; background:#f0fdf4; color:#065f46; padding:10px; margin-top:18px; font-weight:700 }
+			.gl-marquee{ position:relative; overflow:hidden; border-radius:14px; border:1px dashed #d1fae5; background:#f0fdf4; color:#065f46; padding:10px; margin-top:18px; font-weight:700 }
+			.gl-track{ display:inline-flex; align-items:center; gap:2rem; width:max-content; will-change:transform; animation: gl-marquee-x 22s linear infinite }
+			.gl-track span{ flex:none; white-space:nowrap; padding-inline:8px }
+			@keyframes gl-marquee-x { from { transform: translateX(0) } to { transform: translateX(-50%) } }
+			@media (max-width:960px){ .gl-track{ animation-duration:28s; gap:1.25rem } }
+			@media (prefers-reduced-motion: reduce){ .gl-track{ animation:none } }
 			.gl-row{ display:flex; gap:14px; align-items:center; flex-wrap:wrap }
 			.gl-quote{ font-size: clamp(16px, 2.2vw, 18px) }
 			.gl-pill{ padding:8px 12px; border-radius:999px; background:#fff; border:1px solid #e2e8f0 }
@@ -214,6 +227,8 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 			/* reveal */
 			.gl-reveal{ opacity:0; transform: translateY(12px); transition: opacity .5s ease, transform .5s ease }
 			.gl-reveal.is-visible{ opacity:1; transform: translateY(0) }
+			/* span helper: 컨테이너 폭 정렬 */
+			.gl-span{ width:100%; }
 		</style>
 
 		<Footer />
