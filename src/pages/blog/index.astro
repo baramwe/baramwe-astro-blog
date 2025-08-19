@@ -25,6 +25,10 @@ const mbtiImage = '/mbti.png';
 			.mbti a { display: inline-block; }
 			.mbti img { width: 100%; max-width: 480px; border-radius: 12px; box-shadow: var(--box-shadow); }
 			.mbti .caption { margin-top: .5rem; font-size: 1rem; color: rgb(var(--gray)); }
+			.clip { display: grid; place-items: center; margin-top: .25rem; }
+			.clip video { width: 100%; max-width: 680px; border-radius: 12px; box-shadow: var(--box-shadow); outline: none; cursor: pointer; }
+			.clip video:hover { filter: brightness(1.02); }
+			.clip .clip-caption { margin-top: .35rem; font-size: .95rem; color: rgb(var(--gray)); text-align: center; }
 			ul {
 				display: flex;
 				flex-wrap: wrap;
@@ -61,6 +65,20 @@ const mbtiImage = '/mbti.png';
 						<img src={mbtiImage} width="680" height="340" alt="골프 MBTI" />
 					</a>
 					<div class="caption">당신의 골프 스타일을 확인하세요</div><br>
+					<div class="clip">
+						<video id="golf-clip" width="680" height="382" muted preload="metadata" playsinline>
+							<source src="https://baramwe.github.io/image/golf/ai/20250802.mp4#t=0.1" type="video/mp4" />
+							이 브라우저는 동영상을 지원하지 않습니다.
+						</video>
+						<div class="clip-caption">2025 Japan Sapporo Championship</div>
+					</div>
+					<div class="clip">
+						<video id="golf-clip-2" width="680" height="382" muted preload="metadata" playsinline>
+							<source src="https://baramwe.github.io/image/golf/ai/Miyako_Island.mp4#t=0.1" type="video/mp4" />
+							이 브라우저는 동영상을 지원하지 않습니다.
+						</video>
+						<div class="clip-caption">2025 Miyako Island Championship</div>
+					</div>
 				</div>
 			</section>
 			<section>
@@ -82,5 +100,30 @@ const mbtiImage = '/mbti.png';
 			</section>
 		</main>
 		<Footer />
+		<script>
+		(function(){
+			function wire(id){
+				const v = document.getElementById(id);
+				if(!v) return;
+				const play = ()=>{ if(v.paused){ v.play().catch(()=>{}); } };
+				const pause = ()=>{ if(!v.paused){ v.pause(); } };
+				v.addEventListener('mouseenter', play, {passive:true});
+				v.addEventListener('mouseleave', pause, {passive:true});
+				v.addEventListener('touchstart', play, {passive:true});
+				v.addEventListener('touchend', pause, {passive:true});
+				v.addEventListener('click', async ()=>{
+					if(!v.paused){ v.pause(); } else { await v.play().catch(()=>{}); }
+					try {
+						if (!document.fullscreenElement){
+							if (v.requestFullscreen) await v.requestFullscreen();
+							else if (v.webkitRequestFullscreen) v.webkitRequestFullscreen();
+						}
+					} catch(_) {}
+				}, {passive:true});
+			}
+			wire('golf-clip');
+			wire('golf-clip-2');
+		})();
+		</script>
 	</body>
 </html>
