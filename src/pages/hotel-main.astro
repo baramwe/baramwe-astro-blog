@@ -92,12 +92,18 @@ import Footer from '../components/Footer.astro';
 			.hx2 .hx2-marquee { display: flex; gap: 12px; animation: hx2-marquee 38s linear infinite; }
 			@keyframes hx2-marquee { to { transform: translateX(-50%); } }
 			/* button */
-			.hx2 .hx2-book { display: inline-flex; align-items: center; gap: 8px; padding: .6rem .9rem; border-radius: 999px; background: #11a6ff; color: #00131f; font-weight: 800; }
+			.hx2 .hx2-book { display: inline-flex; align-items: center; gap: 8px; padding: .6rem .9rem; border-radius: 999px; background: #11a6ff; color: #00131f; font-weight: 800; text-decoration: none; transition: all 0.3s ease; }
+			.hx2 .hx2-book:hover { background: #0ea5e9; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(17, 166, 255, 0.3); }
+			.hx2 .hx2-book-secondary { background: #6b7280; color: white; }
+			.hx2 .hx2-book-secondary:hover { background: #4b5563; box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3); }
 			.hx2 .hx2-center { text-align: center; }
+			.hx2 .hx2-buttons { display: flex; gap: 1rem; justify-content: center; align-items: center; flex-wrap: wrap; }
 			/* responsive */
 			@media (max-width: 768px) { .hx2 .hx2-card { grid-column: span 12; } }
 			@media (max-width: 768px){
 				.hx2 .hx2-pad { padding: 40px 0; }
+				.hx2 .hx2-buttons { flex-direction: column; gap: 0.75rem; }
+				.hx2 .hx2-book { width: 100%; max-width: 280px; justify-content: center; }
 			}
 		</style>
 	</head>
@@ -165,7 +171,10 @@ import Footer from '../components/Footer.astro';
 								<div class="hx2-caption">구마모토 ♨️</div>
 							</a>
 						</div>
-						<p class="hx2-center" style="margin-top:18px"><a class="hx2-book" href="#" target="_blank" rel="noopener">지금 예약하기 🔔</a></p>
+						<div class="hx2-center hx2-buttons" style="margin-top:18px">
+							<a class="hx2-book" href="/hotel/booking" rel="noopener">지금 예약하기 🔔</a>
+							<a class="hx2-book hx2-book-secondary" href="/hotel/reservations" rel="noopener">예약조회 📋</a>
+						</div>
 					</div>
 				</section>
 
