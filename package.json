@@ -50,7 +50,15 @@
     "db:migrate:remote": "wrangler d1 execute bl-house --file=./migrations/0001_initial_schema.sql",
     "db:studio": "wrangler d1 execute bl-house --local --command='SELECT name FROM sqlite_master WHERE type=\"table\";'",
     "db:generate": "prisma generate",
-    "db:reset": "wrangler d1 execute bl-house --local --command='DROP TABLE IF EXISTS reservations; DROP TABLE IF EXISTS room_prices; DROP TABLE IF EXISTS rooms; DROP TABLE IF EXISTS room_types; DROP TABLE IF EXISTS hotels;'"
+    "db:reset": "wrangler d1 execute bl-house --local --command='DROP TABLE IF EXISTS reservations; DROP TABLE IF EXISTS room_prices; DROP TABLE IF EXISTS rooms; DROP TABLE IF EXISTS room_types; DROP TABLE IF EXISTS hotels;'",
+    "db:hotels": "wrangler d1 execute bl-house --local --command='SELECT * FROM hotels;'",
+    "db:rooms": "wrangler d1 execute bl-house --local --command='SELECT rt.name as room_type, rt.base_price, rt.max_occupancy FROM room_types rt;'",
+    "db:prices": "wrangler d1 execute bl-house --local --command='SELECT rt.name, rp.price_date, rp.price, rp.is_weekend FROM room_types rt JOIN room_prices rp ON rt.id = rp.room_type_id ORDER BY rp.price_date;'",
+    "db:reservations": "wrangler d1 execute bl-house --local --command='SELECT reservation_code, guest_name, check_in_date, check_out_date, status, total_amount FROM reservations ORDER BY created_at DESC;'",
+    "db:backup": "wrangler d1 export bl-house --local --output=./backup.sql",
+    "db:status": "wrangler d1 execute bl-house --local --file=./queries/hotel_status.sql",
+    "db:shell": "echo 'D1 Shell 모드 - 직접 SQL 명령어를 입력하세요 (종료: .quit)' && sqlite3 $(find .wrangler -name '*.sqlite' | head -1)",
+    "db:info": "wrangler d1 info bl-house"
   },
   "type": "module"
 }

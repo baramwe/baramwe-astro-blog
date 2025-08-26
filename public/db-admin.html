@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏨 BlueWine D1 데이터베이스 관리</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding: 2rem;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            color: #065f46;
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            color: #6b7280;
+            font-size: 1.1rem;
+        }
+
+        .warning {
+            background: linear-gradient(135deg, #fef3c7, #fed7aa);
+            border: 2px solid #f59e0b;
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .warning strong {
+            color: #92400e;
+            font-size: 1.1rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+        }
+
+        .card h3 {
+            color: #065f46;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .command {
+            background: #1f2937;
+            color: #e5e7eb;
+            padding: 0.75rem;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 0.9rem;
+            margin: 0.5rem 0;
+            overflow-x: auto;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .command:hover {
+            background: #374151;
+        }
+
+        .command::before {
+            content: '$ ';
+            color: #10b981;
+            font-weight: bold;
+        }
+
+        .section {
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .section h2 {
+            color: #065f46;
+            font-size: 1.8rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 3px solid #10b981;
+            padding-bottom: 0.5rem;
+        }
+
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .action-btn {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .action-btn:hover {
+            background: linear-gradient(135deg, #059669, #047857);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+        }
+
+        .action-btn.danger {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+        }
+
+        .action-btn.danger:hover {
+            background: linear-gradient(135deg, #b91c1c, #991b1b);
+            box-shadow: 0 6px 20px rgba(220, 38, 38, 0.4);
+        }
+
+        .code-block {
+            background: #1f2937;
+            color: #e5e7eb;
+            padding: 1.5rem;
+            border-radius: 12px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 0.9rem;
+            overflow-x: auto;
+            margin: 1rem 0;
+            border-left: 4px solid #10b981;
+        }
+
+        .sql-query {
+            background: #1e3a8a;
+            color: #ddd6fe;
+            border-left-color: #3b82f6;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 2rem;
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+
+        .emoji {
+            font-size: 1.2em;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><span class="emoji">🏨</span> BlueWine D1 데이터베이스 관리</h1>
+            <p>로컬 개발 환경에서 D1 데이터베이스를 편리하게 관리하세요</p>
+        </div>
+
+        <div class="warning">
+            <strong>⚠️ 주의: 이 도구는 로컬 개발 환경에서만 사용하세요!</strong>
+            <br>운영 데이터베이스에 실수로 접근하지 않도록 주의하시기 바랍니다.
+        </div>
+
+        <div class="section">
+            <h2><span class="emoji">🚀</span> 빠른 실행 명령어</h2>
+            <div class="quick-actions">
+                <button class="action-btn" onclick="copyCommand('npm run db:studio')">
+                    <span class="emoji">📋</span> 테이블 목록
+                </button>
+                <button class="action-btn" onclick="copyCommand('npm run db:hotels')">
+                    <span class="emoji">🏨</span> 호텔 정보
+                </button>
+                <button class="action-btn" onclick="copyCommand('npm run db:reservations')">
+                    <span class="emoji">📝</span> 예약 현황
+                </button>
+                <button class="action-btn" onclick="copyCommand('npm run db:prices')">
+                    <span class="emoji">💰</span> 가격 정보
+                </button>
+                <button class="action-btn" onclick="copyCommand('npm run db:status')">
+                    <span class="emoji">📊</span> 종합 리포트
+                </button>
+                <button class="action-btn danger" onclick="copyCommand('npm run db:reset')">
+                    <span class="emoji">🗑️</span> 초기화 (주의!)
+                </button>
+            </div>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <h3><span class="emoji">🔍</span> 데이터 조회</h3>
+                <div class="command" onclick="copyToClipboard(this)">npm run db:hotels</div>
+                <div class="command" onclick="copyToClipboard(this)">npm run db:rooms</div>
+                <div class="command" onclick="copyToClipboard(this)">npm run db:prices</div>
+                <div class="command" onclick="copyToClipboard(this)">npm run db:reservations</div>
+                <div class="command" onclick="copyToClipboard(this)">npm run db:status</div>
+            </div>
+
+            <div class="card">
+                <h3><span class="emoji">⚙️</span> 기본 관리</h3>
+                <div class="command" onclick="copyToClipboard(this)">npm run db:migrate</div>
+                <div class="command" onclick="copyToClipboard(this)">npm run db:generate</div>
+                <div class="command" onclick="copyToClipboard(this)">npm run db:backup</div>
+                <div class="command" onclick="copyToClipboard(this)">npm run db:info</div>
+                <div class="command" onclick="copyToClipboard(this)">npm run db:shell</div>
+            </div>
+
+            <div class="card">
+                <h3><span class="emoji">💻</span> 직접 SQL</h3>
+                <div class="command" onclick="copyToClipboard(this)">npx wrangler d1 execute bl-house --local --command="SELECT * FROM hotels;"</div>
+                <div class="command" onclick="copyToClipboard(this)">npx wrangler d1 execute bl-house --local --file=./queries/hotel_status.sql</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2><span class="emoji">📝</span> 유용한 SQL 쿼리</h2>
+            
+            <h4>호텔 운영 현황</h4>
+            <div class="code-block sql-query">SELECT 
+    h.name as hotel_name,
+    COUNT(r.id) as total_reservations,
+    SUM(CASE WHEN r.status = 1 THEN 1 ELSE 0 END) as confirmed,
+    SUM(r.total_amount) as total_revenue
+FROM hotels h
+LEFT JOIN reservations r ON h.id = r.hotel_id
+GROUP BY h.id, h.name;</div>
+
+            <h4>월별 매출 통계</h4>
+            <div class="code-block sql-query">SELECT 
+    strftime('%Y-%m', created_at) as month,
+    COUNT(*) as bookings,
+    SUM(total_amount) as revenue,
+    AVG(total_amount) as avg_booking_value
+FROM reservations 
+WHERE status = 1  -- 1: 확정
+GROUP BY strftime('%Y-%m', created_at)
+ORDER BY month DESC
+LIMIT 12;</div>
+
+            <h4>인기 객실 타입</h4>
+            <div class="code-block sql-query">SELECT 
+    rt.name as room_type,
+    rt.base_price,
+    COUNT(r.id) as booking_count,
+    AVG(r.total_amount) as avg_revenue
+FROM room_types rt
+LEFT JOIN reservations r ON rt.id = r.room_type_id
+WHERE r.status = 1  -- 1: 확정
+GROUP BY rt.id, rt.name
+ORDER BY booking_count DESC;</div>
+        </div>
+
+        <div class="section">
+            <h2><span class="emoji">🛠️</span> 고급 도구</h2>
+            <p><strong>SQLite GUI 도구 추천:</strong></p>
+            <ul style="margin: 1rem 0; padding-left: 2rem; color: #374151;">
+                <li><strong>DB Browser for SQLite</strong> - 무료, 사용하기 쉬운 GUI</li>
+                <li><strong>SQLiteStudio</strong> - 고급 기능 제공</li>
+                <li><strong>VS Code SQLite Viewer</strong> - 에디터에서 직접 확인</li>
+            </ul>
+
+            <p><strong>SQLite 파일 직접 접근:</strong></p>
+            <div class="code-block">find .wrangler -name "*.sqlite" -type f</div>
+        </div>
+
+        <div class="footer">
+            <p>
+                <span class="emoji">🎯</span> 
+                개발된 명령어들을 터미널에서 실행하세요. 
+                클릭하면 클립보드에 복사됩니다!
+            </p>
+            <p style="margin-top: 0.5rem;">
+                <strong>BlueWine Resort Hotel Management System</strong>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        function copyToClipboard(element) {
+            const text = element.textContent.replace('$ ', '');
+            navigator.clipboard.writeText(text).then(() => {
+                // 시각적 피드백
+                const originalBg = element.style.background;
+                element.style.background = '#10b981';
+                element.style.color = 'white';
+                
+                setTimeout(() => {
+                    element.style.background = originalBg;
+                    element.style.color = '#e5e7eb';
+                }, 200);
+                
+                // 토스트 메시지 (간단한 알림)
+                showToast(`복사됨: ${text}`);
+            }).catch(() => {
+                showToast('복사 실패: 수동으로 복사해주세요');
+            });
+        }
+
+        function copyCommand(command) {
+            navigator.clipboard.writeText(command).then(() => {
+                showToast(`복사됨: ${command}`);
+            });
+        }
+
+        function showToast(message) {
+            // 기존 토스트 제거
+            const existingToast = document.querySelector('.toast');
+            if (existingToast) {
+                existingToast.remove();
+            }
+
+            // 새 토스트 생성
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: linear-gradient(135deg, #10b981, #059669);
+                color: white;
+                padding: 1rem 1.5rem;
+                border-radius: 12px;
+                box-shadow: 0 8px 32px rgba(16, 185, 129, 0.3);
+                z-index: 1000;
+                font-weight: 600;
+                transform: translateX(400px);
+                transition: transform 0.3s ease;
+            `;
+
+            document.body.appendChild(toast);
+
+            // 애니메이션
+            setTimeout(() => {
+                toast.style.transform = 'translateX(0)';
+            }, 100);
+
+            // 자동 제거
+            setTimeout(() => {
+                toast.style.transform = 'translateX(400px)';
+                setTimeout(() => toast.remove(), 300);
+            }, 2500);
+        }
+
+        // 페이지 로드 시 환영 메시지
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                showToast('🎉 D1 관리 도구에 오신 것을 환영합니다!');
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
