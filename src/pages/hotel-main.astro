@@ -1,0 +1,227 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<!doctype html>
+<html lang="ko">
+	<head>
+		<BaseHead title="Hotel" description="몽환적이고 평온한 숙소에서의 특별한 하루를 소개합니다." />
+		<style>
+			:where(html, body) { overflow-x: hidden; }
+			main.page { width: 100%; max-width: 100%; margin: 0; padding: 0; }
+
+			.hero {
+				position: relative;
+				min-height: 100svh;
+				display: grid;
+				place-items: center;
+				place-content: center;
+				padding: 6vh 1rem;
+				background: url('/hotel1.png') center / cover no-repeat;
+				color: #fff;
+				box-sizing: border-box;
+			}
+			.hero-inner {
+				width: min(1200px, calc(100% - 2rem)); max-width: 100%; padding: 2.25em 1.5em; text-align: center; margin: 0 auto;
+				border-radius: 16px; background: rgba(255,255,255,0.08);
+				box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+				backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+				border: 1px solid rgba(255,255,255,0.15);
+			}
+			.hero-inner, .hero-inner p { word-break: keep-all; }
+			.hero p.lead { white-space: nowrap; display: inline-block; }
+			@media (min-width: 1200px) {
+				.hero-inner { width: min(1280px, calc(100% - 2rem)); }
+			}
+			h1 { margin: 0 0 .5em 0; font-size: clamp(1.25rem, 3vw, 1.75rem); letter-spacing: -0.02em; }
+			p.lead { margin: 0.2em auto 1em auto; max-width: 44ch; font-size: clamp(0.95rem, 2.2vw, 1.0625rem); line-height: 1.9; color: rgba(255,255,255,0.95); }
+			@media (min-width: 0px) {
+				p.lead { max-width: 80ch; }
+			}
+			.meta { margin-top: 1.25em; font-size: .95rem; color: rgba(255,255,255,0.9); }
+			.meta a { color: rgba(255,255,255,0.95); text-decoration: underline; }
+			.meta a:hover { color: #fff; }
+			@supports(padding: max(0px)) {
+				.hero-inner { padding-bottom: max(1.5em, env(safe-area-inset-bottom)); }
+			}
+			/* 모바일에서 배경 이미지가 잘리지 않도록 전체(Contain) 표시 */
+			@media (max-width: 700px) {
+				.hero {
+					background-position: center;
+					background-size: contain;
+					background-repeat: no-repeat;
+				}
+			}
+			@media (max-width: 480px) {
+				.hero { padding: 5vh 0.75rem; }
+				.hero-inner { width: min(660px, calc(100% - 1.5rem)); padding: 1.75em 1.25em; }
+			}
+			@media (min-width: 1200px) {
+				p.lead { max-width: none; }
+			}
+			/* ===== Hotel extra sections (scoped: .hx2) ===== */
+			.hx2 { color: #e8edf5; }
+			.hx2 a { color: inherit; text-decoration: none; }
+			.hx2 img { display: block; max-width: 100%; }
+			.hx2 .hx2-section { position: relative; }
+			.hx2 .hx2-container { max-width: 1160px; margin: 0 auto; padding: 0 16px; }
+			.hx2 .hx2-pad { padding: 56px 0; }
+			.hx2 h2 { font-weight: 700; font-size: clamp(22px, 4vw, 36px); line-height: 1.2; margin: 0; }
+			.hx2 .hx2-lead { margin-top: 10px; color: #98a4b4; }
+			/* grid */
+			.hx2 .hx2-grid { display: grid; gap: 16px; grid-template-columns: repeat(12, 1fr); margin-top: 26px; }
+			.hx2 .hx2-card { grid-column: span 6; background: #0f1520; border: 1px solid rgba(255,255,255,.06); border-radius: 18px; overflow: hidden; }
+			.hx2 .hx2-card img { aspect-ratio: 16/11; width: 100%; object-fit: cover; }
+			.hx2 .hx2-card .hx2-pad-in { padding: 14px 16px; }
+			.hx2 .hx2-card .hx2-title { font-weight: 700; }
+			.hx2 .hx2-card .hx2-desc { color: #98a4b4; margin-top: 6px; }
+			/* rooms horizontal scroller */
+			.hx2 .hx2-rooms { background: #0a121d; }
+			.hx2 .hx2-hscroll { display: flex; gap: 16px; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scroll-behavior: smooth; -webkit-overflow-scrolling: touch; touch-action: pan-x; padding: 18px 4px 10px; margin-top: 14px; cursor: grab; }
+			.hx2 .hx2-hscroll::-webkit-scrollbar { height: 6px; }
+			.hx2 .hx2-hscroll::-webkit-scrollbar-thumb { background: #1b2433; border-radius: 999px; }
+			.hx2 .hx2-hscroll.is-drag { cursor: grabbing; }
+			.hx2 .hx2-room { scroll-snap-align: center; scroll-snap-stop: always; flex: 0 0 84vw; max-width: 520px; border-radius: 18px; overflow: hidden; background: #0f1520; border: 1px solid rgba(255,255,255,.06); position: relative; color: #fff; }
+			.hx2 .hx2-room img { aspect-ratio: 16/10; width: 100%; object-fit: cover; }
+			.hx2 .hx2-room .hx2-caption { position: absolute; left: 12px; bottom: 12px; background: rgba(0,0,0,.5); backdrop-filter: blur(3px); color: #fff; padding: 10px 12px; border-radius: 12px; }
+			/* gallery strip marquee */
+			.hx2 .hx2-strip { display: flex; gap: 12px; overflow: hidden; -webkit-mask-image: linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent); mask-image: linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent); margin-top: 22px; }
+			.hx2 .hx2-tile { flex: 0 0 22vw; min-width: 180px; aspect-ratio: 16/10; border-radius: 14px; overflow: hidden; }
+			.hx2 .hx2-marquee { display: flex; gap: 12px; animation: hx2-marquee 38s linear infinite; }
+			@keyframes hx2-marquee { to { transform: translateX(-50%); } }
+			/* button */
+			.hx2 .hx2-book { display: inline-flex; align-items: center; gap: 8px; padding: .6rem .9rem; border-radius: 999px; background: #11a6ff; color: #00131f; font-weight: 800; text-decoration: none; transition: all 0.3s ease; }
+			.hx2 .hx2-book:hover { background: #0ea5e9; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(17, 166, 255, 0.3); }
+			.hx2 .hx2-book-secondary { background: #6b7280; color: white; }
+			.hx2 .hx2-book-secondary:hover { background: #4b5563; box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3); }
+			.hx2 .hx2-center { text-align: center; }
+			.hx2 .hx2-buttons { display: flex; gap: 1rem; justify-content: center; align-items: center; flex-wrap: wrap; }
+			/* responsive */
+			@media (max-width: 768px) { .hx2 .hx2-card { grid-column: span 12; } }
+			@media (max-width: 768px){
+				.hx2 .hx2-pad { padding: 40px 0; }
+				.hx2 .hx2-buttons { flex-direction: column; gap: 0.75rem; }
+				.hx2 .hx2-book { width: 100%; max-width: 280px; justify-content: center; }
+			}
+		</style>
+	</head>
+	<body>
+		<Header />
+		<main class="page">
+			<section class="hero">
+				<div class="hero-inner">
+					<h1>머무는 순간이 여행이 되는 곳</h1>
+					<p class="lead" style="max-width:100ch">아름답고 평온한 공간에서, 라운드의 여운을 길게 즐겨보세요.</p><br>
+					<p class="lead">자연과 어우러진 뷰, 깊은 수면을 돕는 조도, 포근한 텍스타일.</p><br>
+					<p class="lead">미니멀한 디자인 속 디테일, 가벼운 스낵과 웰컴 드링크.</p><br>
+					<p class="lead">라운지의 잔잔한 플레이리스트와 향기로운 어메니티.</p><br>
+					<p class="lead">머무는 시간 자체가 힐링이 되는, 우리만의 숙소 셀렉션.</p>
+				</div>
+			</section>
+			
+			<!-- extra sections (below hero, above footer) -->
+			<section class="hx2">
+				<section id="hx2-about" class="hx2-section hx2-pad">
+					<div class="hx2-container">
+						<h2>About Us</h2>
+						<p class="hx2-lead">안락함과 노을을 가장 가까이서 즐길 수 있는 감성 펜션. 넓은 대지 위에서 프라이빗한 휴식을 누려보세요.</p>
+						<div class="hx2-grid" aria-label="주요 시설">
+							<article class="hx2-card">
+								<img src="https://baramwe.github.io/image/golf/ai/barbecue1.png" alt="바베큐 테라스" />
+								<div class="hx2-pad-in">
+									<div class="hx2-title">🍖 개별 바베큐 테라스</div>
+									<p class="hx2-desc">오션뷰를 바라보며 프라이빗하게 즐기는 바베큐.</p>
+								</div>
+							</article>
+							<article class="hx2-card">
+								<img src="https://baramwe.github.io/image/golf/ai/hotel-7.png" alt="정원" />
+								<div class="hx2-pad-in">
+									<div class="hx2-title">🌳 정원 & 산책로</div>
+									<p class="hx2-desc">싱그러운 숲과 잔디정원, 여유로운 산책 코스.</p>
+								</div>
+							</article>
+						</div>
+					</div>
+				</section>
+				<section id="hx2-rooms" class="hx2-section hx2-pad">
+					<div class="hx2-container">
+						<h2>Rooms</h2>
+						<p class="hx2-lead">좌우로 넘겨 다양한 타입을 확인하세요.</p>
+						<div class="hx2-hscroll" aria-label="숙소 미리보기">
+							<a class="hx2-room" href="#">
+								<img src="https://baramwe.github.io/image/golf/ai/america-1.png" alt="제주 오션뷰" />
+								<div class="hx2-caption">제주</div>
+							</a>
+							<a class="hx2-room" href="#">
+								<img src="https://baramwe.github.io/image/golf/ai/golf-6.png" alt="오사카" />
+								<div class="hx2-caption">오사카</div>
+							</a>
+							<a class="hx2-room" href="#">
+								<img src="https://baramwe.github.io/image/golf/ai/asia-1.png" alt="후쿠오카 패밀리" />
+								<div class="hx2-caption">후쿠오카</div>
+							</a>
+							<a class="hx2-room" href="#">
+								<img src="https://baramwe.github.io/image/golf/ai/hotel-4.png" alt="삿포로" />
+								<div class="hx2-caption">삿포로</div>
+							</a>
+							<a class="hx2-room" href="#">
+								<img src="https://baramwe.github.io/image/golf/ai/hotel-2.png" alt="구마모토 스파룸" />
+								<div class="hx2-caption">구마모토 ♨️</div>
+							</a>
+						</div>
+						<div class="hx2-center hx2-buttons" style="margin-top:18px">
+							<a class="hx2-book" href="/hotel/booking" rel="noopener">지금 예약하기 🔔</a>
+							<a class="hx2-book hx2-book-secondary" href="/hotel/reservations" rel="noopener">예약조회 📋</a>
+						</div>
+					</div>
+				</section>
+
+				<script>
+				// 드래그 스크롤 지원 (모바일/데스크톱)
+				(function(){
+					const el = document.querySelector('.hx2-hscroll');
+					if(!el) return;
+					let isDown = false; let startX = 0; let scrollLeft = 0;
+					const onDown = (e)=>{ isDown = true; el.classList.add('is-drag'); startX = (e.pageX||e.touches?.[0]?.pageX||0) - el.getBoundingClientRect().left; scrollLeft = el.scrollLeft; };
+					const onLeave = ()=>{ isDown = false; el.classList.remove('is-drag'); };
+					const onUp = ()=>{ isDown = false; el.classList.remove('is-drag'); };
+					const onMove = (e)=>{ if(!isDown) return; e.preventDefault(); const x = (e.pageX||e.touches?.[0]?.pageX||0) - el.getBoundingClientRect().left; const walk = (x - startX); el.scrollLeft = scrollLeft - walk; };
+					el.addEventListener('mousedown', onDown, {passive:true});
+					el.addEventListener('mouseleave', onLeave, {passive:true});
+					el.addEventListener('mouseup', onUp, {passive:true});
+					el.addEventListener('mousemove', onMove, {passive:false});
+					el.addEventListener('touchstart', onDown, {passive:true});
+					el.addEventListener('touchend', onUp, {passive:true});
+					el.addEventListener('touchmove', onMove, {passive:false});
+				})();
+				</script>
+
+				<section id="hx2-gallery" class="hx2-section hx2-pad">
+					<div class="hx2-container">
+						<h2>Gallery</h2>
+						<p class="hx2-lead">감성 한 컷. 아름다운 자연을 담았습니다.</p>
+						<div class="hx2-strip" aria-hidden="true">
+							<div class="hx2-marquee">
+								<div class="hx2-tile"><img src="https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1600&q=80" alt=""/></div>
+								<div class="hx2-tile"><img src="https://images.unsplash.com/photo-1469474968028-56623f02e42e?q=80&w=1600&auto=format&fit=crop" alt=""/></div>
+								<div class="hx2-tile"><img src="https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1600&auto=format&fit=crop" alt=""/></div>
+								<div class="hx2-tile"><img src="https://images.unsplash.com/photo-1465101162946-4377e57745c3?q=80&w=1600&auto=format&fit=crop" alt=""/></div>
+								<div class="hx2-tile"><img src="https://images.unsplash.com/photo-1470770841072-f978cf4d019e?q=80&w=1600&auto=format&fit=crop" alt=""/></div>
+								<!-- duplicate for seamless loop -->
+								<div class="hx2-tile"><img src="https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1600&q=80" alt=""/></div>
+								<div class="hx2-tile"><img src="https://images.unsplash.com/photo-1469474968028-56623f02e42e?q=80&w=1600&auto=format&fit=crop" alt=""/></div>
+								<div class="hx2-tile"><img src="https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1600&auto=format&fit=crop" alt=""/></div>
+								<div class="hx2-tile"><img src="https://images.unsplash.com/photo-1465101162946-4377e57745c3?q=80&w=1600&auto=format&fit=crop" alt=""/></div>
+								<div class="hx2-tile"><img src="https://images.unsplash.com/photo-1470770841072-f978cf4d019e?q=80&w=1600&auto=format&fit=crop" alt=""/></div>
+							</div>
+						</div>
+					</div>
+				</section>
+			</section>
+
+		</main>
+		<Footer />
+	</body>
+</html> 

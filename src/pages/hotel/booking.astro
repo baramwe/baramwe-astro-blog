@@ -1,0 +1,618 @@
+---
+import BaseHead from '../../components/BaseHead.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import { SITE_TITLE } from '../../consts';
+---
+
+<!doctype html>
+<html lang="ko">
+	<head>
+		<BaseHead title={`호텔 예약 - ${SITE_TITLE}`} description="블루와인 리조트와 제휴 호텔들을 확인하고 예약하세요." />
+		<style is:global>
+			main {
+				width: 100%;
+				max-width: 1200px;
+				margin: 0 auto;
+				padding: 2rem 1rem;
+			}
+			
+			.hero {
+				text-align: center;
+				margin-bottom: 3rem;
+				padding: 2rem;
+				background: linear-gradient(135deg, #f0fdf4, #e6fffa);
+				border-radius: 16px;
+			}
+			
+			.hero h1 {
+				font-size: 2.5rem;
+				margin-bottom: 1rem;
+				color: #065f46;
+			}
+			
+			.hero p {
+				font-size: 1.125rem;
+				color: #047857;
+			}
+			
+			.search-section {
+				background: white;
+				padding: 2rem;
+				border-radius: 16px;
+				box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+				margin-bottom: 3rem;
+			}
+			
+			.search-form {
+				display: grid;
+				grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+				gap: 1rem;
+				align-items: end;
+			}
+			
+			.form-group {
+				display: flex;
+				flex-direction: column;
+			}
+			
+			.form-group label {
+				margin-bottom: 0.5rem;
+				font-weight: 600;
+				color: #374151;
+			}
+			
+			.form-group input,
+			.form-group select {
+				padding: 0.75rem;
+				border: 2px solid #e5e7eb;
+				border-radius: 8px;
+				font-size: 1rem;
+				transition: border-color 0.2s;
+			}
+			
+			.form-group input:focus,
+			.form-group select:focus {
+				outline: none;
+				border-color: #10b981;
+			}
+			
+			.search-btn {
+				padding: 0.75rem 2rem;
+				background: #10b981;
+				color: white;
+				border: none;
+				border-radius: 8px;
+				font-size: 1rem;
+				font-weight: 600;
+				cursor: pointer;
+				transition: background-color 0.2s;
+			}
+			
+			.search-btn:hover {
+				background: #059669;
+			}
+			
+			.hotels-container {
+				margin-top: 2rem !important;
+			}
+			
+			/* 추가 테이블 강화 */
+			table.hotels-table {
+				border: 3px solid #e5e7eb !important;
+				border-radius: 16px !important;
+				background: white !important;
+				box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1) !important;
+			}
+			
+			table.hotels-table thead {
+				background: linear-gradient(135deg, #10b981, #059669) !important;
+			}
+			
+			table.hotels-table th {
+				background: linear-gradient(135deg, #10b981, #059669) !important;
+				color: white !important;
+				font-weight: 700 !important;
+			}
+			
+			table.hotels-table td {
+				background: white !important;
+				border-right: 1px solid #f1f5f9 !important;
+			}
+			
+			table.hotels-table tbody tr:hover td {
+				background: linear-gradient(135deg, #f0fdf9, #ecfdf5) !important;
+			}
+			
+			.hotels-table {
+				width: 100%;
+				max-width: 1400px;
+				margin: 0 auto;
+				background: white;
+				border-radius: 16px;
+				box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+				overflow: hidden;
+				border-collapse: collapse;
+				border: 2px solid #e5e7eb;
+			}
+			
+			.hotels-table thead {
+				background: linear-gradient(135deg, #10b981, #059669);
+				color: white;
+			}
+			
+			.hotels-table th {
+				padding: 1.5rem 1rem;
+				font-weight: 600;
+				text-align: left;
+				border-bottom: 3px solid rgba(255, 255, 255, 0.2);
+				border-right: 1px solid rgba(255, 255, 255, 0.2);
+			}
+			
+			.hotels-table th:first-child {
+				padding-left: 2rem;
+			}
+			
+			.hotels-table th:last-child {
+				text-align: center;
+				border-right: none;
+			}
+			
+			.hotels-table tbody tr {
+				transition: all 0.3s ease;
+				border-bottom: 2px solid #f1f5f9;
+			}
+			
+			.hotels-table tbody tr:hover {
+				background: linear-gradient(135deg, #f0fdf9, #ecfdf5);
+				transform: scale(1.01);
+				box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2);
+			}
+			
+			.hotels-table td {
+				padding: 1.5rem 1rem;
+				vertical-align: top;
+				border-right: 1px solid #f1f5f9;
+			}
+			
+			.hotels-table td:first-child {
+				padding-left: 2rem;
+			}
+			
+			.hotels-table td:last-child {
+				border-right: none;
+			}
+			
+			.hotel-basic-info {
+				display: flex;
+				align-items: center;
+				gap: 1.5rem;
+			}
+			
+			.hotel-image {
+				width: 120px;
+				height: 90px;
+				border-radius: 12px;
+				background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+				flex-shrink: 0;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				color: #065f46;
+				font-size: 1.5rem;
+				font-weight: 600;
+				border: 2px solid rgba(16, 185, 129, 0.2);
+			}
+			
+			.hotel-image::before {
+				content: '🏨';
+				font-size: 2rem;
+			}
+			
+			.hotel-details h3 {
+				font-size: 1.25rem;
+				font-weight: 700;
+				color: #111827;
+				margin-bottom: 0.25rem;
+			}
+			
+			.hotel-details .hotel-name-en {
+				font-size: 0.9rem;
+				color: #6b7280;
+				margin-bottom: 0.5rem;
+			}
+			
+			.hotel-details .hotel-address {
+				color: #6b7280;
+				font-size: 0.875rem;
+				display: flex;
+				align-items: center;
+				gap: 0.5rem;
+			}
+			
+			.amenities {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.5rem;
+				max-width: 200px;
+			}
+			
+			.amenity-tag {
+				background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+				color: #065f46;
+				padding: 0.375rem 0.75rem;
+				border-radius: 20px;
+				font-size: 0.75rem;
+				font-weight: 500;
+				border: 1px solid rgba(16, 185, 129, 0.2);
+			}
+			
+			.price-cell {
+				text-align: center;
+			}
+			
+			.price {
+				font-size: 1.5rem;
+				font-weight: 800;
+				color: #10b981;
+				display: block;
+				margin-bottom: 0.25rem;
+			}
+			
+			.price-unit {
+				font-size: 0.875rem;
+				color: #6b7280;
+			}
+			
+			.action-cell {
+				text-align: center;
+			}
+			
+			.book-btn {
+				background: linear-gradient(135deg, #10b981, #059669) !important;
+				color: white !important;
+				border: none !important;
+				border-radius: 50px !important;
+				padding: 1rem 2rem !important;
+				font-weight: 700 !important;
+				font-size: 1rem !important;
+				cursor: pointer !important;
+				transition: all 0.3s ease !important;
+				box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4) !important;
+				text-transform: uppercase !important;
+				letter-spacing: 0.8px !important;
+				position: relative !important;
+				overflow: hidden !important;
+				text-decoration: none !important;
+				display: inline-block !important;
+				min-width: 180px !important;
+				text-align: center !important;
+			}
+			
+			.book-btn:hover {
+				background: linear-gradient(135deg, #059669, #047857) !important;
+				transform: translateY(-3px) scale(1.05) !important;
+				box-shadow: 0 10px 30px rgba(16, 185, 129, 0.5) !important;
+			}
+			
+			.book-btn::before {
+				content: '' !important;
+				position: absolute !important;
+				top: 0 !important;
+				left: -100% !important;
+				width: 100% !important;
+				height: 100% !important;
+				background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent) !important;
+				transition: left 0.6s !important;
+			}
+			
+			.book-btn:hover::before {
+				left: 100% !important;
+			}
+			
+			.loading {
+				text-align: center;
+				padding: 3rem;
+				font-size: 1.125rem;
+				color: #6b7280;
+			}
+			
+			.error {
+				text-align: center;
+				padding: 3rem;
+				color: #dc2626;
+				background: #fef2f2;
+				border-radius: 8px;
+				margin: 2rem 0;
+			}
+
+			@media (max-width: 768px) {
+				.search-form {
+					grid-template-columns: 1fr;
+				}
+				
+				.hotels-table {
+					font-size: 0.875rem;
+				}
+				
+				.hotels-table th,
+				.hotels-table td {
+					padding: 1rem 0.5rem;
+				}
+				
+				.hotel-basic-info {
+					flex-direction: column;
+					gap: 1rem;
+				}
+				
+				.hotel-image {
+					width: 100px;
+					height: 75px;
+				}
+				
+				.amenities {
+					max-width: 150px;
+				}
+				
+				.price {
+					font-size: 1.25rem;
+				}
+				
+				.book-btn {
+					padding: 0.75rem 1.5rem;
+					font-size: 0.9rem;
+				}
+				
+				.hero h1 {
+					font-size: 2rem;
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<Header />
+		<main>
+			<div class="hero">
+				<h1>🏨 호텔 예약</h1>
+				<p>편안하고 럭셔리한 숙박을 위한 프리미엄 호텔들을 만나보세요.</p>
+			</div>
+
+			<div class="search-section">
+				<div class="search-form">
+					<div class="form-group">
+						<label for="checkin">체크인</label>
+						<input type="date" id="checkin" name="checkin" />
+					</div>
+					<div class="form-group">
+						<label for="checkout">체크아웃</label>
+						<input type="date" id="checkout" name="checkout" />
+					</div>
+					<div class="form-group">
+						<label for="guests">투숙객</label>
+						<select id="guests" name="guests">
+							<option value="1">성인 1명</option>
+							<option value="2" selected>성인 2명</option>
+							<option value="3">성인 3명</option>
+							<option value="4">성인 4명</option>
+						</select>
+					</div>
+					<div class="form-group">
+						<button type="button" class="search-btn" id="search-btn">검색하기</button>
+					</div>
+				</div>
+			</div>
+
+			<div id="hotels-container">
+				<div class="loading">호텔 정보를 불러오는 중입니다...</div>
+			</div>
+		</main>
+
+		<script>
+			// 기본 날짜 설정 (오늘, 내일)
+			const today = new Date();
+			const tomorrow = new Date(today);
+			tomorrow.setDate(tomorrow.getDate() + 1);
+			
+			const checkinInput = document.getElementById('checkin') as HTMLInputElement;
+			const checkoutInput = document.getElementById('checkout') as HTMLInputElement;
+			
+			checkinInput.value = today.toISOString().split('T')[0];
+			checkoutInput.value = tomorrow.toISOString().split('T')[0];
+			checkinInput.min = today.toISOString().split('T')[0];
+
+			// 검색 버튼 클릭 이벤트
+			document.getElementById('search-btn')?.addEventListener('click', () => {
+				searchHotels();
+			});
+
+			// 체크인 날짜 변경 시 체크아웃 최소 날짜 업데이트
+			checkinInput.addEventListener('change', () => {
+				const checkinDate = new Date(checkinInput.value);
+				const nextDay = new Date(checkinDate);
+				nextDay.setDate(nextDay.getDate() + 1);
+				checkoutInput.min = nextDay.toISOString().split('T')[0];
+				
+				if (checkoutInput.value <= checkinInput.value) {
+					checkoutInput.value = nextDay.toISOString().split('T')[0];
+				}
+			});
+
+			// 호텔 검색/로드 함수
+			async function searchHotels() {
+				const container = document.getElementById('hotels-container');
+				if (!container) return;
+
+				container.innerHTML = '<div class="loading">호텔을 검색 중입니다...</div>';
+
+				try {
+					const response = await fetch('/api/hotels');
+					const hotels = await response.json();
+
+					// API 응답이 에러를 포함하고 있는 경우 (로컬 환경)
+					if (hotels.error || hotels.development) {
+						container.innerHTML = `
+							<div class="error">
+								<h3>⚠️ 서비스 안내</h3>
+								<p>호텔 예약 기능은 배포 환경에서만 이용하실 수 있습니다.</p>
+								<p>현재는 로컬 개발 환경이므로 샘플 데이터를 표시합니다.</p>
+							</div>
+						`;
+						
+						// 개발환경용 샘플 데이터 표시
+						showSampleHotels();
+						return;
+					}
+
+					if (hotels.length === 0) {
+						container.innerHTML = '<div class="loading">등록된 호텔이 없습니다.</div>';
+						return;
+					}
+
+					displayHotels(hotels);
+
+				} catch (error) {
+					console.error('Hotels fetch error:', error);
+					container.innerHTML = `
+						<div class="error">
+							<h3>⚠️ 서비스 안내</h3>
+							<p>호텔 예약 기능은 배포 환경에서만 이용하실 수 있습니다.</p>
+							<p>현재는 로컬 개발 환경이므로 샘플 데이터를 표시합니다.</p>
+						</div>
+					`;
+					
+					// 개발환경용 샘플 데이터 표시
+					showSampleHotels();
+				}
+			}
+
+			// 샘플 호텔 데이터 표시 (개발환경용)
+			function showSampleHotels() {
+				const sampleHotels = [
+					{
+						id: 1,
+						name: "블루와인 리조트",
+						nameEn: "BlueWine Resort",
+						address: "제주특별자치도 제주시 애월읍 해안로 123",
+						images: [],
+						amenities: ["골프장", "스파", "수영장", "레스토랑", "무료WiFi"],
+						roomTypes: [
+							{
+								id: 1,
+								name: "오션뷰 스위트",
+								basePrice: 350000
+							},
+							{
+								id: 2,
+								name: "가든뷰 디럭스",
+								basePrice: 250000
+							},
+							{
+								id: 3,
+								name: "스탠다드 룸",
+								basePrice: 180000
+							}
+						]
+					}
+				];
+				
+				setTimeout(() => {
+					displayHotels(sampleHotels);
+				}, 1000);
+			}
+
+			// 호텔 목록 표시
+			function displayHotels(hotels: any[]) {
+				const container = document.getElementById('hotels-container');
+				if (!container) return;
+
+				// 테이블 생성
+				const table = document.createElement('table');
+				table.className = 'hotels-table';
+
+				// 테이블 헤더
+				const thead = document.createElement('thead');
+				thead.innerHTML = `
+					<tr>
+						<th>호텔 정보</th>
+						<th>편의시설</th>
+						<th>가격 (1박)</th>
+						<th>예약</th>
+					</tr>
+				`;
+				table.appendChild(thead);
+
+				// 테이블 바디
+				const tbody = document.createElement('tbody');
+				
+				hotels.forEach(hotel => {
+					const minPrice = Math.min(...hotel.roomTypes.map((rt: any) => rt.basePrice));
+					const amenities = Array.isArray(hotel.amenities) ? hotel.amenities : [];
+
+					const row = document.createElement('tr');
+					row.innerHTML = `
+						<td>
+							<div class="hotel-basic-info">
+								<div class="hotel-image" title="${hotel.name}"></div>
+								<div class="hotel-details">
+									<h3>${hotel.name}</h3>
+									${hotel.nameEn ? `<div class="hotel-name-en">${hotel.nameEn}</div>` : ''}
+									<div class="hotel-address">📍 ${hotel.address}</div>
+								</div>
+							</div>
+						</td>
+						<td>
+							<div class="amenities">
+								${amenities.slice(0, 5).map((amenity: string) => `
+									<span class="amenity-tag">${amenity}</span>
+								`).join('')}
+								${amenities.length > 5 ? `<span class="amenity-tag">+${amenities.length - 5}</span>` : ''}
+							</div>
+						</td>
+						<td class="price-cell">
+							<span class="price">₩${minPrice.toLocaleString()}</span>
+							<div class="price-unit">/ 박</div>
+						</td>
+						<td class="action-cell">
+							<button class="book-btn" onclick="goToHotelDetail(${hotel.id})">
+								상세보기 & 예약
+							</button>
+						</td>
+					`;
+					tbody.appendChild(row);
+				});
+
+				table.appendChild(tbody);
+
+				// 컨테이너 클래스 설정
+				container.className = 'hotels-container';
+				container.innerHTML = '';
+				container.appendChild(table);
+			}
+
+			// 호텔 상세 페이지로 이동
+			function goToHotelDetail(hotelId: number) {
+				const checkin = (document.getElementById('checkin') as HTMLInputElement).value;
+				const checkout = (document.getElementById('checkout') as HTMLInputElement).value;
+				const guests = (document.getElementById('guests') as HTMLSelectElement).value;
+				
+				const params = new URLSearchParams({
+					checkin,
+					checkout,
+					guests
+				});
+				
+				window.location.href = `/hotel/${hotelId}?${params.toString()}`;
+			}
+
+			// 전역에서 접근 가능하도록 window 객체에 할당
+			(window as any).goToHotelDetail = goToHotelDetail;
+
+			// 페이지 로드 시 호텔 목록 가져오기
+			document.addEventListener('DOMContentLoaded', () => {
+				searchHotels();
+			});
+		</script>
+
+		<Footer />
+	</body>
+</html>

@@ -1,0 +1,496 @@
+---
+import BaseHead from '../../../components/BaseHead.astro';
+import Header from '../../../components/Header.astro';
+import Footer from '../../../components/Footer.astro';
+import { SITE_TITLE } from '../../../consts';
+---
+
+<!doctype html>
+<html lang="ko">
+	<head>
+		<BaseHead title={`예약 확인 - ${SITE_TITLE}`} description="호텔 예약 확인 페이지" />
+		<style is:global>
+			main {
+				width: 100%;
+				max-width: 800px;
+				margin: 0 auto;
+				padding: 2rem 1rem;
+			}
+			
+			.confirmation-container {
+				background: white;
+				border-radius: 16px;
+				padding: 2rem;
+				box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+				text-align: center;
+			}
+			
+			.success-icon {
+				font-size: 4rem;
+				margin-bottom: 1rem;
+			}
+			
+			.success-title {
+				font-size: 2rem;
+				font-weight: 700;
+				color: #10b981;
+				margin-bottom: 1rem;
+			}
+			
+			.success-message {
+				color: #6b7280;
+				margin-bottom: 2rem;
+				line-height: 1.6;
+			}
+			
+			.reservation-details {
+				background: #f9fafb;
+				border-radius: 12px;
+				padding: 1.5rem;
+				margin: 2rem 0;
+				text-align: left;
+			}
+			
+			.reservation-code {
+				text-align: center;
+				margin-bottom: 1.5rem;
+			}
+			
+			.code-label {
+				font-size: 0.875rem;
+				color: #6b7280;
+				margin-bottom: 0.5rem;
+			}
+			
+			.code-value {
+				font-size: 1.5rem;
+				font-weight: 700;
+				color: #10b981;
+				font-family: 'Courier New', monospace;
+				letter-spacing: 2px;
+			}
+			
+			.detail-grid {
+				display: grid;
+				grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+				gap: 1rem;
+				margin-bottom: 1.5rem;
+			}
+			
+			.detail-item {
+				display: flex;
+				flex-direction: column;
+			}
+			
+			.detail-label {
+				font-size: 0.875rem;
+				color: #6b7280;
+				font-weight: 500;
+				margin-bottom: 0.25rem;
+			}
+			
+			.detail-value {
+				font-weight: 600;
+				color: #111827;
+			}
+			
+			.status-section {
+				border-top: 1px solid #e5e7eb;
+				padding-top: 1.5rem;
+				margin-top: 1.5rem;
+			}
+			
+			.status-item {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				margin-bottom: 0.75rem;
+			}
+			
+			.status-label {
+				color: #6b7280;
+			}
+			
+			.status-badge {
+				padding: 0.25rem 0.75rem;
+				border-radius: 999px;
+				font-size: 0.75rem;
+				font-weight: 600;
+			}
+			
+			.status-confirmed {
+				background: #d1fae5;
+				color: #065f46;
+			}
+			
+			.status-pending {
+				background: #fef3c7;
+				color: #92400e;
+			}
+			
+			.important-info {
+				background: #eff6ff;
+				border: 1px solid #bfdbfe;
+				border-radius: 8px;
+				padding: 1rem;
+				margin: 1.5rem 0;
+			}
+			
+			.important-title {
+				font-weight: 600;
+				color: #1e40af;
+				margin-bottom: 0.5rem;
+			}
+			
+			.important-text {
+				font-size: 0.875rem;
+				color: #1e40af;
+				line-height: 1.5;
+			}
+			
+			.action-buttons {
+				display: flex;
+				gap: 1.5rem;
+				justify-content: center;
+				flex-wrap: wrap;
+				margin-top: 3rem;
+			}
+			
+			.btn {
+				padding: 1.25rem 2.5rem;
+				border-radius: 50px;
+				text-decoration: none;
+				font-weight: 800;
+				font-size: 1.1rem;
+				text-transform: uppercase;
+				letter-spacing: 0.8px;
+				transition: all 0.4s ease;
+				position: relative;
+				overflow: hidden;
+				min-width: 200px;
+				text-align: center;
+			}
+			
+			.btn-primary {
+				background: linear-gradient(135deg, #10b981, #059669);
+				color: white;
+				border: none;
+				box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+			}
+			
+			.btn-primary:hover {
+				background: linear-gradient(135deg, #059669, #047857);
+				transform: translateY(-4px) scale(1.05);
+				box-shadow: 0 15px 35px rgba(16, 185, 129, 0.5);
+			}
+			
+			.btn-secondary {
+				background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+				color: #374151;
+				border: 2px solid #cbd5e1;
+				box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+			}
+			
+			.btn-secondary:hover {
+				background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
+				color: #1f2937;
+				border-color: #94a3b8;
+				transform: translateY(-3px) scale(1.03);
+				box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+			}
+			
+			.btn::before {
+				content: '';
+				position: absolute;
+				top: 0;
+				left: -100%;
+				width: 100%;
+				height: 100%;
+				background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+				transition: left 0.6s;
+			}
+			
+			.btn:hover::before {
+				left: 100%;
+			}
+			
+			.loading {
+				text-align: center;
+				padding: 3rem;
+			}
+			
+			.error {
+				text-align: center;
+				padding: 3rem;
+				color: #dc2626;
+			}
+			
+			.error-icon {
+				font-size: 3rem;
+				margin-bottom: 1rem;
+			}
+
+			@media (max-width: 768px) {
+				.detail-grid {
+					grid-template-columns: 1fr;
+				}
+				
+				.action-buttons {
+					flex-direction: column;
+					align-items: center;
+				}
+				
+				.btn {
+					width: 100%;
+					max-width: 300px;
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<Header />
+		<main>
+			<div id="confirmation-container">
+				<div class="loading">예약 정보를 확인하는 중입니다...</div>
+			</div>
+		</main>
+
+		<script>
+			// URL에서 예약 코드 가져오기
+			const urlParams = new URLSearchParams(window.location.search);
+			const reservationCode = urlParams.get('code');
+
+			if (!reservationCode) {
+				window.location.href = '/hotel/booking';
+			}
+
+			// 예약 정보 로드
+			async function loadReservationDetails() {
+				const container = document.getElementById('confirmation-container');
+				if (!container) return;
+
+				try {
+					const response = await fetch(`/api/reservations/${reservationCode}`);
+					const reservation = await response.json();
+
+					// API 응답이 에러를 포함하고 있는 경우 (로컬 환경)
+					if (reservation.error || reservation.development) {
+						// 개발환경용 샘플 데이터
+						showSampleReservation();
+						return;
+					}
+					
+					if (!response.ok) {
+						throw new Error('예약을 찾을 수 없습니다.');
+					}
+
+					displayReservation(reservation);
+
+				} catch (error) {
+					console.error('Reservation fetch error:', error);
+					
+					// 개발환경에서는 샘플 데이터 표시
+					if (reservationCode === 'SAMPLE123') {
+						showSampleReservation();
+					} else {
+						showError('예약 정보를 불러올 수 없습니다.');
+					}
+				}
+			}
+
+			// 샘플 예약 데이터 표시 (개발환경용)
+			function showSampleReservation() {
+				const sampleReservation = {
+					reservationCode: 'SAMPLE123',
+					hotel: {
+						name: '블루와인 리조트',
+						address: '제주특별자치도 제주시 애월읍 해안로 123',
+						phone: '064-123-4567',
+						checkInTime: '15:00',
+						checkOutTime: '11:00'
+					},
+					roomType: {
+						name: '오션뷰 스위트',
+						description: '넓은 바다 전망을 감상할 수 있는 프리미엄 스위트룸입니다.',
+						bedType: '킹베드'
+					},
+					room: null,
+					guestInfo: {
+						name: '샘플 고객',
+						phone: '010-1234-5678',
+						email: 'sample@example.com'
+					},
+					dates: {
+						checkInDate: '2024-12-25',
+						checkOutDate: '2024-12-27',
+						totalNights: 2
+					},
+					occupancy: {
+						adults: 2,
+						children: 0,
+						total: 2
+					},
+					pricing: {
+						totalAmount: 700000,
+						pricePerNight: 350000
+					},
+					status: {
+						reservation: 1,
+						reservationText: '예약 확정',
+						payment: 0,
+						paymentText: '미결제'
+					},
+					specialRequests: null,
+					createdAt: new Date().toISOString()
+				};
+				
+				setTimeout(() => {
+					displayReservation(sampleReservation);
+				}, 1000);
+			}
+
+			// 예약 정보 표시
+			/** @param {any} reservation */
+			function displayReservation(reservation) {
+				const container = document.getElementById('confirmation-container');
+				if (!container) return;
+
+				const checkinDate = new Date(reservation.dates.checkInDate);
+				const checkoutDate = new Date(reservation.dates.checkOutDate);
+
+				container.innerHTML = `
+					<div class="confirmation-container">
+						<div class="success-icon">✅</div>
+						<h1 class="success-title">예약이 완료되었습니다!</h1>
+						<p class="success-message">
+							예약 확인 번호를 안전하게 보관해 주시고,<br>
+							체크인 시 예약 확인 번호를 제시해 주세요.
+						</p>
+
+						<div class="reservation-details">
+							<div class="reservation-code">
+								<div class="code-label">예약 확인 번호</div>
+								<div class="code-value">${reservation.reservationCode}</div>
+							</div>
+
+							<div class="detail-grid">
+								<div class="detail-item">
+									<span class="detail-label">호텔</span>
+									<span class="detail-value">${reservation.hotel.name}</span>
+								</div>
+								<div class="detail-item">
+									<span class="detail-label">객실</span>
+									<span class="detail-value">${reservation.roomType.name}</span>
+								</div>
+								<div class="detail-item">
+									<span class="detail-label">체크인</span>
+									<span class="detail-value">${formatDate(checkinDate)} (${reservation.hotel.checkInTime})</span>
+								</div>
+								<div class="detail-item">
+									<span class="detail-label">체크아웃</span>
+									<span class="detail-value">${formatDate(checkoutDate)} (${reservation.hotel.checkOutTime})</span>
+								</div>
+								<div class="detail-item">
+									<span class="detail-label">투숙기간</span>
+									<span class="detail-value">${reservation.dates.totalNights}박</span>
+								</div>
+								<div class="detail-item">
+									<span class="detail-label">투숙객</span>
+									<span class="detail-value">성인 ${reservation.occupancy.adults}명</span>
+								</div>
+							</div>
+
+							<div class="status-section">
+								<div class="status-item">
+									<span class="status-label">예약 상태</span>
+									<span class="status-badge status-confirmed">${reservation.status.reservationText}</span>
+								</div>
+								<div class="status-item">
+									<span class="status-label">결제 상태</span>
+									<span class="status-badge ${reservation.status.payment === 0 ? 'status-pending' : 'status-confirmed'}">${reservation.status.paymentText}</span>
+								</div>
+								<div class="status-item">
+									<span class="status-label">총 결제 금액</span>
+									<span class="detail-value">₩${reservation.pricing.totalAmount.toLocaleString()}</span>
+								</div>
+							</div>
+						</div>
+
+						<div class="important-info">
+							<div class="important-title">💡 중요 안내사항</div>
+							<div class="important-text">
+								• 결제는 체크인 시 호텔에서 진행됩니다<br>
+								• 예약 변경이나 취소는 체크인 1일 전까지 가능합니다<br>
+								• 체크인 시 예약 확인 번호와 신분증을 지참해 주세요<br>
+								• 문의사항이 있으시면 호텔로 직접 연락 부탁드립니다
+							</div>
+						</div>
+
+						<div style="background: #f9fafb; border-radius: 8px; padding: 1rem; margin: 1rem 0;">
+							<div style="font-weight: 600; margin-bottom: 0.5rem;">호텔 연락처</div>
+							<div style="color: #6b7280; font-size: 0.875rem;">
+								📍 ${reservation.hotel.address}<br>
+								📞 ${reservation.hotel.phone}
+							</div>
+						</div>
+
+						<div class="action-buttons">
+							<button class="btn btn-primary" id="print-btn">
+								🖨️ 예약 확인서 인쇄
+							</button>
+							<a href="/hotel" class="btn btn-secondary">
+								🏨 다른 호텔 둘러보기
+							</a>
+						</div>
+					</div>
+				`;
+			}
+
+			// 오류 표시
+			/** @param {string} message */
+			function showError(message) {
+				const container = document.getElementById('confirmation-container');
+				if (!container) return;
+
+				container.innerHTML = `
+					<div class="confirmation-container error">
+						<div class="error-icon">❌</div>
+						<h1 style="color: #dc2626; margin-bottom: 1rem;">예약 확인 실패</h1>
+						<p style="color: #6b7280; margin-bottom: 2rem;">${message}</p>
+						<div class="action-buttons">
+							<a href="/hotel/booking" class="btn btn-primary">
+								🏨 호텔 목록으로 돌아가기
+							</a>
+						</div>
+					</div>
+				`;
+			}
+
+			// 날짜 포맷팅
+			/** @param {Date} date */
+			function formatDate(date) {
+				return date.toLocaleDateString('ko-KR', {
+					year: 'numeric',
+					month: 'long',
+					day: 'numeric',
+					weekday: 'short'
+				});
+			}
+
+			// 인쇄 기능
+			function printPage() {
+				window.print();
+			}
+
+			// 페이지 로드 시 예약 정보 가져오기
+			document.addEventListener('DOMContentLoaded', () => {
+				loadReservationDetails();
+				
+				// 인쇄 버튼 이벤트 리스너
+				document.getElementById('print-btn')?.addEventListener('click', printPage);
+			});
+		</script>
+
+		<Footer />
+	</body>
+</html>

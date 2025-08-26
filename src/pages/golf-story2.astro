@@ -18,6 +18,7 @@ import Footer from '../components/Footer.astro';
 			.backdrops { position:absolute; inset:0; }
 			.backdrops img.bg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:0; transition:opacity 800ms ease; filter:saturate(1.02) contrast(1.02); will-change:opacity; }
 			.backdrops img.bg.active { opacity:1; }
+			.placeholder-image { background: linear-gradient(135deg, #f0fdf4, #dcfce7); display: flex; align-items: center; justify-content: center; font-size: 4rem; color: #065f46; }
 			.overlay { position:absolute; inset:0; background: linear-gradient(180deg, rgba(0,0,0,.45), rgba(0,0,0,.35)); pointer-events:none; }
 			.caption { position:absolute; left:50%; top:12vh; transform:translateX(-50%); width:min(960px, calc(100% - 2rem)); color:#fff; text-align:center; }
 			.caption h1 { margin:0 0 .5rem 0; font-size: clamp(1.375rem, 3.2vw, 1.875rem); letter-spacing:-0.02em; }
@@ -40,7 +41,7 @@ import Footer from '../components/Footer.astro';
 					<img class="bg" src="/asia-1.png" alt="아시아 명문 코스" decoding="async" />
 					<img class="bg" src="/europe-1.png" alt="유럽 해변 코스" decoding="async" />
 					<img class="bg" src="/america-1.png" alt="미국 사막 코스" decoding="async" />
-					<img class="bg" src="/hotel1.png" alt="평온한 숙소" decoding="async" />
+					<div class="bg placeholder-image">🏨</div>
 				</div>
 				<div class="overlay"></div>
 				<div class="caption">
@@ -94,7 +95,7 @@ import Footer from '../components/Footer.astro';
 			steps.forEach((s)=>stepObserver.observe(s));
 			function onScroll(){ const t=window.scrollY||document.documentElement.scrollTop; const h=document.documentElement.scrollHeight - window.innerHeight; const r=h>0?(t/h):0; if(progress) progress.style.width=(r*100)+'%'; }
 			window.addEventListener('scroll', onScroll, { passive:true }); onScroll();
-			['/golf.png','/asia-1.png','/europe-1.png','/america-1.png','/hotel1.png'].forEach(src=>{ const i=new Image(); i.src=src; });
+			['/golf.png','/asia-1.png','/europe-1.png','/america-1.png'].forEach(src=>{ const i=new Image(); i.src=src; });
 		})();
 		</script>
 	</body>

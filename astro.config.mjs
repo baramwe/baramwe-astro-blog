@@ -16,4 +16,20 @@ export default defineConfig({
       enabled: true,
     },
   }),
+  vite: {
+    define: {
+      global: 'globalThis',
+    },
+    resolve: {
+      alias: {
+        '.prisma/client/index-browser': '.prisma/client/index-browser.js'
+      }
+    },
+    ssr: {
+      external: ['@prisma/client', '.prisma/client']
+    },
+    optimizeDeps: {
+      exclude: ['@prisma/client', '.prisma/client']
+    }
+  },
 });
