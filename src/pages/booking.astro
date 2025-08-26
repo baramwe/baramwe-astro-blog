@@ -545,14 +545,14 @@ import { SITE_TITLE } from '../consts';
 					if (result.error || result.development) {
 						showAlert(successAlert, '⚠️ 개발환경에서는 실제 예약이 되지 않습니다. 샘플 예약 확인 페이지로 이동합니다.');
 						setTimeout(() => {
-							window.location.href = `/booking/confirmation?code=SAMPLE123`;
+							window.location.href = `/hotel/booking/confirmation?code=SAMPLE123`;
 						}, 2000);
 						return;
 					}
 
 					if (response.ok && result.success) {
 						// 성공 시 예약 확인 페이지로 이동
-						window.location.href = `/booking/confirmation?code=${result.reservation.reservationCode}`;
+						window.location.href = `/hotel/booking/confirmation?code=${result.reservation.reservationCode}`;
 					} else {
 						throw new Error(result.error || '예약 처리 중 오류가 발생했습니다.');
 					}
@@ -567,7 +567,7 @@ import { SITE_TITLE } from '../consts';
 					)) {
 						showAlert(successAlert, '⚠️ 개발환경에서는 실제 예약이 되지 않습니다. 샘플 예약 확인 페이지로 이동합니다.');
 						setTimeout(() => {
-							window.location.href = `/booking/confirmation?code=SAMPLE123`;
+							window.location.href = `/hotel/booking/confirmation?code=SAMPLE123`;
 						}, 2000);
 					} else {
 						showAlert(errorAlert, error instanceof Error ? error.message : '예약 처리 중 오류가 발생했습니다.');

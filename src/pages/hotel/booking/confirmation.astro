@@ -1,8 +1,8 @@
 ---
-import BaseHead from '../../components/BaseHead.astro';
-import Header from '../../components/Header.astro';
-import Footer from '../../components/Footer.astro';
-import { SITE_TITLE } from '../../consts';
+import BaseHead from '../../../components/BaseHead.astro';
+import Header from '../../../components/Header.astro';
+import Footer from '../../../components/Footer.astro';
+import { SITE_TITLE } from '../../../consts';
 ---
 
 <!doctype html>
@@ -261,7 +261,7 @@ import { SITE_TITLE } from '../../consts';
 			const reservationCode = urlParams.get('code');
 
 			if (!reservationCode) {
-				window.location.href = '/hotels';
+				window.location.href = '/hotel/booking';
 			}
 
 			// 예약 정보 로드
@@ -350,7 +350,8 @@ import { SITE_TITLE } from '../../consts';
 			}
 
 			// 예약 정보 표시
-			function displayReservation(reservation: any) {
+			/** @param {any} reservation */
+			function displayReservation(reservation) {
 				const container = document.getElementById('confirmation-container');
 				if (!container) return;
 
@@ -437,7 +438,7 @@ import { SITE_TITLE } from '../../consts';
 							<button class="btn btn-primary" id="print-btn">
 								🖨️ 예약 확인서 인쇄
 							</button>
-							<a href="/hotels" class="btn btn-secondary">
+							<a href="/hotel" class="btn btn-secondary">
 								🏨 다른 호텔 둘러보기
 							</a>
 						</div>
@@ -446,7 +447,8 @@ import { SITE_TITLE } from '../../consts';
 			}
 
 			// 오류 표시
-			function showError(message: string) {
+			/** @param {string} message */
+			function showError(message) {
 				const container = document.getElementById('confirmation-container');
 				if (!container) return;
 
@@ -456,7 +458,7 @@ import { SITE_TITLE } from '../../consts';
 						<h1 style="color: #dc2626; margin-bottom: 1rem;">예약 확인 실패</h1>
 						<p style="color: #6b7280; margin-bottom: 2rem;">${message}</p>
 						<div class="action-buttons">
-							<a href="/hotels" class="btn btn-primary">
+							<a href="/hotel/booking" class="btn btn-primary">
 								🏨 호텔 목록으로 돌아가기
 							</a>
 						</div>
@@ -465,7 +467,8 @@ import { SITE_TITLE } from '../../consts';
 			}
 
 			// 날짜 포맷팅
-			function formatDate(date: Date): string {
+			/** @param {Date} date */
+			function formatDate(date) {
 				return date.toLocaleDateString('ko-KR', {
 					year: 'numeric',
 					month: 'long',
