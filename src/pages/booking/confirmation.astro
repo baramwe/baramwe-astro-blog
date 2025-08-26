@@ -9,7 +9,7 @@ import { SITE_TITLE } from '../../consts';
 <html lang="ko">
 	<head>
 		<BaseHead title={`예약 확인 - ${SITE_TITLE}`} description="호텔 예약 확인 페이지" />
-		<style>
+		<style is:global>
 			main {
 				width: 100%;
 				max-width: 800px;
@@ -150,40 +150,68 @@ import { SITE_TITLE } from '../../consts';
 			
 			.action-buttons {
 				display: flex;
-				gap: 1rem;
+				gap: 1.5rem;
 				justify-content: center;
 				flex-wrap: wrap;
-				margin-top: 2rem;
+				margin-top: 3rem;
 			}
 			
 			.btn {
-				padding: 0.75rem 1.5rem;
-				border-radius: 8px;
+				padding: 1.25rem 2.5rem;
+				border-radius: 50px;
 				text-decoration: none;
-				font-weight: 600;
-				transition: all 0.2s;
+				font-weight: 800;
+				font-size: 1.1rem;
+				text-transform: uppercase;
+				letter-spacing: 0.8px;
+				transition: all 0.4s ease;
+				position: relative;
+				overflow: hidden;
+				min-width: 200px;
+				text-align: center;
 			}
 			
 			.btn-primary {
-				background: #10b981;
+				background: linear-gradient(135deg, #10b981, #059669);
 				color: white;
-				border: 2px solid #10b981;
+				border: none;
+				box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
 			}
 			
 			.btn-primary:hover {
-				background: #059669;
-				border-color: #059669;
+				background: linear-gradient(135deg, #059669, #047857);
+				transform: translateY(-4px) scale(1.05);
+				box-shadow: 0 15px 35px rgba(16, 185, 129, 0.5);
 			}
 			
 			.btn-secondary {
-				background: white;
+				background: linear-gradient(135deg, #f8fafc, #e2e8f0);
 				color: #374151;
-				border: 2px solid #d1d5db;
+				border: 2px solid #cbd5e1;
+				box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
 			}
 			
 			.btn-secondary:hover {
-				background: #f9fafb;
-				border-color: #9ca3af;
+				background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
+				color: #1f2937;
+				border-color: #94a3b8;
+				transform: translateY(-3px) scale(1.03);
+				box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+			}
+			
+			.btn::before {
+				content: '';
+				position: absolute;
+				top: 0;
+				left: -100%;
+				width: 100%;
+				height: 100%;
+				background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+				transition: left 0.6s;
+			}
+			
+			.btn:hover::before {
+				left: 100%;
 			}
 			
 			.loading {
