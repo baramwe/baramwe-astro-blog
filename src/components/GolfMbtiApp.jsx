@@ -86,7 +86,7 @@ const QUESTIONS = [
   { id: 17, axis: "TF", text: "동반자가 골프 룰을 몰라 실수하면 친절히 알려주고 상황을 정리한다 🫱🫲" },
   { id: 18, axis: "EI", text: "짧은 파4, 동반자가 원온하겠다며 티샷했지만 뱀샷 50미터 나간 상황, 큰 소리로 웃으며 분위기를 띄운다. 😏" },
   { id: 19, axis: "SN", text: "샷 전 체크 포인트(그립/얼라인/볼 위치 등)를 체계적으로 점검한다 ✅" },
-  { id: 20, axis: "JP", text: "어이없는 미스샷으로 스코어가 망가져도 자첵하지 않고 다음 홀의 전략을 준비한다 🧭" },
+  { id: 20, axis: "JP", text: "어이없는 미스샷으로 스코어가 망가져도 자책하지 않고 다음 홀의 전략을 준비한다 🧭" },
   { id: 21, axis: "TF", text: "컨디션 난조로 동반자의 표정이 좋지 않으면 가급적 유쾌함을 유지하려고 유도한다 🚫" },
   { id: 22, axis: "SN", text: "핀 위치를 과감히 공략하는 모험을 즐긴다(벙커따윈 두렵지 않다) 🎯" },
   { id: 23, axis: "EI", text: "라운드 후 뒤풀이로 사람들과 어울리며 피드백을 나눈다 🍻" },
@@ -97,20 +97,20 @@ const QUESTIONS = [
 // ===== 결과 맵핑 =====
 const RESULT_MAP = {
   ESTJ: { title: "싱글 도전자(규칙파)", subtitle: "실력은 아직이지만 욕심과 추진력", desc: "진행과 규칙 러버. 가끔은 과감함도!" },
-  ENTJ: { title: "골프 군기반장", subtitle: "공정·정의·승부욕-상대는 내자신", desc: "기획→회고 풀스택 리더." },
+  ENTJ: { title: "골프 군기반장", subtitle: "공정·정의·승부욕:오늘은 1등하자", desc: "기획→회고 풀스택 리더." },
   ESFJ: { title: "팀 무드메이커", subtitle: "밝은 에너지 기복 심한 인싸", desc: "동반자 케어 1티어." },
   ENFJ: { title: "멘탈 코치", subtitle: "격려와 조언 리더형 고수", desc: "분위기+실력 투트랙." },
   ISTJ: { title: "정밀 측정기", subtitle: "루틴/재현성 집착", desc: "성실함=실력." },
   INTJ: { title: "전략가", subtitle: "체스 두듯 매니지먼트", desc: "리스크/리턴 계산!" },
   ISFJ: { title: "따뜻한 버디요정", subtitle: "팀 케어 성실형", desc: "배려의 아이콘." },
   INFJ: { title: "영감 스윙러", subtitle: "감성과 통찰", desc: "감각 플레이 강점." },
-  ESTP: { title: "죽어도 지른다", subtitle: "공격수-스코어는 망해도 짜릿한 손맛에 기분이 좋다", desc: "짜릿한 샷 메이커." },
+  ESTP: { title: "죽어도 지른다", subtitle: "공격수:스코어는 망해도 짜릿한 손맛에 기분이 좋다", desc: "짜릿한 샷 메이커." },
   ENTP: { title: "아이디어 골퍼", subtitle: "새 장비/새 스윙 실험", desc: "발상의 전환." },
   ESFP: { title: "즐거운 백돌이", subtitle: "라운드는 파티", desc: "분위기 제조기." },
   ENFP: { title: "천재 백돌이", subtitle: "감각 과다 루틴 실종", desc: "영감 폭발형." },
   ISTP: { title: "스윙 공돌이", subtitle: "메커니즘 분석", desc: "문제해결 빠름." },
   INTP: { title: "데이터 브레이커", subtitle: "샷 트래킹 분석가", desc: "이론 최강." },
-  ISFP: { title: "감성 페어웨이", subtitle: "풍경/바람/기분-스코어 보다 골프장의 관리와 풍경이 더 중요", desc: "아티스트." },
+  ISFP: { title: "감성 페어웨이", subtitle: "풍경/바람/기분:스코어 보다 골프장의 아름다운 풍경이 더 중요", desc: "아티스트." },
   INFP: { title: "꿈꾸는 퍼터", subtitle: "어프로치에 스토리", desc: "미학적 골퍼." },
 };
 
