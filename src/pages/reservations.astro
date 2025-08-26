@@ -1,0 +1,617 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { SITE_TITLE } from '../consts';
+---
+
+<!doctype html>
+<html lang="ko">
+	<head>
+		<BaseHead title={`예약 조회 - ${SITE_TITLE}`} description="호텔 예약 조회 및 관리" />
+		<style>
+			main {
+				width: 100%;
+				max-width: 800px;
+				margin: 0 auto;
+				padding: 2rem 1rem;
+			}
+			
+			.hero {
+				text-align: center;
+				margin-bottom: 3rem;
+				padding: 2rem;
+				background: linear-gradient(135deg, #f0fdf4, #e6fffa);
+				border-radius: 16px;
+			}
+			
+			.hero h1 {
+				font-size: 2rem;
+				margin-bottom: 1rem;
+				color: #065f46;
+			}
+			
+			.hero p {
+				color: #047857;
+			}
+			
+			.search-section {
+				background: white;
+				padding: 2rem;
+				border-radius: 16px;
+				box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+				margin-bottom: 2rem;
+			}
+			
+			.search-title {
+				font-size: 1.25rem;
+				font-weight: 700;
+				margin-bottom: 1.5rem;
+				color: #111827;
+			}
+			
+			.search-form {
+				display: flex;
+				gap: 1rem;
+				align-items: end;
+			}
+			
+			.form-group {
+				flex: 1;
+				display: flex;
+				flex-direction: column;
+			}
+			
+			.form-group label {
+				margin-bottom: 0.5rem;
+				font-weight: 600;
+				color: #374151;
+			}
+			
+			.form-group input {
+				padding: 0.75rem;
+				border: 2px solid #e5e7eb;
+				border-radius: 8px;
+				font-size: 1rem;
+				transition: border-color 0.2s;
+			}
+			
+			.form-group input:focus {
+				outline: none;
+				border-color: #10b981;
+			}
+			
+			.search-btn {
+				padding: 0.75rem 2rem;
+				background: #10b981;
+				color: white;
+				border: none;
+				border-radius: 8px;
+				font-size: 1rem;
+				font-weight: 600;
+				cursor: pointer;
+				transition: background-color 0.2s;
+				white-space: nowrap;
+			}
+			
+			.search-btn:hover {
+				background: #059669;
+			}
+			
+			.search-btn:disabled {
+				background: #d1d5db;
+				cursor: not-allowed;
+			}
+			
+			.result-section {
+				background: white;
+				border-radius: 16px;
+				box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+				overflow: hidden;
+			}
+			
+			.reservation-header {
+				background: #10b981;
+				color: white;
+				padding: 1.5rem;
+				text-align: center;
+			}
+			
+			.reservation-code {
+				font-size: 1.5rem;
+				font-weight: 700;
+				font-family: 'Courier New', monospace;
+				letter-spacing: 2px;
+				margin-bottom: 0.5rem;
+			}
+			
+			.reservation-status {
+				opacity: 0.9;
+			}
+			
+			.reservation-details {
+				padding: 2rem;
+			}
+			
+			.detail-grid {
+				display: grid;
+				grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+				gap: 1.5rem;
+				margin-bottom: 2rem;
+			}
+			
+			.detail-item {
+				display: flex;
+				flex-direction: column;
+			}
+			
+			.detail-label {
+				font-size: 0.875rem;
+				color: #6b7280;
+				font-weight: 500;
+				margin-bottom: 0.25rem;
+			}
+			
+			.detail-value {
+				font-weight: 600;
+				color: #111827;
+			}
+			
+			.status-section {
+				border-top: 1px solid #e5e7eb;
+				padding-top: 1.5rem;
+				margin-top: 1.5rem;
+			}
+			
+			.status-grid {
+				display: grid;
+				grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+				gap: 1rem;
+				margin-bottom: 1.5rem;
+			}
+			
+			.status-item {
+				text-align: center;
+				padding: 1rem;
+				background: #f9fafb;
+				border-radius: 8px;
+			}
+			
+			.status-label {
+				font-size: 0.75rem;
+				color: #6b7280;
+				margin-bottom: 0.5rem;
+				text-transform: uppercase;
+				letter-spacing: 0.5px;
+			}
+			
+			.status-badge {
+				padding: 0.5rem 1rem;
+				border-radius: 999px;
+				font-size: 0.875rem;
+				font-weight: 600;
+			}
+			
+			.status-confirmed {
+				background: #d1fae5;
+				color: #065f46;
+			}
+			
+			.status-pending {
+				background: #fef3c7;
+				color: #92400e;
+			}
+			
+			.status-cancelled {
+				background: #fee2e2;
+				color: #991b1b;
+			}
+			
+			.price-total {
+				text-align: center;
+				font-size: 1.25rem;
+				font-weight: 700;
+				color: #10b981;
+			}
+			
+			.contact-info {
+				background: #f0fdf4;
+				border-radius: 8px;
+				padding: 1rem;
+				margin-top: 1.5rem;
+			}
+			
+			.contact-title {
+				font-weight: 600;
+				color: #065f46;
+				margin-bottom: 0.5rem;
+			}
+			
+			.contact-text {
+				font-size: 0.875rem;
+				color: #047857;
+				line-height: 1.5;
+			}
+			
+			.error {
+				background: #fef2f2;
+				border: 1px solid #fecaca;
+				color: #b91c1c;
+				padding: 1.5rem;
+				border-radius: 8px;
+				text-align: center;
+			}
+			
+			.loading {
+				text-align: center;
+				padding: 2rem;
+				color: #6b7280;
+			}
+			
+			.empty-state {
+				text-align: center;
+				padding: 3rem 2rem;
+				color: #6b7280;
+			}
+			
+			.empty-icon {
+				font-size: 3rem;
+				margin-bottom: 1rem;
+			}
+
+			@media (max-width: 768px) {
+				.search-form {
+					flex-direction: column;
+					align-items: stretch;
+				}
+				
+				.search-btn {
+					margin-top: 1rem;
+				}
+				
+				.detail-grid,
+				.status-grid {
+					grid-template-columns: 1fr;
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<Header />
+		<main>
+			<div class="hero">
+				<h1>🔍 예약 조회</h1>
+				<p>예약 확인 번호로 예약 정보를 조회하고 관리하세요.</p>
+			</div>
+
+			<div class="search-section">
+				<div class="search-title">예약 조회하기</div>
+				<div class="search-form">
+					<div class="form-group">
+						<label for="reservation-code">예약 확인 번호</label>
+						<input 
+							type="text" 
+							id="reservation-code" 
+							placeholder="예약 확인 번호를 입력하세요 (예: ABC12345)"
+							maxlength="10"
+							style="text-transform: uppercase;"
+						/>
+					</div>
+					<button type="button" class="search-btn" id="search-btn">
+						조회하기
+					</button>
+				</div>
+			</div>
+
+			<div id="result-container"></div>
+		</main>
+
+		<script>
+			// 입력 필드 대문자 변환
+			document.getElementById('reservation-code')?.addEventListener('input', (e) => {
+				const target = e.target as HTMLInputElement;
+				target.value = target.value.toUpperCase();
+			});
+
+			// 검색 버튼 클릭 이벤트
+			document.getElementById('search-btn')?.addEventListener('click', () => {
+				searchReservation();
+			});
+
+			// 엔터키 입력 시 검색
+			document.getElementById('reservation-code')?.addEventListener('keypress', (e) => {
+				if (e.key === 'Enter') {
+					searchReservation();
+				}
+			});
+
+			// 예약 조회 함수
+			async function searchReservation() {
+				const codeInput = document.getElementById('reservation-code') as HTMLInputElement;
+				const searchBtn = document.getElementById('search-btn') as HTMLButtonElement;
+				const resultContainer = document.getElementById('result-container');
+
+				if (!resultContainer) return;
+
+				const reservationCode = codeInput.value.trim();
+
+				if (!reservationCode) {
+					showError('예약 확인 번호를 입력해주세요.');
+					return;
+				}
+
+				if (reservationCode.length < 6) {
+					showError('올바른 예약 확인 번호를 입력해주세요.');
+					return;
+				}
+
+				// 로딩 상태
+				searchBtn.disabled = true;
+				searchBtn.textContent = '조회 중...';
+				resultContainer.innerHTML = '<div class="loading">예약 정보를 조회하는 중입니다...</div>';
+
+				try {
+					const response = await fetch(`/api/reservations/${reservationCode}`);
+					const reservation = await response.json();
+					
+					// API 응답이 에러를 포함하고 있는 경우 (로컬 환경)
+					if (reservation.error || reservation.development) {
+						// 개발환경용 샘플 데이터
+						if (reservationCode === 'SAMPLE123') {
+							showSampleReservation();
+						} else {
+							showError('개발환경에서는 "SAMPLE123"을 입력해보세요.');
+						}
+						return;
+					}
+					
+					// 404나 다른 에러인 경우
+					if (!response.ok) {
+						if (response.status === 404) {
+							throw new Error('해당 예약 번호를 찾을 수 없습니다. 예약 번호를 다시 확인해주세요.');
+						}
+						throw new Error('예약 조회 중 오류가 발생했습니다.');
+					}
+
+					displayReservation(reservation);
+
+				} catch (error) {
+					console.error('Search error:', error);
+					
+					// 개발환경에서는 샘플 데이터 표시
+					if (reservationCode === 'SAMPLE123') {
+						showSampleReservation();
+					} else {
+						showError(error instanceof Error ? error.message : '예약 조회 중 오류가 발생했습니다.');
+					}
+				} finally {
+					searchBtn.disabled = false;
+					searchBtn.textContent = '조회하기';
+				}
+			}
+
+			// 샘플 예약 데이터 표시 (개발환경용)
+			function showSampleReservation() {
+				const sampleReservation = {
+					reservationCode: 'SAMPLE123',
+					hotel: {
+						name: '블루와인 리조트',
+						address: '제주특별자치도 제주시 애월읍 해안로 123',
+						phone: '064-123-4567',
+						checkInTime: '15:00',
+						checkOutTime: '11:00'
+					},
+					roomType: {
+						name: '오션뷰 스위트',
+						description: '넓은 바다 전망을 감상할 수 있는 프리미엄 스위트룸입니다.',
+						bedType: '킹베드'
+					},
+					room: {
+						roomNumber: '501',
+						floor: 5
+					},
+					guestInfo: {
+						name: '샘플 고객',
+						phone: '010-1234-5678',
+						email: 'sample@example.com'
+					},
+					dates: {
+						checkInDate: '2024-12-25',
+						checkOutDate: '2024-12-27',
+						totalNights: 2
+					},
+					occupancy: {
+						adults: 2,
+						children: 0,
+						total: 2
+					},
+					pricing: {
+						totalAmount: 700000,
+						pricePerNight: 350000
+					},
+					status: {
+						reservation: 1,
+						reservationText: '예약 확정',
+						payment: 0,
+						paymentText: '미결제'
+					},
+					specialRequests: '늦은 체크인 요청',
+					createdAt: new Date().toISOString()
+				};
+				
+				setTimeout(() => {
+					displayReservation(sampleReservation);
+				}, 1000);
+			}
+
+			// 예약 정보 표시
+			function displayReservation(reservation: any) {
+				const resultContainer = document.getElementById('result-container');
+				if (!resultContainer) return;
+
+				const checkinDate = new Date(reservation.dates.checkInDate);
+				const checkoutDate = new Date(reservation.dates.checkOutDate);
+				const createdDate = new Date(reservation.createdAt);
+
+				// 상태에 따른 색상 결정
+				const getStatusClass = (status: number) => {
+					switch (status) {
+						case 0: return 'status-cancelled';
+						case 1: return 'status-confirmed';
+						case 2: return 'status-confirmed';
+						case 3: return 'status-confirmed';
+						default: return 'status-pending';
+					}
+				};
+
+				const getPaymentStatusClass = (status: number) => {
+					switch (status) {
+						case 0: return 'status-pending';
+						case 1: return 'status-confirmed';
+						case 2: return 'status-cancelled';
+						default: return 'status-pending';
+					}
+				};
+
+				resultContainer.innerHTML = `
+					<div class="result-section">
+						<div class="reservation-header">
+							<div class="reservation-code">${reservation.reservationCode}</div>
+							<div class="reservation-status">${reservation.hotel.name}</div>
+						</div>
+
+						<div class="reservation-details">
+							<div class="detail-grid">
+								<div class="detail-item">
+									<span class="detail-label">투숙객</span>
+									<span class="detail-value">${reservation.guestInfo.name}</span>
+								</div>
+								<div class="detail-item">
+									<span class="detail-label">연락처</span>
+									<span class="detail-value">${reservation.guestInfo.phone}</span>
+								</div>
+								<div class="detail-item">
+									<span class="detail-label">객실</span>
+									<span class="detail-value">${reservation.roomType.name}${reservation.room ? ` (${reservation.room.roomNumber}호)` : ''}</span>
+								</div>
+								<div class="detail-item">
+									<span class="detail-label">침대 타입</span>
+									<span class="detail-value">${reservation.roomType.bedType || '-'}</span>
+								</div>
+								<div class="detail-item">
+									<span class="detail-label">체크인</span>
+									<span class="detail-value">${formatDate(checkinDate)}<br><small>(${reservation.hotel.checkInTime})</small></span>
+								</div>
+								<div class="detail-item">
+									<span class="detail-label">체크아웃</span>
+									<span class="detail-value">${formatDate(checkoutDate)}<br><small>(${reservation.hotel.checkOutTime})</small></span>
+								</div>
+								<div class="detail-item">
+									<span class="detail-label">투숙기간</span>
+									<span class="detail-value">${reservation.dates.totalNights}박</span>
+								</div>
+								<div class="detail-item">
+									<span class="detail-label">투숙객</span>
+									<span class="detail-value">성인 ${reservation.occupancy.adults}명${reservation.occupancy.children > 0 ? `, 아동 ${reservation.occupancy.children}명` : ''}</span>
+								</div>
+							</div>
+
+							${reservation.specialRequests ? `
+								<div class="detail-item" style="margin-bottom: 1.5rem;">
+									<span class="detail-label">특별 요청사항</span>
+									<span class="detail-value" style="white-space: pre-wrap;">${reservation.specialRequests}</span>
+								</div>
+							` : ''}
+
+							<div class="status-section">
+								<div class="status-grid">
+									<div class="status-item">
+										<div class="status-label">예약 상태</div>
+										<div class="status-badge ${getStatusClass(reservation.status.reservation)}">
+											${reservation.status.reservationText}
+										</div>
+									</div>
+									<div class="status-item">
+										<div class="status-label">결제 상태</div>
+										<div class="status-badge ${getPaymentStatusClass(reservation.status.payment)}">
+											${reservation.status.paymentText}
+										</div>
+									</div>
+									<div class="status-item">
+										<div class="status-label">총 결제 금액</div>
+										<div class="price-total">₩${reservation.pricing.totalAmount.toLocaleString()}</div>
+									</div>
+								</div>
+
+								<div style="text-align: center; color: #6b7280; font-size: 0.875rem; margin-top: 1rem;">
+									예약일시: ${formatDateTime(createdDate)}
+								</div>
+
+								<div class="contact-info">
+									<div class="contact-title">호텔 연락처</div>
+									<div class="contact-text">
+										📍 ${reservation.hotel.address}<br>
+										📞 ${reservation.hotel.phone}<br><br>
+										• 예약 변경/취소는 체크인 1일 전까지 가능합니다<br>
+										• 결제는 체크인 시 호텔에서 진행됩니다<br>
+										• 문의사항은 호텔로 직접 연락 바랍니다
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				`;
+			}
+
+			// 오류 표시
+			function showError(message: string) {
+				const resultContainer = document.getElementById('result-container');
+				if (resultContainer) {
+					resultContainer.innerHTML = `
+						<div class="error">
+							<div style="font-size: 2rem; margin-bottom: 1rem;">❌</div>
+							<div>${message}</div>
+						</div>
+					`;
+				}
+			}
+
+			// 날짜 포맷팅
+			function formatDate(date: Date): string {
+				return date.toLocaleDateString('ko-KR', {
+					year: 'numeric',
+					month: 'long',
+					day: 'numeric',
+					weekday: 'short'
+				});
+			}
+
+			// 날짜시간 포맷팅
+			function formatDateTime(date: Date): string {
+				return date.toLocaleString('ko-KR', {
+					year: 'numeric',
+					month: '2-digit',
+					day: '2-digit',
+					hour: '2-digit',
+					minute: '2-digit'
+				});
+			}
+
+			// 페이지 로드 시 URL에서 코드 확인
+			document.addEventListener('DOMContentLoaded', () => {
+				const urlParams = new URLSearchParams(window.location.search);
+				const code = urlParams.get('code');
+				
+				if (code) {
+					const input = document.getElementById('reservation-code') as HTMLInputElement;
+					if (input) {
+						input.value = code.toUpperCase();
+						searchReservation();
+					}
+				}
+			});
+		</script>
+
+		<Footer />
+	</body>
+</html>

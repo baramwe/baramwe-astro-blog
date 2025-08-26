@@ -10,5 +10,12 @@
   "observability": {
     "enabled": true
   },
-  "upload_source_maps": true
+  "upload_source_maps": true,
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "bl-house",
+      "database_id": "cb33c003-faf4-4a1f-b294-75f7bed03e6d"
+    }
+  ]
 }

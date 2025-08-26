@@ -1,0 +1,559 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { SITE_TITLE } from '../consts';
+---
+
+<!doctype html>
+<html lang="ko">
+	<head>
+		<BaseHead title={`예약하기 - ${SITE_TITLE}`} description="호텔 예약 정보 입력" />
+		<style>
+			main {
+				width: 100%;
+				max-width: 1000px;
+				margin: 0 auto;
+				padding: 2rem 1rem;
+			}
+			
+			.booking-container {
+				display: grid;
+				grid-template-columns: 1fr 350px;
+				gap: 2rem;
+			}
+			
+			.booking-form {
+				background: white;
+				border-radius: 16px;
+				padding: 2rem;
+				box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+			}
+			
+			.form-title {
+				font-size: 1.5rem;
+				font-weight: 700;
+				margin-bottom: 1.5rem;
+				color: #111827;
+			}
+			
+			.section {
+				margin-bottom: 2rem;
+			}
+			
+			.section-title {
+				font-size: 1.125rem;
+				font-weight: 600;
+				margin-bottom: 1rem;
+				color: #374151;
+				border-bottom: 2px solid #f3f4f6;
+				padding-bottom: 0.5rem;
+			}
+			
+			.form-grid {
+				display: grid;
+				grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+				gap: 1rem;
+				margin-bottom: 1rem;
+			}
+			
+			.form-group {
+				display: flex;
+				flex-direction: column;
+			}
+			
+			.form-group label {
+				margin-bottom: 0.5rem;
+				font-weight: 600;
+				color: #374151;
+			}
+			
+			.required {
+				color: #dc2626;
+			}
+			
+			.form-group input,
+			.form-group select,
+			.form-group textarea {
+				padding: 0.75rem;
+				border: 2px solid #e5e7eb;
+				border-radius: 8px;
+				font-size: 1rem;
+				transition: border-color 0.2s;
+			}
+			
+			.form-group input:focus,
+			.form-group select:focus,
+			.form-group textarea:focus {
+				outline: none;
+				border-color: #10b981;
+			}
+			
+			.form-group input.error,
+			.form-group select.error,
+			.form-group textarea.error {
+				border-color: #dc2626;
+			}
+			
+			.error-message {
+				color: #dc2626;
+				font-size: 0.875rem;
+				margin-top: 0.25rem;
+			}
+			
+			.summary-card {
+				background: white;
+				border-radius: 16px;
+				padding: 1.5rem;
+				box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+				position: sticky;
+				top: 2rem;
+				height: fit-content;
+			}
+			
+			.summary-title {
+				font-size: 1.25rem;
+				font-weight: 700;
+				margin-bottom: 1.5rem;
+				color: #111827;
+			}
+			
+			.booking-summary {
+				margin-bottom: 1.5rem;
+			}
+			
+			.summary-item {
+				display: flex;
+				justify-content: space-between;
+				margin-bottom: 0.75rem;
+				padding-bottom: 0.75rem;
+				border-bottom: 1px solid #f3f4f6;
+			}
+			
+			.summary-item:last-child {
+				border-bottom: none;
+				margin-bottom: 0;
+				padding-bottom: 0;
+			}
+			
+			.summary-label {
+				color: #6b7280;
+				font-weight: 500;
+			}
+			
+			.summary-value {
+				font-weight: 600;
+				color: #111827;
+			}
+			
+			.price-breakdown {
+				border-top: 2px solid #f3f4f6;
+				padding-top: 1rem;
+				margin-bottom: 1.5rem;
+			}
+			
+			.price-item {
+				display: flex;
+				justify-content: space-between;
+				margin-bottom: 0.5rem;
+				color: #6b7280;
+			}
+			
+			.price-total {
+				display: flex;
+				justify-content: space-between;
+				font-weight: 700;
+				font-size: 1.125rem;
+				color: #111827;
+				border-top: 1px solid #e5e7eb;
+				padding-top: 0.5rem;
+				margin-top: 0.5rem;
+			}
+			
+			.submit-btn {
+				width: 100%;
+				padding: 1rem;
+				background: #10b981;
+				color: white;
+				border: none;
+				border-radius: 8px;
+				font-size: 1rem;
+				font-weight: 600;
+				cursor: pointer;
+				transition: background-color 0.2s;
+			}
+			
+			.submit-btn:hover {
+				background: #059669;
+			}
+			
+			.submit-btn:disabled {
+				background: #d1d5db;
+				cursor: not-allowed;
+			}
+			
+			.loading {
+				text-align: center;
+				padding: 3rem;
+			}
+			
+			.error-alert {
+				background: #fef2f2;
+				border: 1px solid #fecaca;
+				color: #b91c1c;
+				padding: 1rem;
+				border-radius: 8px;
+				margin-bottom: 1rem;
+			}
+			
+			.success-alert {
+				background: #f0fdf4;
+				border: 1px solid #bbf7d0;
+				color: #166534;
+				padding: 1rem;
+				border-radius: 8px;
+				margin-bottom: 1rem;
+			}
+
+			@media (max-width: 768px) {
+				.booking-container {
+					grid-template-columns: 1fr;
+				}
+				
+				.summary-card {
+					position: static;
+					order: -1;
+				}
+				
+				.form-grid {
+					grid-template-columns: 1fr;
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<Header />
+		<main>
+			<div id="booking-container">
+				<div class="loading">예약 정보를 불러오는 중입니다...</div>
+			</div>
+		</main>
+
+		<script>
+			// URL 파라미터에서 예약 정보 가져오기
+			const urlParams = new URLSearchParams(window.location.search);
+			const bookingInfo = {
+				hotelId: urlParams.get('hotelId'),
+				roomTypeId: urlParams.get('roomTypeId'),
+				roomName: urlParams.get('roomName'),
+				checkin: urlParams.get('checkin'),
+				checkout: urlParams.get('checkout'),
+				guests: parseInt(urlParams.get('guests') || '2'),
+				price: parseInt(urlParams.get('price') || '0')
+			};
+
+			// 예약 정보 검증
+			if (!bookingInfo.hotelId || !bookingInfo.roomTypeId || !bookingInfo.checkin || !bookingInfo.checkout) {
+				window.location.href = '/hotels';
+			}
+
+			// 날짜 계산
+			const checkinDate = new Date(bookingInfo.checkin!);
+			const checkoutDate = new Date(bookingInfo.checkout!);
+			const nights = Math.ceil((checkoutDate.getTime() - checkinDate.getTime()) / (1000 * 60 * 60 * 24));
+			const totalAmount = bookingInfo.price * nights;
+
+			// 예약 폼 표시
+			function displayBookingForm() {
+				const container = document.getElementById('booking-container');
+				if (!container) return;
+
+				container.innerHTML = `
+					<div class="booking-container">
+						<div class="booking-form">
+							<h1 class="form-title">예약 정보 입력</h1>
+							
+							<div id="error-alert" class="error-alert" style="display: none;"></div>
+							<div id="success-alert" class="success-alert" style="display: none;"></div>
+
+							<form id="booking-form">
+								<div class="section">
+									<h2 class="section-title">투숙객 정보</h2>
+									<div class="form-grid">
+										<div class="form-group">
+											<label for="guestName">투숙객 이름 <span class="required">*</span></label>
+											<input type="text" id="guestName" name="guestName" required />
+											<div class="error-message" id="guestName-error"></div>
+										</div>
+										<div class="form-group">
+											<label for="guestPhone">휴대폰 번호 <span class="required">*</span></label>
+											<input type="tel" id="guestPhone" name="guestPhone" placeholder="010-1234-5678" required />
+											<div class="error-message" id="guestPhone-error"></div>
+										</div>
+									</div>
+									<div class="form-group">
+										<label for="guestEmail">이메일 주소</label>
+										<input type="email" id="guestEmail" name="guestEmail" placeholder="example@email.com" />
+										<div class="error-message" id="guestEmail-error"></div>
+									</div>
+								</div>
+
+								<div class="section">
+									<h2 class="section-title">요청사항</h2>
+									<div class="form-group">
+										<label for="specialRequests">특별 요청사항</label>
+										<textarea id="specialRequests" name="specialRequests" rows="4" placeholder="체크인 시간, 침대 타입, 기타 요청사항을 입력해 주세요."></textarea>
+									</div>
+								</div>
+
+								<div class="section">
+									<button type="submit" class="submit-btn" id="submit-btn">
+										예약 확정하기
+									</button>
+								</div>
+							</form>
+						</div>
+
+						<div class="summary-card">
+							<div class="summary-title">예약 요약</div>
+							
+							<div class="booking-summary">
+								<div class="summary-item">
+									<span class="summary-label">객실</span>
+									<span class="summary-value">${bookingInfo.roomName}</span>
+								</div>
+								<div class="summary-item">
+									<span class="summary-label">체크인</span>
+									<span class="summary-value">${formatDate(checkinDate)}</span>
+								</div>
+								<div class="summary-item">
+									<span class="summary-label">체크아웃</span>
+									<span class="summary-value">${formatDate(checkoutDate)}</span>
+								</div>
+								<div class="summary-item">
+									<span class="summary-label">투숙기간</span>
+									<span class="summary-value">${nights}박</span>
+								</div>
+								<div class="summary-item">
+									<span class="summary-label">투숙객</span>
+									<span class="summary-value">성인 ${bookingInfo.guests}명</span>
+								</div>
+							</div>
+
+							<div class="price-breakdown">
+								<div class="price-item">
+									<span>₩${bookingInfo.price.toLocaleString()} x ${nights}박</span>
+									<span>₩${totalAmount.toLocaleString()}</span>
+								</div>
+								<div class="price-total">
+									<span>총 합계</span>
+									<span>₩${totalAmount.toLocaleString()}</span>
+								</div>
+							</div>
+
+							<div style="font-size: 0.75rem; color: #6b7280; text-align: center; margin-top: 1rem;">
+								※ 결제는 체크인 시 호텔에서 진행됩니다
+							</div>
+						</div>
+					</div>
+				`;
+
+				// 폼 이벤트 리스너 추가
+				setupFormValidation();
+			}
+
+			// 날짜 포맷팅
+			function formatDate(date: Date): string {
+				return date.toLocaleDateString('ko-KR', {
+					year: 'numeric',
+					month: 'long',
+					day: 'numeric',
+					weekday: 'short'
+				});
+			}
+
+			// 폼 유효성 검사 설정
+			function setupFormValidation() {
+				const form = document.getElementById('booking-form') as HTMLFormElement;
+				const guestNameInput = document.getElementById('guestName') as HTMLInputElement;
+				const guestPhoneInput = document.getElementById('guestPhone') as HTMLInputElement;
+				const guestEmailInput = document.getElementById('guestEmail') as HTMLInputElement;
+
+				// 실시간 유효성 검사
+				guestNameInput.addEventListener('blur', () => validateName());
+				guestPhoneInput.addEventListener('blur', () => validatePhone());
+				guestEmailInput.addEventListener('blur', () => validateEmail());
+
+				// 폼 제출
+				form.addEventListener('submit', handleSubmit);
+			}
+
+			// 이름 유효성 검사
+			function validateName(): boolean {
+				const input = document.getElementById('guestName') as HTMLInputElement;
+				const error = document.getElementById('guestName-error');
+				
+				if (!input.value.trim()) {
+					showFieldError(input, error, '투숙객 이름을 입력해주세요.');
+					return false;
+				}
+				
+				if (input.value.trim().length < 2) {
+					showFieldError(input, error, '이름은 2글자 이상 입력해주세요.');
+					return false;
+				}
+				
+				clearFieldError(input, error);
+				return true;
+			}
+
+			// 전화번호 유효성 검사
+			function validatePhone(): boolean {
+				const input = document.getElementById('guestPhone') as HTMLInputElement;
+				const error = document.getElementById('guestPhone-error');
+				const phoneRegex = /^010-?\d{4}-?\d{4}$/;
+				
+				if (!input.value.trim()) {
+					showFieldError(input, error, '휴대폰 번호를 입력해주세요.');
+					return false;
+				}
+				
+				const phone = input.value.replace(/-/g, '');
+				if (!phoneRegex.test(phone)) {
+					showFieldError(input, error, '올바른 휴대폰 번호를 입력해주세요.');
+					return false;
+				}
+				
+				clearFieldError(input, error);
+				return true;
+			}
+
+			// 이메일 유효성 검사
+			function validateEmail(): boolean {
+				const input = document.getElementById('guestEmail') as HTMLInputElement;
+				const error = document.getElementById('guestEmail-error');
+				
+				if (input.value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.value)) {
+					showFieldError(input, error, '올바른 이메일 주소를 입력해주세요.');
+					return false;
+				}
+				
+				clearFieldError(input, error);
+				return true;
+			}
+
+			// 필드 오류 표시
+			function showFieldError(input: HTMLElement, errorElement: Element | null, message: string) {
+				input.classList.add('error');
+				if (errorElement) errorElement.textContent = message;
+			}
+
+			// 필드 오류 제거
+			function clearFieldError(input: HTMLElement, errorElement: Element | null) {
+				input.classList.remove('error');
+				if (errorElement) errorElement.textContent = '';
+			}
+
+			// 폼 제출 처리
+			async function handleSubmit(e: Event) {
+				e.preventDefault();
+
+				const submitBtn = document.getElementById('submit-btn') as HTMLButtonElement;
+				const errorAlert = document.getElementById('error-alert');
+				const successAlert = document.getElementById('success-alert');
+
+				// 유효성 검사
+				const isNameValid = validateName();
+				const isPhoneValid = validatePhone();
+				const isEmailValid = validateEmail();
+
+				if (!isNameValid || !isPhoneValid || !isEmailValid) {
+					showAlert(errorAlert, '입력 정보를 확인해주세요.');
+					return;
+				}
+
+				// 제출 버튼 비활성화
+				submitBtn.disabled = true;
+				submitBtn.textContent = '예약 중...';
+
+				try {
+					const formData = new FormData(e.target as HTMLFormElement);
+					const reservationData = {
+						roomTypeId: parseInt(bookingInfo.roomTypeId!),
+						checkInDate: bookingInfo.checkin,
+						checkOutDate: bookingInfo.checkout,
+						adults: bookingInfo.guests,
+						children: 0,
+						guestName: formData.get('guestName') as string,
+						guestPhone: formData.get('guestPhone') as string,
+						guestEmail: formData.get('guestEmail') as string || undefined,
+						specialRequests: formData.get('specialRequests') as string || undefined
+					};
+
+					const response = await fetch('/api/reservations/create', {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+						},
+						body: JSON.stringify(reservationData)
+					});
+
+					const result = await response.json();
+
+					// 개발환경 응답인 경우
+					if (result.error || result.development) {
+						showAlert(successAlert, '⚠️ 개발환경에서는 실제 예약이 되지 않습니다. 샘플 예약 확인 페이지로 이동합니다.');
+						setTimeout(() => {
+							window.location.href = `/booking/confirmation?code=SAMPLE123`;
+						}, 2000);
+						return;
+					}
+
+					if (response.ok && result.success) {
+						// 성공 시 예약 확인 페이지로 이동
+						window.location.href = `/booking/confirmation?code=${result.reservation.reservationCode}`;
+					} else {
+						throw new Error(result.error || '예약 처리 중 오류가 발생했습니다.');
+					}
+
+				} catch (error) {
+					console.error('Booking error:', error);
+					
+					// 개발환경 또는 데이터베이스 연결 오류인 경우
+					if (error instanceof Error && (
+						error.message.includes('Database not available') ||
+						error.message.includes('development')
+					)) {
+						showAlert(successAlert, '⚠️ 개발환경에서는 실제 예약이 되지 않습니다. 샘플 예약 확인 페이지로 이동합니다.');
+						setTimeout(() => {
+							window.location.href = `/booking/confirmation?code=SAMPLE123`;
+						}, 2000);
+					} else {
+						showAlert(errorAlert, error instanceof Error ? error.message : '예약 처리 중 오류가 발생했습니다.');
+					}
+				} finally {
+					submitBtn.disabled = false;
+					submitBtn.textContent = '예약 확정하기';
+				}
+			}
+
+			// 알림 표시
+			function showAlert(element: Element | null, message: string) {
+				if (element) {
+					element.textContent = message;
+					element.style.display = 'block';
+					setTimeout(() => {
+						element.style.display = 'none';
+					}, 5000);
+				}
+			}
+
+			// 페이지 로드 시 예약 폼 표시
+			document.addEventListener('DOMContentLoaded', () => {
+				displayBookingForm();
+			});
+		</script>
+
+		<Footer />
+	</body>
+</html>

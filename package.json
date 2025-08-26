@@ -20,26 +20,37 @@
     "@astrojs/tailwind": "6.0.0",
     "@astrojs/rss": "4.0.11",
     "@astrojs/sitemap": "3.4.1",
+    "@prisma/adapter-d1": "^5.19.1",
+    "@prisma/client": "^5.19.1",
     "astro": "5.10.1",
     "clsx": "2.1.1",
+    "hono": "^4.6.3",
     "react": "18.3.1",
     "react-dom": "18.3.1",
-    "typescript": "5.8.3"
+    "typescript": "5.8.3",
+    "uuid": "^10.0.0"
   },
   "devDependencies": {
     "wrangler": "4.21.x",
     "tailwindcss": "3.4.10",
     "postcss": "8.4.47",
-    "autoprefixer": "10.4.20"
+    "autoprefixer": "10.4.20",
+    "prisma": "^5.19.1",
+    "@types/uuid": "^10.0.0"
   },
   "scripts": {
     "astro": "astro",
-    "build": "astro build",
+    "build": "prisma generate && astro build",
     "cf-typegen": "wrangler types",
     "check": "astro build && tsc && wrangler deploy --dry-run",
     "deploy": "wrangler deploy",
     "dev": "astro dev",
-    "preview": "astro build && wrangler dev"
+    "preview": "astro build && wrangler dev",
+    "db:migrate": "wrangler d1 execute bl-house --local --file=./migrations/0001_initial_schema.sql",
+    "db:migrate:remote": "wrangler d1 execute bl-house --file=./migrations/0001_initial_schema.sql",
+    "db:studio": "wrangler d1 execute bl-house --local --command='SELECT name FROM sqlite_master WHERE type=\"table\";'",
+    "db:generate": "prisma generate",
+    "db:reset": "wrangler d1 execute bl-house --local --command='DROP TABLE IF EXISTS reservations; DROP TABLE IF EXISTS room_prices; DROP TABLE IF EXISTS rooms; DROP TABLE IF EXISTS room_types; DROP TABLE IF EXISTS hotels;'"
   },
   "type": "module"
 }
