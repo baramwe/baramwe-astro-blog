@@ -1,0 +1,984 @@
+---
+import BaseHead from '../../components/BaseHead.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import { SITE_TITLE } from '../../consts';
+
+export const prerender = false;
+---
+
+<!doctype html>
+<html lang="ko">
+	<head>
+		<BaseHead title={`호텔 상세 - ${SITE_TITLE}`} description="호텔 상세 정보와 예약" />
+		<style is:global>
+			main {
+				width: 100%;
+				max-width: 1200px;
+				margin: 0 auto;
+				padding: 2rem 1rem;
+			}
+			
+			.hotel-header {
+				display: grid;
+				grid-template-columns: 1fr 350px;
+				gap: 2rem;
+				margin-bottom: 3rem;
+			}
+			
+			.hotel-images {
+				border-radius: 16px;
+				overflow: hidden;
+			}
+			
+			.hotel-image {
+				width: 100%;
+				height: 400px;
+				background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				color: #065f46;
+				font-size: 2rem;
+				font-weight: 700;
+				border: 3px solid rgba(16, 185, 129, 0.2);
+			}
+			
+			.hotel-image::before {
+				content: '🏨✨';
+				font-size: 4rem;
+				text-align: center;
+			}
+			
+			.hotel-info {
+				padding: 1rem;
+			}
+			
+			.hotel-name {
+				font-size: 2rem;
+				font-weight: 700;
+				margin-bottom: 0.5rem;
+				color: #111827;
+			}
+			
+			.hotel-name-en {
+				font-size: 1rem;
+				color: #6b7280;
+				margin-bottom: 1rem;
+			}
+			
+			.hotel-address {
+				color: #6b7280;
+				margin-bottom: 1rem;
+				display: flex;
+				align-items: center;
+				gap: 0.5rem;
+			}
+			
+			.hotel-contact {
+				margin-bottom: 1.5rem;
+			}
+			
+			.contact-item {
+				display: flex;
+				align-items: center;
+				gap: 0.5rem;
+				margin-bottom: 0.5rem;
+				color: #374151;
+			}
+			
+			.amenities {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.5rem;
+				margin-bottom: 1.5rem;
+			}
+			
+			.amenity-tag {
+				background: #f0fdf4;
+				color: #065f46;
+				padding: 0.5rem 1rem;
+				border-radius: 12px;
+				font-size: 0.875rem;
+				font-weight: 500;
+			}
+			
+			.booking-card {
+				background: white;
+				border-radius: 16px;
+				padding: 1.5rem;
+				box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+				position: sticky;
+				top: 2rem;
+				height: fit-content;
+			}
+			
+			.booking-title {
+				font-size: 1.25rem;
+				font-weight: 700;
+				margin-bottom: 1.5rem;
+				color: #111827;
+			}
+			
+			.date-inputs {
+				display: grid;
+				grid-template-columns: 1fr 1fr;
+				gap: 1rem;
+				margin-bottom: 1rem;
+			}
+			
+			.form-group {
+				display: flex;
+				flex-direction: column;
+			}
+			
+			.form-group label {
+				margin-bottom: 0.5rem;
+				font-weight: 600;
+				color: #374151;
+				font-size: 0.875rem;
+			}
+			
+			.form-group input,
+			.form-group select {
+				padding: 0.75rem;
+				border: 2px solid #e5e7eb;
+				border-radius: 8px;
+				font-size: 0.875rem;
+				transition: border-color 0.2s;
+			}
+			
+			.form-group input:focus,
+			.form-group select:focus {
+				outline: none;
+				border-color: #10b981;
+			}
+			
+			.guests-input {
+				margin-bottom: 1.5rem;
+			}
+			
+			.price-summary {
+				border-top: 1px solid #e5e7eb;
+				padding-top: 1rem;
+				margin-bottom: 1.5rem;
+			}
+			
+			.price-item {
+				display: flex;
+				justify-content: space-between;
+				margin-bottom: 0.5rem;
+				color: #6b7280;
+			}
+			
+			.price-total {
+				display: flex;
+				justify-content: space-between;
+				font-weight: 700;
+				font-size: 1.125rem;
+				color: #111827;
+				border-top: 1px solid #e5e7eb;
+				padding-top: 0.5rem;
+			}
+			
+			.book-btn {
+				width: 100%;
+				padding: 1.5rem;
+				background: linear-gradient(135deg, #10b981, #059669);
+				color: white;
+				border: none;
+				border-radius: 50px;
+				font-size: 1.2rem;
+				font-weight: 800;
+				cursor: pointer;
+				transition: all 0.4s ease;
+				box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+				text-transform: uppercase;
+				letter-spacing: 1px;
+				position: relative;
+				overflow: hidden;
+			}
+			
+			.book-btn:hover {
+				background: linear-gradient(135deg, #059669, #047857);
+				transform: translateY(-3px) scale(1.02);
+				box-shadow: 0 12px 35px rgba(16, 185, 129, 0.5);
+			}
+			
+			.book-btn:disabled {
+				background: linear-gradient(135deg, #d1d5db, #9ca3af);
+				cursor: not-allowed;
+				transform: none;
+				box-shadow: none;
+			}
+			
+			.book-btn::before {
+				content: '';
+				position: absolute;
+				top: 0;
+				left: -100%;
+				width: 100%;
+				height: 100%;
+				background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+				transition: left 0.6s;
+			}
+			
+			.book-btn:hover::before {
+				left: 100%;
+			}
+			
+			.room-types {
+				margin-top: 3rem;
+			}
+			
+			.section-title {
+				font-size: 1.75rem;
+				font-weight: 800;
+				margin-bottom: 2rem;
+				color: #111827;
+				text-align: center;
+				background: linear-gradient(135deg, #10b981, #059669);
+				-webkit-background-clip: text;
+				-webkit-text-fill-color: transparent;
+				background-clip: text;
+			}
+			
+			/* 추가 객실 테이블 강화 */
+			table.rooms-table {
+				border: 4px solid #e5e7eb !important;
+				border-radius: 20px !important;
+				background: white !important;
+				box-shadow: 0 12px 35px rgba(0, 0, 0, 0.15) !important;
+				overflow: hidden !important;
+			}
+			
+			table.rooms-table thead {
+				background: linear-gradient(135deg, #10b981, #059669) !important;
+			}
+			
+			table.rooms-table th {
+				background: linear-gradient(135deg, #10b981, #059669) !important;
+				color: white !important;
+				font-weight: 800 !important;
+				text-transform: uppercase !important;
+			}
+			
+			table.rooms-table td {
+				background: white !important;
+				border-right: 2px solid #f1f5f9 !important;
+			}
+			
+			table.rooms-table tbody tr:hover td {
+				background: linear-gradient(135deg, #f0fdf9, #ecfdf5) !important;
+			}
+			
+			table.rooms-table tbody tr.selected td {
+				background: linear-gradient(135deg, #d1fae5, #a7f3d0) !important;
+				border-color: #10b981 !important;
+			}
+			
+			.rooms-table {
+				width: 100%;
+				max-width: 1400px;
+				margin: 0 auto;
+				background: white;
+				border-radius: 20px;
+				box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+				overflow: hidden;
+				border-collapse: collapse;
+				border: 3px solid #e5e7eb;
+			}
+			
+			.rooms-table thead {
+				background: linear-gradient(135deg, #10b981, #059669);
+				color: white;
+			}
+			
+			.rooms-table th {
+				padding: 2rem 1.5rem;
+				font-weight: 700;
+				text-align: center;
+				font-size: 1.1rem;
+				text-transform: uppercase;
+				letter-spacing: 0.5px;
+				border-bottom: 3px solid rgba(255, 255, 255, 0.3);
+				border-right: 1px solid rgba(255, 255, 255, 0.2);
+			}
+			
+			.rooms-table th:last-child {
+				border-right: none;
+			}
+			
+			.rooms-table tbody tr {
+				transition: all 0.4s ease;
+				border-bottom: 2px solid #f1f5f9;
+			}
+			
+			.rooms-table tbody tr:hover {
+				background: linear-gradient(135deg, #f0fdf9, #ecfdf5);
+				transform: scale(1.02);
+				box-shadow: 0 6px 25px rgba(16, 185, 129, 0.2);
+			}
+			
+			.rooms-table tbody tr.selected {
+				background: linear-gradient(135deg, #d1fae5, #a7f3d0) !important;
+				border: 3px solid #10b981 !important;
+				transform: scale(1.02) !important;
+				box-shadow: 0 8px 30px rgba(16, 185, 129, 0.3) !important;
+			}
+			
+			.rooms-table td {
+				padding: 2rem 1.5rem;
+				vertical-align: middle;
+				text-align: center;
+				border-right: 1px solid #f1f5f9;
+			}
+			
+			.rooms-table td:last-child {
+				border-right: none;
+			}
+			
+			.room-info-cell {
+				display: flex;
+				align-items: center;
+				gap: 2rem;
+			}
+			
+			.room-image {
+				width: 180px;
+				height: 135px;
+				border-radius: 16px;
+				background: linear-gradient(135deg, #eff6ff, #dbeafe);
+				flex-shrink: 0;
+				box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				color: #1e40af;
+				font-size: 1.2rem;
+				font-weight: 600;
+				border: 2px solid rgba(59, 130, 246, 0.2);
+			}
+			
+			.room-image::before {
+				content: '🛏️';
+				font-size: 2.5rem;
+			}
+			
+			.room-info {
+				text-align: left;
+				flex: 1;
+			}
+			
+			.room-name {
+				font-size: 1.5rem;
+				font-weight: 800;
+				margin-bottom: 0.5rem;
+				color: #111827;
+			}
+			
+			.room-name-en {
+				font-size: 1rem;
+				color: #6b7280;
+				font-style: italic;
+				margin-bottom: 1rem;
+			}
+			
+			.room-description {
+				color: #6b7280;
+				margin-bottom: 1.5rem;
+				line-height: 1.6;
+				font-size: 0.95rem;
+			}
+			
+			.room-specs {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.75rem;
+				margin-bottom: 1rem;
+			}
+			
+			.spec-item {
+				background: linear-gradient(135deg, #f9fafb, #f3f4f6);
+				padding: 0.5rem 1rem;
+				border-radius: 20px;
+				font-size: 0.875rem;
+				color: #374151;
+				font-weight: 500;
+				border: 1px solid rgba(16, 185, 129, 0.1);
+			}
+			
+			.room-amenities {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.5rem;
+				max-width: 300px;
+			}
+			
+			.room-amenity {
+				background: linear-gradient(135deg, #eff6ff, #dbeafe);
+				color: #1d4ed8;
+				padding: 0.375rem 0.875rem;
+				border-radius: 20px;
+				font-size: 0.8rem;
+				font-weight: 600;
+				border: 1px solid rgba(29, 78, 216, 0.2);
+			}
+			
+			.price-cell {
+				text-align: center;
+			}
+			
+			.room-price {
+				font-size: 2rem;
+				font-weight: 900;
+				color: #10b981;
+				margin-bottom: 0.5rem;
+				display: block;
+			}
+			
+			.room-price-unit {
+				font-size: 1rem;
+				color: #6b7280;
+			}
+			
+			.select-cell {
+				text-align: center;
+			}
+			
+			.select-room-btn {
+				background: linear-gradient(135deg, #10b981, #059669) !important;
+				color: white !important;
+				border: none !important;
+				border-radius: 50px !important;
+				padding: 1.25rem 2.5rem !important;
+				font-weight: 800 !important;
+				font-size: 1.1rem !important;
+				cursor: pointer !important;
+				transition: all 0.4s ease !important;
+				box-shadow: 0 8px 25px rgba(16, 185, 129, 0.5) !important;
+				text-transform: uppercase !important;
+				letter-spacing: 1px !important;
+				position: relative !important;
+				overflow: hidden !important;
+				min-width: 160px !important;
+				text-align: center !important;
+			}
+			
+			.select-room-btn:hover {
+				background: linear-gradient(135deg, #059669, #047857) !important;
+				transform: translateY(-4px) scale(1.08) !important;
+				box-shadow: 0 12px 35px rgba(16, 185, 129, 0.6) !important;
+			}
+			
+			.select-room-btn::before {
+				content: '' !important;
+				position: absolute !important;
+				top: 0 !important;
+				left: -100% !important;
+				width: 100% !important;
+				height: 100% !important;
+				background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent) !important;
+				transition: left 0.7s !important;
+			}
+			
+			.select-room-btn:hover::before {
+				left: 100% !important;
+			}
+			
+			.selected .select-room-btn {
+				background: linear-gradient(135deg, #047857, #065f46) !important;
+				box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.4) !important;
+				transform: scale(1.05) !important;
+			}
+			
+			.selected .select-room-btn::after {
+				content: '✓ 선택됨' !important;
+				position: absolute !important;
+				top: -30px !important;
+				left: 50% !important;
+				transform: translateX(-50%) !important;
+				background: #047857 !important;
+				color: white !important;
+				padding: 4px 12px !important;
+				border-radius: 15px !important;
+				font-size: 0.8rem !important;
+				font-weight: 600 !important;
+				white-space: nowrap !important;
+			}
+			
+			.loading, .error {
+				text-align: center;
+				padding: 3rem;
+				font-size: 1.125rem;
+			}
+			
+			.error {
+				color: #dc2626;
+				background: #fef2f2;
+				border-radius: 8px;
+			}
+
+			@media (max-width: 768px) {
+				.hotel-header {
+					grid-template-columns: 1fr;
+				}
+				
+				.booking-card {
+					position: static;
+				}
+				
+				.date-inputs {
+					grid-template-columns: 1fr;
+				}
+				
+				.rooms-table {
+					font-size: 0.875rem;
+				}
+				
+				.rooms-table th,
+				.rooms-table td {
+					padding: 1.5rem 0.75rem;
+				}
+				
+				.room-info-cell {
+					flex-direction: column;
+					gap: 1rem;
+				}
+				
+				.room-image {
+					width: 150px;
+					height: 112px;
+				}
+				
+				.room-specs {
+					justify-content: center;
+				}
+				
+				.room-amenities {
+					justify-content: center;
+				}
+				
+				.room-price {
+					font-size: 1.5rem;
+				}
+				
+				.select-room-btn {
+					padding: 1rem 1.5rem;
+					font-size: 0.95rem;
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<Header />
+		<main>
+			<div id="hotel-container">
+				<div class="loading">호텔 정보를 불러오는 중입니다...</div>
+			</div>
+		</main>
+
+		<script>
+			// URL에서 파라미터 가져오기
+			const urlParams = new URLSearchParams(window.location.search);
+			const pathSegments = window.location.pathname.split('/');
+			const hotelId = pathSegments[pathSegments.length - 1];
+			
+			const checkinParam = urlParams.get('checkin');
+			const checkoutParam = urlParams.get('checkout');
+			const guestsParam = urlParams.get('guests');
+
+			// 기본 날짜 설정
+			const today = new Date();
+			const tomorrow = new Date(today);
+			tomorrow.setDate(tomorrow.getDate() + 1);
+			
+			let checkinDate = checkinParam || today.toISOString().split('T')[0];
+			let checkoutDate = checkoutParam || tomorrow.toISOString().split('T')[0];
+			let guestsCount = parseInt(guestsParam || '2');
+
+			// 호텔 상세 정보 로드
+			async function loadHotelDetail() {
+				const container = document.getElementById('hotel-container');
+				if (!container) return;
+
+				try {
+					const response = await fetch(`/api/hotels/${hotelId}`);
+					const hotel = await response.json();
+
+					// API 응답이 에러를 포함하고 있는 경우 (로컬 환경)
+					if (hotel.error || hotel.development) {
+						// 개발환경용 샘플 데이터
+						showSampleHotel();
+						return;
+					}
+
+					displayHotel(hotel);
+
+				} catch (error) {
+					console.error('Hotel detail fetch error:', error);
+					// 개발환경용 샘플 데이터
+					showSampleHotel();
+				}
+			}
+
+			// 샘플 호텔 데이터 표시 (개발환경용)
+			function showSampleHotel() {
+				const sampleHotel = {
+					id: 1,
+					name: "블루와인 리조트",
+					nameEn: "BlueWine Resort",
+					description: "제주도의 아름다운 바다를 바라보는 프리미엄 골프 리조트입니다.",
+					address: "제주특별자치도 제주시 애월읍 해안로 123",
+					phone: "064-123-4567",
+					email: "info@bluewine-resort.com",
+					checkInTime: "15:00",
+					checkOutTime: "11:00",
+					images: [],
+					amenities: ["골프장", "스파", "수영장", "레스토랑", "비즈니스센터", "무료WiFi", "주차장"],
+					roomTypes: [
+						{
+							id: 1,
+							name: "오션뷰 스위트",
+							nameEn: "Ocean View Suite",
+							description: "넓은 바다 전망을 감상할 수 있는 프리미엄 스위트룸입니다.",
+							maxOccupancy: 4,
+							bedType: "킹베드",
+							roomSize: 85,
+							basePrice: 350000,
+							images: [],
+							amenities: ["바다전망", "발코니", "미니바", "커피머신", "욕조", "무료WiFi"],
+							availableRooms: 3
+						},
+						{
+							id: 2,
+							name: "가든뷰 디럭스",
+							nameEn: "Garden View Deluxe",
+							description: "아름다운 정원이 보이는 편안한 객실입니다.",
+							maxOccupancy: 2,
+							bedType: "더블베드",
+							roomSize: 55,
+							basePrice: 250000,
+							images: [],
+							amenities: ["정원전망", "발코니", "미니바", "커피머신", "무료WiFi"],
+							availableRooms: 4
+						},
+						{
+							id: 3,
+							name: "스탠다드 룸",
+							nameEn: "Standard Room",
+							description: "합리적인 가격의 깔끔한 표준 객실입니다.",
+							maxOccupancy: 2,
+							bedType: "퀸베드",
+							roomSize: 35,
+							basePrice: 180000,
+							images: [],
+							amenities: ["미니바", "커피머신", "무료WiFi"],
+							availableRooms: 5
+						}
+					]
+				};
+				
+				setTimeout(() => {
+					displayHotel(sampleHotel);
+				}, 1000);
+			}
+
+			// 호텔 정보 표시
+			function displayHotel(hotel: any) {
+				const container = document.getElementById('hotel-container');
+				if (!container) return;
+
+				const amenities = Array.isArray(hotel.amenities) ? hotel.amenities : [];
+
+				container.innerHTML = `
+					<div class="hotel-header">
+						<div class="hotel-images">
+							<div class="hotel-image" title="${hotel.name}"></div>
+						</div>
+						<div class="booking-card">
+							<div class="booking-title">예약하기</div>
+							<div class="date-inputs">
+								<div class="form-group">
+									<label for="checkin">체크인</label>
+									<input type="date" id="checkin" value="${checkinDate}" min="${new Date().toISOString().split('T')[0]}" />
+								</div>
+								<div class="form-group">
+									<label for="checkout">체크아웃</label>
+									<input type="date" id="checkout" value="${checkoutDate}" />
+								</div>
+							</div>
+							<div class="form-group guests-input">
+								<label for="guests">투숙객</label>
+								<select id="guests">
+									<option value="1" ${guestsCount === 1 ? 'selected' : ''}>성인 1명</option>
+									<option value="2" ${guestsCount === 2 ? 'selected' : ''}>성인 2명</option>
+									<option value="3" ${guestsCount === 3 ? 'selected' : ''}>성인 3명</option>
+									<option value="4" ${guestsCount === 4 ? 'selected' : ''}>성인 4명</option>
+								</select>
+							</div>
+							<div class="price-summary" id="price-summary" style="display: none;">
+								<div class="price-item">
+									<span>1박 x <span id="nights">1</span>박</span>
+									<span id="room-total">₩0</span>
+								</div>
+								<div class="price-total">
+									<span>총 합계</span>
+									<span id="total-price">₩0</span>
+								</div>
+							</div>
+							<button class="book-btn" id="book-btn" disabled>
+								객실을 선택해주세요
+							</button>
+						</div>
+					</div>
+
+					<div class="hotel-info">
+						<h1 class="hotel-name">${hotel.name}</h1>
+						${hotel.nameEn ? `<div class="hotel-name-en">${hotel.nameEn}</div>` : ''}
+						${hotel.description ? `<p style="margin-bottom: 1.5rem; line-height: 1.6; color: #374151;">${hotel.description}</p>` : ''}
+						
+						<div class="hotel-address">
+							<span>📍</span>
+							<span>${hotel.address}</span>
+						</div>
+						
+						<div class="hotel-contact">
+							${hotel.phone ? `<div class="contact-item"><span>📞</span><span>${hotel.phone}</span></div>` : ''}
+							${hotel.email ? `<div class="contact-item"><span>✉️</span><span>${hotel.email}</span></div>` : ''}
+							<div class="contact-item"><span>🕐</span><span>체크인 ${hotel.checkInTime} / 체크아웃 ${hotel.checkOutTime}</span></div>
+						</div>
+						
+						<div class="amenities">
+							${amenities.map((amenity: string) => `<span class="amenity-tag">${amenity}</span>`).join('')}
+						</div>
+					</div>
+
+					<div class="room-types">
+						<h2 class="section-title">✨ 객실 선택 ✨</h2>
+						<table class="rooms-table">
+							<thead>
+								<tr>
+									<th>객실 정보</th>
+									<th>편의시설</th>
+									<th>가격 (1박)</th>
+									<th>선택</th>
+								</tr>
+							</thead>
+							<tbody>
+								${hotel.roomTypes.map((room: any) => {
+									const roomAmenities = Array.isArray(room.amenities) ? room.amenities : [];
+									
+									return `
+										<tr data-room-id="${room.id}">
+											<td>
+												<div class="room-info-cell">
+													<div class="room-image" title="${room.name}"></div>
+													<div class="room-info">
+														<div class="room-name">${room.name}</div>
+														${room.nameEn ? `<div class="room-name-en">${room.nameEn}</div>` : ''}
+														${room.description ? `<div class="room-description">${room.description}</div>` : ''}
+														
+														<div class="room-specs">
+															<span class="spec-item">👥 최대 ${room.maxOccupancy}명</span>
+															${room.bedType ? `<span class="spec-item">🛏️ ${room.bedType}</span>` : ''}
+															${room.roomSize ? `<span class="spec-item">📐 ${room.roomSize}m²</span>` : ''}
+														</div>
+													</div>
+												</div>
+											</td>
+											<td>
+												<div class="room-amenities">
+													${roomAmenities.slice(0, 6).map((amenity: string) => `
+														<span class="room-amenity">${amenity}</span>
+													`).join('')}
+													${roomAmenities.length > 6 ? `<span class="room-amenity">+${roomAmenities.length - 6}</span>` : ''}
+												</div>
+											</td>
+											<td class="price-cell">
+												<span class="room-price">₩${room.basePrice.toLocaleString()}</span>
+												<div class="room-price-unit">/ 박</div>
+											</td>
+											<td class="select-cell">
+												<button class="select-room-btn" onclick="selectRoom(${room.id}, '${room.name}', ${room.basePrice}, ${room.maxOccupancy})">
+													선택하기
+												</button>
+											</td>
+										</tr>
+									`;
+								}).join('')}
+							</tbody>
+						</table>
+						</div>
+					</div>
+				`;
+
+				// 이벤트 리스너 추가
+				setupEventListeners();
+			}
+
+			// 이벤트 리스너 설정
+			function setupEventListeners() {
+				const checkinInput = document.getElementById('checkin') as HTMLInputElement;
+				const checkoutInput = document.getElementById('checkout') as HTMLInputElement;
+
+				if (checkinInput && checkoutInput) {
+					checkinInput.addEventListener('change', updateBookingInfo);
+					checkoutInput.addEventListener('change', updateBookingInfo);
+					document.getElementById('guests')?.addEventListener('change', updateBookingInfo);
+
+					// 체크인 날짜 변경 시 체크아웃 최소 날짜 업데이트
+					checkinInput.addEventListener('change', () => {
+						const checkinDate = new Date(checkinInput.value);
+						const nextDay = new Date(checkinDate);
+						nextDay.setDate(nextDay.getDate() + 1);
+						checkoutInput.min = nextDay.toISOString().split('T')[0];
+						
+						if (checkoutInput.value <= checkinInput.value) {
+							checkoutInput.value = nextDay.toISOString().split('T')[0];
+						}
+					});
+				}
+
+				// 예약 버튼 이벤트 리스너 추가
+				document.getElementById('book-btn')?.addEventListener('click', () => {
+					console.log('Book button clicked');
+					proceedToBooking();
+				});
+			}
+
+			let selectedRoom: any = null;
+
+			// 객실 선택
+			function selectRoom(roomId: number, roomName: string, basePrice: number, maxOccupancy: number) {
+				console.log('selectRoom called:', { roomId, roomName, basePrice, maxOccupancy });
+				
+				// 이전 선택 해제
+				document.querySelectorAll('tbody tr').forEach(row => {
+					row.classList.remove('selected');
+				});
+
+				// 현재 선택 표시
+				const roomRow = document.querySelector(`tr[data-room-id="${roomId}"]`);
+				if (roomRow) {
+					roomRow.classList.add('selected');
+					console.log('Room row selected:', roomRow);
+				} else {
+					console.log('Room row not found for ID:', roomId);
+				}
+
+				selectedRoom = { roomId, roomName, basePrice, maxOccupancy };
+				console.log('Selected room set:', selectedRoom);
+				updateBookingInfo();
+			}
+
+			// 예약 정보 업데이트
+			function updateBookingInfo() {
+				console.log('updateBookingInfo called, selectedRoom:', selectedRoom);
+				if (!selectedRoom) return;
+
+				const checkinInput = document.getElementById('checkin') as HTMLInputElement;
+				const checkoutInput = document.getElementById('checkout') as HTMLInputElement;
+				const guestsSelect = document.getElementById('guests') as HTMLSelectElement;
+
+				console.log('DOM elements found:', { 
+					checkinInput: !!checkinInput, 
+					checkoutInput: !!checkoutInput, 
+					guestsSelect: !!guestsSelect 
+				});
+
+				if (!checkinInput || !checkoutInput || !guestsSelect) {
+					console.log('Missing required DOM elements');
+					return;
+				}
+
+				checkinDate = checkinInput.value;
+				checkoutDate = checkoutInput.value;
+				guestsCount = parseInt(guestsSelect.value);
+
+				const checkin = new Date(checkinDate);
+				const checkout = new Date(checkoutDate);
+				const nights = Math.ceil((checkout.getTime() - checkin.getTime()) / (1000 * 60 * 60 * 24));
+
+				console.log('Date calculations:', { checkinDate, checkoutDate, nights });
+
+				if (nights > 0) {
+					const roomTotal = selectedRoom.basePrice * nights;
+					console.log('Room total calculated:', roomTotal);
+					
+					// 최대 수용인원 체크
+					const bookBtn = document.getElementById('book-btn') as HTMLButtonElement;
+					if (!bookBtn) {
+						console.log('Book button not found');
+						return;
+					}
+
+					if (guestsCount > selectedRoom.maxOccupancy) {
+						console.log('Guest count exceeded:', guestsCount, '>', selectedRoom.maxOccupancy);
+						bookBtn.textContent = `최대 수용인원(${selectedRoom.maxOccupancy}명) 초과`;
+						bookBtn.disabled = true;
+						return;
+					}
+
+					const nightsElement = document.getElementById('nights');
+					const roomTotalElement = document.getElementById('room-total');
+					const totalPriceElement = document.getElementById('total-price');
+					const priceSummaryElement = document.getElementById('price-summary');
+
+					console.log('Price elements found:', {
+						nights: !!nightsElement,
+						roomTotal: !!roomTotalElement,
+						totalPrice: !!totalPriceElement,
+						priceSummary: !!priceSummaryElement
+					});
+
+					if (nightsElement) nightsElement.textContent = nights.toString();
+					if (roomTotalElement) roomTotalElement.textContent = `₩${roomTotal.toLocaleString()}`;
+					if (totalPriceElement) totalPriceElement.textContent = `₩${roomTotal.toLocaleString()}`;
+					if (priceSummaryElement) priceSummaryElement.style.display = 'block';
+
+					bookBtn.textContent = `${selectedRoom.roomName} 예약하기`;
+					bookBtn.disabled = false;
+					console.log('Book button updated:', bookBtn.textContent, 'disabled:', bookBtn.disabled);
+				} else {
+					console.log('Invalid nights calculation:', nights);
+				}
+			}
+
+			// 예약 페이지로 이동
+			function proceedToBooking() {
+				console.log('proceedToBooking called, selectedRoom:', selectedRoom);
+				if (!selectedRoom) {
+					console.log('No room selected, cannot proceed');
+					return;
+				}
+
+				const params = new URLSearchParams({
+					hotelId: hotelId.toString(),
+					roomTypeId: selectedRoom.roomId.toString(),
+					roomName: selectedRoom.roomName,
+					checkin: checkinDate,
+					checkout: checkoutDate,
+					guests: guestsCount.toString(),
+					price: selectedRoom.basePrice.toString()
+				});
+
+				console.log('Booking params:', Object.fromEntries(params));
+				console.log('Redirecting to:', `/booking?${params.toString()}`);
+				
+				window.location.href = `/booking?${params.toString()}`;
+			}
+
+			// 전역에서 접근 가능하도록 window 객체에 할당
+			(window as any).selectRoom = selectRoom;
+			(window as any).proceedToBooking = proceedToBooking;
+
+			// 페이지 로드 시 호텔 정보 가져오기
+			document.addEventListener('DOMContentLoaded', () => {
+				loadHotelDetail();
+			});
+		</script>
+
+		<Footer />
+	</body>
+</html>

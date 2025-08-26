@@ -1,0 +1,125 @@
+// Prisma schema for Cloudflare D1
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Hotel {
+  id              Int      @id @default(autoincrement())
+  name            String
+  nameEn          String?  @map("name_en")
+  description     String?
+  address         String
+  phone           String?
+  email           String?
+  checkInTime     String   @default("15:00") @map("check_in_time")
+  checkOutTime    String   @default("11:00") @map("check_out_time")
+  images          String?  // JSON string
+  amenities       String?  // JSON string
+  locationLat     Float?   @map("location_lat")
+  locationLng     Float?   @map("location_lng")
+  status          Int      @default(1)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at")
+
+  // Relations
+  roomTypes     RoomType[]
+  rooms         Room[]
+  reservations  Reservation[]
+
+  @@map("hotels")
+}
+
+model RoomType {
+  id            Int      @id @default(autoincrement())
+  hotelId       Int      @map("hotel_id")
+  name          String
+  nameEn        String?  @map("name_en")
+  description   String?
+  maxOccupancy  Int      @default(2) @map("max_occupancy")
+  bedType       String?  @map("bed_type")
+  roomSize      Int?     @map("room_size")
+  amenities     String?  // JSON string
+  images        String?  // JSON string
+  basePrice     Int      @map("base_price")
+  status        Int      @default(1)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at")
+
+  // Relations
+  hotel         Hotel    @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  rooms         Room[]
+  reservations  Reservation[]
+  roomPrices    RoomPrice[]
+
+  @@map("room_types")
+}
+
+model Room {
+  id          Int      @id @default(autoincrement())
+  hotelId     Int      @map("hotel_id")
+  roomTypeId  Int      @map("room_type_id")
+  roomNumber  String   @map("room_number")
+  floor       Int?
+  status      Int      @default(1)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+
+  // Relations
+  hotel         Hotel     @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  roomType      RoomType  @relation(fields: [roomTypeId], references: [id], onDelete: Cascade)
+  reservations  Reservation[]
+
+  @@unique([hotelId, roomNumber])
+  @@map("rooms")
+}
+
+model Reservation {
+  id                Int      @id @default(autoincrement())
+  reservationCode   String   @unique @map("reservation_code")
+  hotelId           Int      @map("hotel_id")
+  roomTypeId        Int      @map("room_type_id")
+  roomId            Int?     @map("room_id")
+  guestName         String   @map("guest_name")
+  guestPhone        String   @map("guest_phone")
+  guestEmail        String?  @map("guest_email")
+  checkInDate       String   @map("check_in_date")  // DATE stored as string
+  checkOutDate      String   @map("check_out_date") // DATE stored as string
+  adults            Int      @default(1)
+  children          Int      @default(0)
+  totalNights       Int      @map("total_nights")
+  totalAmount       Int      @map("total_amount")
+  paymentStatus     Int      @default(0) @map("payment_status")
+  specialRequests   String?  @map("special_requests")
+  status            Int      @default(1)
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @default(now()) @updatedAt @map("updated_at")
+
+  // Relations
+  hotel     Hotel     @relation(fields: [hotelId], references: [id])
+  roomType  RoomType  @relation(fields: [roomTypeId], references: [id])
+  room      Room?     @relation(fields: [roomId], references: [id])
+
+  @@map("reservations")
+}
+
+model RoomPrice {
+  id          Int      @id @default(autoincrement())
+  roomTypeId  Int      @map("room_type_id")
+  priceDate   String   @map("price_date") // DATE stored as string
+  price       Int
+  isWeekend   Int      @default(0) @map("is_weekend")
+  isHoliday   Int      @default(0) @map("is_holiday")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Relations
+  roomType    RoomType @relation(fields: [roomTypeId], references: [id], onDelete: Cascade)
+
+  @@unique([roomTypeId, priceDate])
+  @@map("room_prices")
+}
