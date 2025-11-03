@@ -66,6 +66,13 @@ const mbtiImage = '/mbti.png';
 					</a>
 					<div class="caption">당신의 골프 스타일을 확인하세요</div><br>
 					<div class="clip">
+						<video id="golf-clip-0" width="680" height="382" muted preload="metadata" playsinline>
+							<source src="https://baramwe.github.io/image/golf/ai/2025_fukuoka.mp4#t=0.1" type="video/mp4" />
+							이 브라우저는 동영상을 지원하지 않습니다.
+						</video>
+						<div class="clip-caption">2025 Japan Fukuoka Championship</div>
+					</div>
+					<div class="clip">
 						<video id="golf-clip" width="680" height="382" muted preload="metadata" playsinline>
 							<source src="https://baramwe.github.io/image/golf/ai/20250802.mp4#t=0.1" type="video/mp4" />
 							이 브라우저는 동영상을 지원하지 않습니다.
@@ -109,9 +116,10 @@ const mbtiImage = '/mbti.png';
 		<Footer />
 		<script>
 		(function(){
-			function wire(id){
-				const v = document.getElementById(id);
-				if(!v) return;
+			function wire(id: string){
+				const element = document.getElementById(id);
+				if(!element) return;
+				const v = element as HTMLVideoElement;
 				const play = ()=>{ if(v.paused){ v.play().catch(()=>{}); } };
 				const pause = ()=>{ if(!v.paused){ v.pause(); } };
 				v.addEventListener('mouseenter', play, {passive:true});
@@ -123,11 +131,12 @@ const mbtiImage = '/mbti.png';
 					try {
 						if (!document.fullscreenElement){
 							if (v.requestFullscreen) await v.requestFullscreen();
-							else if (v.webkitRequestFullscreen) v.webkitRequestFullscreen();
+							else if ('webkitRequestFullscreen' in v) (v as any).webkitRequestFullscreen();
 						}
 					} catch(_) {}
 				}, {passive:true});
 			}
+			wire('golf-clip-0');
 			wire('golf-clip');
 			wire('golf-clip-2');
 			wire('golf-clip-3');
