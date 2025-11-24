@@ -58,7 +58,7 @@ export const GET: APIRoute = async ({ url, request }) => {
       })
     }
 
-    const prisma = getPrismaClient(env.DB)
+    const prisma = await getPrismaClient(env.DB)
 
     // 객실 존재 여부 확인
     const roomType = await prisma.roomType.findUnique({

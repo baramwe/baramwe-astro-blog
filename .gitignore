@@ -26,3 +26,9 @@ pnpm-debug.log*
 # wrangler files
 .wrangler
 .dev.vars
+
+# GCP 서비스 계정 키 파일 (보안상 중요)
+*.json
+!package*.json
+!tsconfig.json
+!wrangler.json

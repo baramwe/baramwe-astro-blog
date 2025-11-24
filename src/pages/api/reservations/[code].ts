@@ -31,7 +31,7 @@ export const GET: APIRoute = async ({ params, request }) => {
       })
     }
 
-    const prisma = getPrismaClient(env.DB)
+    const prisma = await getPrismaClient(env.DB)
 
     const reservation = await prisma.reservation.findUnique({
       where: { reservationCode },

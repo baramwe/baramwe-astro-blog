@@ -2,6 +2,8 @@
 import type { APIRoute } from 'astro'
 import { getPrismaClient, checkRoomAvailability, calculateTotalPrice, generateReservationCode, getDaysBetween, type Env } from '../../../lib/db'
 
+export const prerender = false
+
 interface CreateReservationRequest {
   roomTypeId: number
   checkInDate: string
@@ -14,9 +16,32 @@ interface CreateReservationRequest {
   specialRequests?: string
 }
 
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async ({ request, locals }) => {
   try {
-    const body: CreateReservationRequest = await request.json()
+    console.log('📝 예약 생성 API 호출됨')
+    
+    // 요청 본문 검증 및 파싱
+    let body: CreateReservationRequest
+    try {
+      const rawBody = await request.text()
+      console.log('📥 받은 요청 본문 길이:', rawBody.length)
+      
+      if (!rawBody || rawBody.trim() === '') {
+        throw new Error('Request body is empty')
+      }
+      
+      body = JSON.parse(rawBody)
+      console.log('✅ JSON 파싱 성공')
+    } catch (parseError) {
+      console.error('❌ JSON 파싱 실패:', parseError)
+      return new Response(JSON.stringify({
+        error: 'Invalid JSON in request body',
+        message: parseError instanceof Error ? parseError.message : 'Unknown parse error'
+      }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    }
     
     const {
       roomTypeId,
@@ -64,9 +89,23 @@ export const POST: APIRoute = async ({ request }) => {
       })
     }
 
-    const env = (globalThis as any).process?.env?.NODE_ENV === 'development' 
-      ? null 
-      : (request as any).cf?.env as Env
+    // 환경 확인 (개선된 버전)
+    let env: Env | null = null
+    let environmentType = 'unknown'
+
+    // 1. Cloudflare Workers runtime에서 env 가져오기 시도
+    if ((locals as any)?.runtime?.env?.DB) {
+      env = (locals as any).runtime.env as Env
+      environmentType = 'wrangler-dev-runtime'
+    }
+    // 2. request.cf.env에서 가져오기 시도
+    else if ((request as any)?.cf?.env?.DB) {
+      env = (request as any).cf.env as Env
+      environmentType = 'cloudflare-workers'
+    }
+
+    console.log(`🌍 감지된 환경: ${environmentType}`)
+    console.log(`💾 DB 사용 가능: ${!!env?.DB}`)
 
     if (!env?.DB) {
       // 로컬 환경에서는 200 상태로 에러 정보를 반환
@@ -80,7 +119,7 @@ export const POST: APIRoute = async ({ request }) => {
       })
     }
 
-    const prisma = getPrismaClient(env.DB)
+    const prisma = await getPrismaClient(env.DB)
 
     // 객실 타입 존재 여부 확인
     const roomType = await prisma.roomType.findUnique({

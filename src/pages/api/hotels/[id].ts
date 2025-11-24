@@ -1,10 +1,10 @@
-// 호텔 상세 정보 API
+// 개별 호텔 상세 정보 API
 import type { APIRoute } from 'astro'
-import { getPrismaClient, type Env } from '../../../lib/db'
+import { getPrismaClient, getLocalSqliteClient, type Env } from '../../../lib/db'
 
 export const prerender = false
 
-export const GET: APIRoute = async ({ params, request }) => {
+export const GET: APIRoute = async ({ params, request, locals }) => {
   try {
     const hotelId = parseInt(params.id as string)
     
@@ -15,68 +15,169 @@ export const GET: APIRoute = async ({ params, request }) => {
       })
     }
 
-    const env = (globalThis as any).process?.env?.NODE_ENV === 'development' 
-      ? null 
-      : (request as any).cf?.env as Env
+    console.log(`🏨 호텔 ID ${hotelId} 조회 API 호출됨`)
+    
+    // 환경 확인 (개선된 버전)
+    let env: Env | null = null
+    let environmentType = 'unknown'
 
-    if (!env?.DB) {
-      // 로컬 환경에서는 200 상태로 에러 정보를 반환
-      return new Response(JSON.stringify({
-        error: 'Database not available. This API works only in Cloudflare Workers environment.',
-        development: true,
-        message: 'Local development mode - sample data will be shown'
-      }), { 
-        status: 200,
-        headers: { 'Content-Type': 'application/json' }
-      })
+    // 1. Cloudflare Workers runtime에서 env 가져오기 시도
+    if ((locals as any)?.runtime?.env?.DB) {
+      env = (locals as any).runtime.env as Env
+      environmentType = 'wrangler-dev-runtime'
+    }
+    // 2. request.cf.env에서 가져오기 시도
+    else if ((request as any)?.cf?.env?.DB) {
+      env = (request as any).cf.env as Env
+      environmentType = 'cloudflare-workers'
     }
 
-    const prisma = getPrismaClient(env.DB)
+    console.log(`🌍 감지된 환경: ${environmentType}`)
+    console.log(`💾 DB 사용 가능: ${!!env?.DB}`)
 
-    const hotel = await prisma.hotel.findUnique({
-      where: { id: hotelId, status: 1 },
-      include: {
-        roomTypes: {
-          where: { status: 1 },
+    let hotel
+    
+    if (env?.DB) {
+      // Cloudflare 환경: Prisma + D1 사용
+      console.log(`☁️ 호텔 ID ${hotelId} D1 데이터베이스에서 조회...`)
+      
+      try {
+        const prisma = await getPrismaClient(env.DB)
+
+        const hotelData = await prisma.hotel.findUnique({
+          where: { id: hotelId, status: 1 },
           include: {
-            rooms: {
-              where: { status: 1 }
-            },
-            roomPrices: {
-              where: {
-                priceDate: {
-                  gte: new Date().toISOString().split('T')[0]
-                }
-              },
-              take: 30, // 30일치 가격
-              orderBy: { priceDate: 'asc' }
+            roomTypes: {
+              where: { status: 1 },
+              select: {
+                id: true,
+                name: true,
+                basePrice: true,
+                maxOccupancy: true,
+                roomSize: true,
+                bedType: true,
+                images: true,
+                amenities: true
+              }
             }
           }
+        })
+
+        if (!hotelData) {
+          return new Response(JSON.stringify({ 
+            error: 'Hotel not found' 
+          }), {
+            status: 404,
+            headers: { 'Content-Type': 'application/json' }
+          })
         }
+
+        // JSON 문자열로 저장된 데이터 파싱
+        hotel = {
+          ...hotelData,
+          images: hotelData.images ? JSON.parse(hotelData.images) : [],
+          amenities: hotelData.amenities ? JSON.parse(hotelData.amenities) : [],
+          roomTypes: hotelData.roomTypes.map(room => ({
+            ...room,
+            size: room.roomSize, // roomSize를 size로 매핑
+            images: room.images ? JSON.parse(room.images) : [],
+            amenities: room.amenities ? JSON.parse(room.amenities) : []
+          }))
+        }
+
+        console.log(`✅ D1에서 호텔 ID ${hotelId} 데이터 조회 완료`)
+      } catch (prismaError) {
+        console.error('❌ Prisma 연결 실패:', prismaError)
+        throw prismaError
       }
-    })
-
-    if (!hotel) {
-      return new Response(JSON.stringify({ error: 'Hotel not found' }), {
-        status: 404,
-        headers: { 'Content-Type': 'application/json' }
-      })
+    } else {
+      // 로컬 환경: SQLite 파일 직접 읽기
+      console.log(`🏨 호텔 ID ${hotelId} 로컬 SQLite에서 조회...`)
+      
+      try {
+        const db = await getLocalSqliteClient()
+        
+        // 호텔 상세 정보 조회
+        const hotelQuery = `
+          SELECT 
+            h.id,
+            h.name,
+            h.name_en as nameEn,
+            h.description,
+            h.address,
+            h.phone,
+            h.email,
+            h.images,
+            h.amenities,
+            h.status
+          FROM hotels h 
+          WHERE h.id = ? AND h.status = 1
+        `
+        
+        // 룸타입 정보 조회
+        const roomTypesQuery = `
+          SELECT 
+            rt.id,
+            rt.hotel_id as hotelId,
+            rt.name,
+            rt.name_en as nameEn,
+            rt.description,
+            rt.max_occupancy as maxOccupancy,
+            rt.room_size as size,
+            rt.bed_type as bedType,
+            rt.base_price as basePrice,
+            rt.images,
+            rt.amenities,
+            rt.status
+          FROM room_types rt 
+          WHERE rt.hotel_id = ? AND rt.status = 1
+        `
+        
+        const hotelData = db.prepare(hotelQuery).get(hotelId)
+        
+        if (!hotelData) {
+          db.close()
+          return new Response(JSON.stringify({ 
+            error: 'Hotel not found' 
+          }), {
+            status: 404,
+            headers: { 'Content-Type': 'application/json' }
+          })
+        }
+        
+        const roomTypesData = db.prepare(roomTypesQuery).all(hotelId)
+        
+        // 호텔에 룸타입 연결
+        hotel = {
+          ...hotelData,
+          images: hotelData.images ? JSON.parse(hotelData.images) : [],
+          amenities: hotelData.amenities ? JSON.parse(hotelData.amenities) : [],
+          roomTypes: roomTypesData.map(room => ({
+            ...room,
+            images: room.images ? JSON.parse(room.images) : [],
+            amenities: room.amenities ? JSON.parse(room.amenities) : []
+          }))
+        }
+        
+        db.close()
+        console.log(`✅ 로컬 SQLite에서 호텔 ID ${hotelId} 데이터 조회 완료`)
+        
+      } catch (sqliteError) {
+        console.error(`❌ 로컬 SQLite 연결 실패:`, sqliteError)
+        
+        // SQLite 연결 실패 시 에러 응답
+        return new Response(JSON.stringify({
+          error: 'Local SQLite connection failed',
+          development: true,
+          message: 'SQLite 파일 연결에 실패했습니다. 샘플 데이터가 표시됩니다.'
+        }), { 
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        })
+      }
     }
 
-    // JSON 문자열 파싱
-    const parsedHotel = {
-      ...hotel,
-      images: hotel.images ? JSON.parse(hotel.images) : [],
-      amenities: hotel.amenities ? JSON.parse(hotel.amenities) : [],
-      roomTypes: hotel.roomTypes.map(roomType => ({
-        ...roomType,
-        images: roomType.images ? JSON.parse(roomType.images) : [],
-        amenities: roomType.amenities ? JSON.parse(roomType.amenities) : [],
-        availableRooms: roomType.rooms.length
-      }))
-    }
-
-    return new Response(JSON.stringify(parsedHotel), {
+    return new Response(JSON.stringify(hotel), {
       status: 200,
       headers: {
         'Content-Type': 'application/json',
