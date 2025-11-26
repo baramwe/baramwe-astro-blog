@@ -1,0 +1,281 @@
+---
+import BaseHead from '../../../components/BaseHead.astro';
+import Header from '../../../components/Header.astro';
+import Footer from '../../../components/Footer.astro';
+import { SITE_TITLE, SITE_DESCRIPTION } from '../../../consts';
+---
+
+<!doctype html>
+<html lang="ko">
+	<head>
+		<BaseHead title={`포트폴리오 현황 | ${SITE_TITLE}`} description={SITE_DESCRIPTION} />
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+	</head>
+	<body>
+		<Header />
+		<main class="w-full max-w-4xl mx-auto px-4 py-8">
+            <h1 class="text-3xl font-bold text-center mb-8">📈 주가투 포트폴리오 현황</h1>
+            
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+                <div class="relative h-[500px] w-full flex items-center justify-center" id="chart-container">
+                    <p class="text-gray-500" id="loading-text">데이터를 불러오는 중입니다...</p>
+                    <canvas id="portfolioChart"></canvas>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto bg-white rounded-xl shadow-lg p-6 hidden mb-8" id="table-container">
+                <table class="w-full text-sm text-left text-gray-500">
+                    <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3">순위</th>
+                            <th scope="col" class="px-6 py-3">투자자</th>
+                            <th scope="col" class="px-6 py-3 text-right">총자산</th>
+                            <th scope="col" class="px-6 py-3 text-right">수익률</th>
+                            <th scope="col" class="px-6 py-3 text-right">투자금</th>
+                            <th scope="col" class="px-6 py-3 text-right">평가손익</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ranking-table-body">
+                        <!-- 데이터가 여기에 추가됩니다 -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="detail-section" class="hidden bg-white rounded-xl shadow-lg p-6 fade-in">
+                <h2 class="text-xl font-bold mb-4" id="detail-title">보유 종목 상세</h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left text-gray-500">
+                        <thead class="text-xs text-white uppercase bg-blue-600">
+                            <tr>
+                                <th scope="col" class="px-6 py-3">종목명</th>
+                                <th scope="col" class="px-6 py-3">매수일자</th>
+                                <th scope="col" class="px-6 py-3 text-right">평가금액</th>
+                                <th scope="col" class="px-6 py-3 text-right">수익률</th>
+                                <th scope="col" class="px-6 py-3 text-right">평가손익</th>
+                            </tr>
+                        </thead>
+                        <tbody id="detail-table-body">
+                            <!-- 상세 데이터가 여기에 추가됩니다 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+		</main>
+		<Footer />
+
+        <style>
+            .fade-in {
+                animation: fadeIn 0.5s ease-in;
+            }
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            /* 선택된 행 스타일 - !important로 우선순위 강제 */
+            tr.selected-row {
+                background-color: #dbeafe !important; /* bg-blue-100 */
+                border-left: 4px solid #2563eb !important; /* border-blue-600 */
+            }
+            /* 선택되지 않은 행의 호버 효과 */
+            tr:not(.selected-row):hover {
+                background-color: #f3f4f6;
+            }
+            .cursor-pointer {
+                cursor: pointer;
+            }
+        </style>
+
+        <script>
+            // 차트 설정 및 데이터 로드
+            document.addEventListener('DOMContentLoaded', async () => {
+                const ctx = document.getElementById('portfolioChart');
+                const loadingText = document.getElementById('loading-text');
+                const tableContainer = document.getElementById('table-container');
+                const tableBody = document.getElementById('ranking-table-body');
+                const detailSection = document.getElementById('detail-section');
+                const detailTitle = document.getElementById('detail-title');
+                const detailTableBody = document.getElementById('detail-table-body');
+
+                try {
+                    const response = await fetch('/api/portfolio-data');
+                    const result = await response.json();
+
+                    if (!result.success) {
+                        throw new Error(result.message || '데이터 로드 실패');
+                    }
+
+                    loadingText.style.display = 'none';
+                    tableContainer.classList.remove('hidden');
+
+                    const investors = result.data;
+                    const details = result.details || [];
+                    
+                    // 테이블 렌더링
+                    investors.forEach((investor, index) => {
+                        const row = document.createElement('tr');
+                        // 기본 클래스 설정
+                        row.className = 'bg-white border-b transition-colors duration-200 cursor-pointer border-l-4 border-transparent';
+                        row.dataset.investorName = investor.name;
+                        
+                        // 수익률 색상 (양수: 빨강, 음수: 파랑 - 한국 주식 시장 관례)
+                        const rateColor = investor.rate >= 0 ? 'text-red-600' : 'text-blue-600';
+                        const profitColor = investor.profit >= 0 ? 'text-red-600' : 'text-blue-600';
+
+                        row.innerHTML = `
+                            <td class="px-6 py-4 font-medium">${index + 1}</td>
+                            <td class="px-6 py-4 font-bold text-gray-900">${investor.name}</td>
+                            <td class="px-6 py-4 text-right font-bold">${investor.assets.toLocaleString()}원</td>
+                            <td class="px-6 py-4 text-right ${rateColor}">${investor.raw.rate}</td>
+                            <td class="px-6 py-4 text-right">${investor.investment.toLocaleString()}원</td>
+                            <td class="px-6 py-4 text-right ${profitColor}">${investor.profit.toLocaleString()}원</td>
+                        `;
+                        
+                        // 클릭 이벤트 추가
+                        row.addEventListener('click', () => {
+                            // 1. 모든 행의 스타일 초기화
+                            const allRows = tableBody.querySelectorAll('tr');
+                            allRows.forEach(r => {
+                                r.classList.remove('selected-row');
+                                // Tailwind 클래스 제거 (혹시 몰라서 이중 처리)
+                                r.classList.remove('bg-blue-100', 'border-blue-600');
+                                r.classList.add('bg-white', 'border-transparent');
+                            });
+                            
+                            // 2. 현재 행에 스타일 추가
+                            row.classList.add('selected-row');
+                            // Tailwind 클래스 추가 (확실한 적용을 위해)
+                            row.classList.remove('bg-white', 'border-transparent');
+                            row.classList.add('bg-blue-100', 'border-blue-600');
+                            
+                            // 상세 정보 표시
+                            showDetails(investor.name);
+                        });
+
+                        tableBody.appendChild(row);
+                    });
+
+                    function showDetails(investorName) {
+                        // 해당 투자자의 상세 데이터 필터링
+                        const investorDetails = details.filter(d => d.investor === investorName);
+                        
+                        detailTitle.textContent = `${investorName}님의 보유 종목 상세`;
+                        detailTableBody.innerHTML = '';
+
+                        if (investorDetails.length === 0) {
+                            const emptyRow = document.createElement('tr');
+                            emptyRow.innerHTML = `<td colspan="5" class="px-6 py-4 text-center text-gray-500">보유 중인 종목 정보가 없습니다.</td>`;
+                            detailTableBody.appendChild(emptyRow);
+                        } else {
+                            investorDetails.forEach(stock => {
+                                const tr = document.createElement('tr');
+                                tr.className = 'bg-white border-b hover:bg-gray-50';
+                                
+                                // 수익률 파싱해서 색상 결정
+                                const rateVal = parseFloat(stock.rate.replace('%', ''));
+                                const profitVal = parseFloat(stock.profit.replace(/,/g, '').replace('원', ''));
+                                
+                                const rateColor = rateVal >= 0 ? 'text-red-600' : 'text-blue-600';
+                                const profitColor = profitVal >= 0 ? 'text-red-600' : 'text-blue-600';
+
+                                tr.innerHTML = `
+                                    <td class="px-6 py-4 font-bold">${stock.stockName || '-'}</td>
+                                    <td class="px-6 py-4">${stock.buyDate || '-'}</td>
+                                    <td class="px-6 py-4 text-right font-bold">${stock.currentValue || '-'}</td>
+                                    <td class="px-6 py-4 text-right ${rateColor}">${stock.rate}</td>
+                                    <td class="px-6 py-4 text-right ${profitColor}">${stock.profit}</td>
+                                `;
+                                detailTableBody.appendChild(tr);
+                            });
+                        }
+                        
+                        detailSection.classList.remove('hidden');
+                        // 부드럽게 스크롤 이동
+                        detailSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+
+                    // 차트 데이터 구성 (기존 코드 유지)
+                    const labels = investors.map(i => i.name);
+                    const assetsData = investors.map(i => i.assets);
+                    const investmentData = investors.map(i => i.investment);
+
+                    // Chart.js 인스턴스 생성
+                    new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: [
+                                {
+                                    label: '총자산',
+                                    data: assetsData,
+                                    backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                                    borderColor: 'rgba(54, 162, 235, 1)',
+                                    borderWidth: 1,
+                                    order: 1
+                                },
+                                {
+                                    label: '투자원금',
+                                    data: investmentData,
+                                    type: 'line',
+                                    borderColor: 'rgba(255, 99, 132, 1)',
+                                    borderWidth: 2,
+                                    pointBackgroundColor: 'rgba(255, 99, 132, 1)',
+                                    fill: false,
+                                    tension: 0.1,
+                                    order: 0
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'top',
+                                },
+                                title: {
+                                    display: true,
+                                    text: '투자자별 자산 현황 (총자산 순)'
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            let label = context.dataset.label || '';
+                                            if (label) {
+                                                label += ': ';
+                                            }
+                                            if (context.parsed.y !== null) {
+                                                label += context.parsed.y.toLocaleString() + '원';
+                                            }
+                                            return label;
+                                        },
+                                        afterBody: function(context) {
+                                            // 툴팁에 추가 정보 표시 (수익률 등)
+                                            const dataIndex = context[0].dataIndex;
+                                            const investor = investors[dataIndex];
+                                            return `수익률: ${investor.raw.rate}\n평가손익: ${investor.profit.toLocaleString()}원`;
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        callback: function(value) {
+                                            return value.toLocaleString() + '원';
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+
+                } catch (error) {
+                    console.error(error);
+                    loadingText.innerText = '데이터를 불러오는 중 오류가 발생했습니다: ' + error.message;
+                    loadingText.classList.add('text-red-500');
+                }
+            });
+        </script>
+	</body>
+</html>
