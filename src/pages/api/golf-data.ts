@@ -92,13 +92,27 @@ export const GET: APIRoute = async ({ request, locals }) => {
                 if (!cell) continue;
                 if (cell === '평균' || cell === 'Total' || cell === '순위') break;
 
-                // 줄바꿈으로 날짜/골프장 분리
+                // 줄바꿈으로 지역/날짜/골프장 분리
+                // 기존: 날짜 / 골프장
+                // 변경: 지역 / 날짜 / 골프장
                 const parts = cell.split('\n')
-                const date = parts[0] || ''
-                const course = parts.length > 1 ? parts[1] : ''
+                let region = ''
+                let date = ''
+                let course = ''
+
+                if (parts.length >= 3) {
+                    region = parts[0]
+                    date = parts[1]
+                    course = parts[2]
+                } else {
+                    // 하위 호환성 (혹시 모를 예외 처리)
+                    date = parts[0] || ''
+                    course = parts.length > 1 ? parts[1] : ''
+                }
                 
                 currentTournament.games.push({
                     colIndex: j,
+                    region: region.trim(),
                     date: date.trim(),
                     course: course.trim()
                 })
@@ -159,6 +173,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
             
             p.scores.forEach((s: any) => {
                 stat.rounds.push({
+                    region: s.region,
                     date: s.date,
                     course: s.course,
                     score: s.score,

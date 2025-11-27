@@ -71,6 +71,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                     <table class="w-full text-sm text-left text-gray-500">
                         <thead class="text-xs text-gray-700 uppercase bg-gray-100">
                             <tr>
+                                <th scope="col" class="px-6 py-3">지역</th>
                                 <th scope="col" class="px-6 py-3">날짜</th>
                                 <th scope="col" class="px-6 py-3">골프장</th>
                                 <th scope="col" class="px-6 py-3 text-center">스코어</th>
@@ -279,10 +280,11 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                     const tr = target.closest('tr');
                     if (!tr || !tr.dataset.date || !tr.dataset.course) return;
 
+                    const region = tr.dataset.region || '';
                     const date = tr.dataset.date;
                     const course = tr.dataset.course;
 
-                    const participants = getRoundParticipants(date, course);
+                    const participants = getRoundParticipants(region, date, course);
                     showTooltip(e, participants);
                 });
 
@@ -306,18 +308,27 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                     detailTableBody.innerHTML = '';
 
                     if (player.rounds.length === 0) {
-                        detailTableBody.innerHTML = '<tr><td colspan="4" class="p-4 text-center">기록 없음</td></tr>';
+                        detailTableBody.innerHTML = '<tr><td colspan="5" class="p-4 text-center">기록 없음</td></tr>';
                     } else {
-                        player.rounds.forEach(round => {
+                        // 날짜 내림차순 정렬 (최신순)
+                        const sortedRounds = [...player.rounds].sort((a, b) => {
+                            const dateA = new Date(a.date).getTime();
+                            const dateB = new Date(b.date).getTime();
+                            return dateB - dateA; // 내림차순
+                        });
+
+                        sortedRounds.forEach(round => {
                             const tr = document.createElement('tr');
                             tr.className = 'bg-white border-b hover:bg-gray-50';
+                            tr.dataset.region = round.region || '';
                             tr.dataset.date = round.date;
                             tr.dataset.course = round.course;
                             
                             const scoreClass = round.score <= 72 ? 'text-red-600 font-bold' : '';
-                            const dailyRank = calculateDailyRank(round.date, round.course, round.score);
+                            const dailyRank = calculateDailyRank(round.region || '', round.date, round.course, round.score);
 
                             tr.innerHTML = `
+                                <td class="px-6 py-4">${round.region || '-'}</td>
                                 <td class="px-6 py-4">${round.date}</td>
                                 <td class="px-6 py-4">${round.course}</td>
                                 <td class="px-6 py-4 text-center ${scoreClass}">${round.score}</td>
@@ -333,20 +344,28 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                     detailSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
 
-                function calculateDailyRank(date, course, myScore) {
+                function calculateDailyRank(region, date, course, myScore) {
                     const scores = [];
                     allPlayers.forEach(p => {
-                        const round = p.rounds.find(r => r.date === date && r.course === course);
+                        const round = p.rounds.find(r => 
+                            (r.region || '').trim() === region.trim() &&
+                            r.date.trim() === date.trim() && 
+                            r.course.trim() === course.trim()
+                        );
                         if (round) scores.push(round.score);
                     });
                     scores.sort((a, b) => a - b);
                     return scores.indexOf(myScore) + 1;
                 }
 
-                function getRoundParticipants(date, course) {
+                function getRoundParticipants(region, date, course) {
                     const participants = [];
                     allPlayers.forEach(p => {
-                        const round = p.rounds.find(r => r.date.trim() === date.trim() && r.course.trim() === course.trim());
+                        const round = p.rounds.find(r => 
+                            (r.region || '').trim() === region.trim() &&
+                            r.date.trim() === date.trim() && 
+                            r.course.trim() === course.trim()
+                        );
                         if (round) {
                             participants.push({
                                 name: p.name,
