@@ -72,6 +72,13 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                     </table>
                 </div>
             </div>
+            <!-- 툴팁 팝업 (동반 플레이어 정보) -->
+            <div id="hover-tooltip" class="fixed hidden z-50 bg-white rounded-lg shadow-xl border border-gray-200 p-4 min-w-[200px] transform transition-opacity duration-200 opacity-0">
+                <h3 class="text-sm font-bold text-gray-900 mb-2 border-b pb-1">🏌️‍♂️ 해당 라운드 순위</h3>
+                <div id="tooltip-content" class="text-xs">
+                    <!-- 내용이 동적으로 들어갑니다 -->
+                </div>
+            </div>
 		</main>
 		<Footer />
 
@@ -90,6 +97,25 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
             tr.cursor-pointer:hover {
                 background-color: #f0fdf4; /* bg-green-50 */
             }
+            /* 툴팁용 스타일 */
+            .tooltip-row {
+                display: flex;
+                justify-content: space-between;
+                padding: 4px 0;
+                border-bottom: 1px solid #f3f4f6;
+            }
+            .tooltip-row:last-child {
+                border-bottom: none;
+            }
+            .rank-badge {
+                display: inline-block;
+                width: 20px;
+                text-align: center;
+                font-weight: bold;
+            }
+            .rank-1 { color: #eab308; } /* 1등 금색 */
+            .rank-2 { color: #94a3b8; } /* 2등 은색 */
+            .rank-3 { color: #b45309; } /* 3등 동색 */
         </style>
 
         <script>
@@ -102,13 +128,43 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                 const detailTitle = document.getElementById('detail-title');
                 const detailTableBody = document.getElementById('detail-table-body');
                 const closeDetailBtn = document.getElementById('close-detail');
+                const tooltip = document.getElementById('hover-tooltip');
+                const tooltipContent = document.getElementById('tooltip-content');
 
                 let allPlayers = [];
+
+                // 이벤트 위임: 툴팁 표시 (클릭 시)
+                detailTableBody.addEventListener('click', (e) => {
+                    const target = e.target.closest('.rank-cell');
+                    if (!target) return;
+
+                    // 버블링 방지 (혹시 모를 부작용 방지)
+                    e.stopPropagation();
+
+                    const tr = target.closest('tr');
+                    if (!tr || !tr.dataset.date || !tr.dataset.course) return;
+
+                    const date = tr.dataset.date;
+                    const course = tr.dataset.course;
+
+                    const participants = getRoundParticipants(date, course);
+                    showTooltip(e, participants);
+                });
+
+                // 문서 전체 클릭 시 툴팁 닫기
+                document.addEventListener('click', (e) => {
+                    const target = e.target;
+                    // 툴팁 내부나 순위 셀을 클릭한 경우가 아니면 닫기
+                    if (!tooltip.contains(target) && !target.closest('.rank-cell')) {
+                        hideTooltip();
+                    }
+                });
 
                 // 상세 닫기 버튼
                 closeDetailBtn.addEventListener('click', () => {
                     detailSection.classList.add('hidden');
                     document.querySelectorAll('#stats-table-body tr').forEach(r => r.classList.remove('selected-row', 'bg-green-100', 'border-green-600'));
+                    hideTooltip();
                 });
 
                 try {
@@ -197,6 +253,8 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                         player.rounds.forEach(round => {
                             const tr = document.createElement('tr');
                             tr.className = 'bg-white border-b hover:bg-gray-50';
+                            tr.dataset.date = round.date;
+                            tr.dataset.course = round.course;
                             
                             // 스코어에 따른 색상
                             const scoreClass = round.score <= 72 ? 'text-red-600 font-bold' : '';
@@ -208,7 +266,9 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                                 <td class="px-6 py-4">${round.date}</td>
                                 <td class="px-6 py-4">${round.course}</td>
                                 <td class="px-6 py-4 text-center ${scoreClass}">${round.score}</td>
-                                <td class="px-6 py-4 text-center font-bold text-blue-600">${dailyRank}위</td>
+                                <td class="px-6 py-4 text-center font-bold text-blue-600 cursor-pointer hover:text-blue-800 transition-colors rank-cell relative">
+                                    ${dailyRank}위
+                                </td>
                             `;
                             detailTableBody.appendChild(tr);
                         });
@@ -219,20 +279,68 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                 }
 
                 function calculateDailyRank(date, course, myScore) {
-                    // 해당 날짜, 코스에 경기한 모든 선수의 스코어 수집
                     const scores = [];
                     allPlayers.forEach(p => {
                         const round = p.rounds.find(r => r.date === date && r.course === course);
+                        if (round) scores.push(round.score);
+                    });
+                    scores.sort((a, b) => a - b);
+                    return scores.indexOf(myScore) + 1;
+                }
+
+                function getRoundParticipants(date, course) {
+                    const participants = [];
+                    allPlayers.forEach(p => {
+                        const round = p.rounds.find(r => r.date.trim() === date.trim() && r.course.trim() === course.trim());
                         if (round) {
-                            scores.push(round.score);
+                            participants.push({
+                                name: p.name,
+                                score: round.score
+                            });
                         }
                     });
+                    // 스코어 오름차순 정렬
+                    participants.sort((a, b) => a.score - b.score);
+                    
+                    // 순위 부여
+                    return participants.map((p, i) => ({
+                        ...p,
+                        rank: i + 1
+                    }));
+                }
 
-                    // 오름차순 정렬 (낮은 점수가 1등)
-                    scores.sort((a, b) => a - b);
+                function showTooltip(e, participants) {
+                    // 툴팁 내용 생성
+                    let html = '';
+                    participants.forEach(p => {
+                        const rankClass = p.rank === 1 ? 'rank-1' : (p.rank === 2 ? 'rank-2' : (p.rank === 3 ? 'rank-3' : ''));
+                        html += `
+                            <div class="grid grid-cols-[24px_1fr_30px] gap-x-3 items-center py-1.5 border-b border-gray-100 last:border-0 whitespace-nowrap min-w-[150px]">
+                                <span class="rank-badge ${rankClass}">${p.rank}</span>
+                                <span class="font-medium text-gray-800 text-left">${p.name}</span>
+                                <span class="font-bold text-gray-900 text-right">${p.score}</span>
+                            </div>
+                        `;
+                    });
+                    tooltipContent.innerHTML = html;
 
-                    // 내 스코어의 인덱스 찾기 (동점자 처리: 공동 순위는 가장 높은 등수)
-                    return scores.indexOf(myScore) + 1;
+                    // 툴팁 표시 및 위치 조정
+                    tooltip.classList.remove('hidden');
+                    // 약간의 지연 후 opacity 변경으로 페이드인 효과
+                    setTimeout(() => tooltip.classList.remove('opacity-0'), 10);
+
+                    // 마우스 위치 기반 (e.clientX, e.clientY는 뷰포트 기준)
+                    // 안전하게 표시하기 위해 약간 오프셋 추가
+                    const x = e.clientX + 15;
+                    const y = e.clientY + 15;
+
+                    tooltip.style.top = `${y}px`;
+                    tooltip.style.left = `${x}px`;
+                }
+
+                function hideTooltip() {
+                    tooltip.classList.add('opacity-0');
+                    setTimeout(() => tooltip.classList.add('hidden'), 200);
                 }
             });
         </script>
