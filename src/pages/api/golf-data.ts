@@ -8,6 +8,8 @@ const TARGET_FILE_NAME = 'bluewine_golf'
 export const GET: APIRoute = async ({ request, locals }) => {
   try {
     console.log('⛳️ 골프 데이터 API 호출됨')
+    const url = new URL(request.url);
+    const requestedSheet = url.searchParams.get('sheetName');
 
     let envKey = (locals as any)?.runtime?.env?.GCP_SERVICE_ACCOUNT_KEY || 
                  (request as any)?.cf?.env?.GCP_SERVICE_ACCOUNT_KEY
@@ -37,9 +39,26 @@ export const GET: APIRoute = async ({ request, locals }) => {
 
     const fileId = files[0].id
 
-    // 2. 데이터 읽기 ('2025' 시트 기준)
-    // 전체 데이터를 한 번에 가져옵니다.
-    const range = '2025!A1:Z'
+    // 1.5 시트 목록 가져오기 (Metadata)
+    const metaUrl = `https://sheets.googleapis.com/v4/spreadsheets/${fileId}?fields=sheets.properties.title`
+    const metaResponse = await fetch(metaUrl, {
+        headers: { 'Authorization': `Bearer ${accessToken}` }
+    })
+
+    if (!metaResponse.ok) {
+        throw new Error(`Failed to fetch spreadsheet metadata: ${metaResponse.status}`)
+    }
+    
+    const metaData = await metaResponse.json()
+    const sheets = metaData.sheets.map((s: any) => s.properties.title)
+    
+    // 요청된 시트가 유효하면 사용, 아니면 첫 번째 시트 사용
+    const targetSheet = (requestedSheet && sheets.includes(requestedSheet)) ? requestedSheet : sheets[0]
+
+    console.log(`📑 사용 시트: ${targetSheet} (요청: ${requestedSheet})`)
+
+    // 2. 데이터 읽기 (선택된 시트 기준)
+    const range = `${targetSheet}!A1:Z`
     const dataUrl = `https://sheets.googleapis.com/v4/spreadsheets/${fileId}/values/${encodeURIComponent(range)}`
     
     const dataResponse = await fetch(dataUrl, {
@@ -59,9 +78,6 @@ export const GET: APIRoute = async ({ request, locals }) => {
         
         // 헤더 행 발견 ("PRO"로 시작)
         if (row[0] && row[0].toString().toUpperCase() === 'PRO') {
-            // 이전 대회가 진행 중이었다면 저장 (하지만 로직상 바로 아래 데이터 처리하므로 필요 없음)
-            
-            // 새 대회 시작
             currentTournament = {
                 headerRow: row,
                 games: [], // 각 열(Column)별 경기 정보
@@ -107,7 +123,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
                     scores.push({
                         ...game,
                         score,
-                        rank: row[row.length - 1] // 순위는 마지막 열에 있다고 가정 (Total 다음)
+                        rank: row[row.length - 1] // 순위는 마지막 열에 있다고 가정
                     })
                 }
             }
@@ -169,15 +185,17 @@ export const GET: APIRoute = async ({ request, locals }) => {
             bestScore: p.bestScore === 999 ? 0 : p.bestScore,
             worstScore: p.worstScore,
             handicap: handicap,
-            rounds: p.rounds.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()) // 최신순 정렬 시도 (날짜 포맷에 따라 다를 수 있음)
+            rounds: p.rounds.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()) // 최신순 정렬
         }
     })
 
-    // 평균 스코어 기준 정렬 (오름차순) -> 핸디 낮은 순
+    // 평균 스코어 기준 정렬 (오름차순)
     resultPlayers.sort((a, b) => a.averageScore - b.averageScore)
 
     return new Response(JSON.stringify({
         success: true,
+        sheets,
+        currentSheet: targetSheet,
         playerStats: resultPlayers
     }), {
         status: 200,

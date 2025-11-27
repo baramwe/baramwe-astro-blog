@@ -14,7 +14,18 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
 	<body>
 		<Header />
 		<main class="w-full max-w-4xl mx-auto px-4 py-8">
-            <h1 class="text-3xl font-bold text-center mb-8">⛳️ 골프 스코어 분석 (2025)</h1>
+            <h1 class="text-3xl font-bold text-center mb-8 flex justify-center items-center gap-2">
+                ⛳️ 골프 스코어 분석
+                <span class="relative inline-block ml-2">
+                    <select id="year-select" class="appearance-none bg-transparent border-b-2 border-gray-800 text-3xl font-bold text-blue-600 focus:outline-none cursor-pointer py-0 pr-8">
+                        <!-- 옵션은 동적으로 채워집니다 -->
+                        <option>Loading...</option>
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                        <svg class="fill-current h-6 w-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                    </div>
+                </span>
+            </h1>
             
             <!-- 차트 섹션 -->
             <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
@@ -130,15 +141,139 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                 const closeDetailBtn = document.getElementById('close-detail');
                 const tooltip = document.getElementById('hover-tooltip');
                 const tooltipContent = document.getElementById('tooltip-content');
+                const yearSelect = document.getElementById('year-select');
 
                 let allPlayers = [];
+                let chartInstance = null;
+
+                // 데이터 로드 함수
+                async function loadData(sheetName = '') {
+                    try {
+                        // 로딩 상태 표시
+                        loadingText.style.display = 'block';
+                        loadingText.innerText = '데이터를 불러오는 중입니다...';
+                        statsContainer.classList.add('hidden');
+                        detailSection.classList.add('hidden');
+                        hideTooltip();
+                        
+                        // 차트 캔버스 초기화 (잔상 제거)
+                        if (chartInstance) {
+                            chartInstance.destroy();
+                            chartInstance = null;
+                        }
+
+                        const url = sheetName ? `/api/golf-data?sheetName=${encodeURIComponent(sheetName)}` : '/api/golf-data';
+                        const response = await fetch(url);
+                        const result = await response.json();
+
+                        if (!result.success) throw new Error(result.message || '데이터 로드 실패');
+
+                        // 시트 목록 업데이트 (최초 1회 또는 필요시)
+                        if (yearSelect.options.length <= 1 && result.sheets) {
+                            yearSelect.innerHTML = '';
+                            result.sheets.forEach(sheet => {
+                                const option = document.createElement('option');
+                                option.value = sheet;
+                                option.textContent = sheet;
+                                if (sheet === result.currentSheet) {
+                                    option.selected = true;
+                                }
+                                yearSelect.appendChild(option);
+                            });
+                        }
+
+                        // 선택된 값 동기화 (API가 반환한 실제 시트명으로)
+                        if (result.currentSheet) {
+                            yearSelect.value = result.currentSheet;
+                        }
+
+                        allPlayers = result.playerStats;
+                        
+                        loadingText.style.display = 'none';
+                        statsContainer.classList.remove('hidden');
+                        tableBody.innerHTML = ''; // 기존 테이블 초기화
+
+                        // 테이블 렌더링
+                        allPlayers.forEach((player, index) => {
+                            const row = document.createElement('tr');
+                            row.className = 'bg-white border-b transition-colors duration-200 cursor-pointer border-l-4 border-transparent';
+                            
+                            row.innerHTML = `
+                                <td class="px-6 py-4 font-medium">${index + 1}</td>
+                                <td class="px-6 py-4 font-bold text-gray-900">${player.name}</td>
+                                <td class="px-6 py-4 text-center font-bold text-blue-600">${player.handicap > 0 ? '+' : ''}${player.handicap}</td>
+                                <td class="px-6 py-4 text-center">${player.averageScore}</td>
+                                <td class="px-6 py-4 text-center text-green-600 font-bold">${player.bestScore}</td>
+                                <td class="px-6 py-4 text-center">${player.roundCount}</td>
+                            `;
+
+                            row.addEventListener('click', () => {
+                                // 선택 스타일 토글
+                                document.querySelectorAll('#stats-table-body tr').forEach(r => {
+                                    r.classList.remove('selected-row', 'bg-green-100', 'border-green-600');
+                                    r.classList.add('bg-white', 'border-transparent');
+                                });
+                                row.classList.add('selected-row', 'bg-green-100', 'border-green-600');
+                                row.classList.remove('bg-white', 'border-transparent');
+
+                                // 상세 정보 렌더링
+                                renderDetails(player);
+                            });
+
+                            tableBody.appendChild(row);
+                        });
+
+                        // 차트 렌더링
+                        chartInstance = new Chart(ctx, {
+                            type: 'bar',
+                            data: {
+                                labels: allPlayers.map(p => p.name),
+                                datasets: [{
+                                    label: '평균 스코어',
+                                    data: allPlayers.map(p => p.averageScore),
+                                    backgroundColor: 'rgba(34, 197, 94, 0.6)', // Green
+                                    borderColor: 'rgba(34, 197, 94, 1)',
+                                    borderWidth: 1
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: { display: false },
+                                    title: { display: true, text: '선수별 평균 스코어' }
+                                },
+                                scales: {
+                                    y: {
+                                        beginAtZero: false,
+                                        min: 70,
+                                        title: { display: true, text: '타수' }
+                                    }
+                                }
+                            }
+                        });
+
+                    } catch (error) {
+                        console.error(error);
+                        loadingText.innerText = '오류 발생: ' + error.message;
+                        loadingText.classList.add('text-red-500');
+                    }
+                }
+
+                // 초기 로드
+                loadData();
+
+                // 연도 변경 이벤트
+                yearSelect.addEventListener('change', (e) => {
+                    loadData(e.target.value);
+                });
 
                 // 이벤트 위임: 툴팁 표시 (클릭 시)
                 detailTableBody.addEventListener('click', (e) => {
                     const target = e.target.closest('.rank-cell');
                     if (!target) return;
 
-                    // 버블링 방지 (혹시 모를 부작용 방지)
+                    // 버블링 방지
                     e.stopPropagation();
 
                     const tr = target.closest('tr');
@@ -154,7 +289,6 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                 // 문서 전체 클릭 시 툴팁 닫기
                 document.addEventListener('click', (e) => {
                     const target = e.target;
-                    // 툴팁 내부나 순위 셀을 클릭한 경우가 아니면 닫기
                     if (!tooltip.contains(target) && !target.closest('.rank-cell')) {
                         hideTooltip();
                     }
@@ -166,82 +300,6 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                     document.querySelectorAll('#stats-table-body tr').forEach(r => r.classList.remove('selected-row', 'bg-green-100', 'border-green-600'));
                     hideTooltip();
                 });
-
-                try {
-                    const response = await fetch('/api/golf-data');
-                    const result = await response.json();
-
-                    if (!result.success) throw new Error('데이터 로드 실패');
-
-                    allPlayers = result.playerStats;
-                    
-                    loadingText.style.display = 'none';
-                    statsContainer.classList.remove('hidden');
-
-                    // 테이블 렌더링
-                    allPlayers.forEach((player, index) => {
-                        const row = document.createElement('tr');
-                        row.className = 'bg-white border-b transition-colors duration-200 cursor-pointer border-l-4 border-transparent';
-                        
-                        row.innerHTML = `
-                            <td class="px-6 py-4 font-medium">${index + 1}</td>
-                            <td class="px-6 py-4 font-bold text-gray-900">${player.name}</td>
-                            <td class="px-6 py-4 text-center font-bold text-blue-600">${player.handicap > 0 ? '+' : ''}${player.handicap}</td>
-                            <td class="px-6 py-4 text-center">${player.averageScore}</td>
-                            <td class="px-6 py-4 text-center text-green-600 font-bold">${player.bestScore}</td>
-                            <td class="px-6 py-4 text-center">${player.roundCount}</td>
-                        `;
-
-                        row.addEventListener('click', () => {
-                            // 선택 스타일 토글
-                            document.querySelectorAll('#stats-table-body tr').forEach(r => {
-                                r.classList.remove('selected-row', 'bg-green-100', 'border-green-600');
-                                r.classList.add('bg-white', 'border-transparent');
-                            });
-                            row.classList.add('selected-row', 'bg-green-100', 'border-green-600');
-                            row.classList.remove('bg-white', 'border-transparent');
-
-                            // 상세 정보 렌더링
-                            renderDetails(player);
-                        });
-
-                        tableBody.appendChild(row);
-                    });
-
-                    // 차트 렌더링
-                    new Chart(ctx, {
-                        type: 'bar',
-                        data: {
-                            labels: allPlayers.map(p => p.name),
-                            datasets: [{
-                                label: '평균 스코어',
-                                data: allPlayers.map(p => p.averageScore),
-                                backgroundColor: 'rgba(34, 197, 94, 0.6)', // Green
-                                borderColor: 'rgba(34, 197, 94, 1)',
-                                borderWidth: 1
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: { display: false },
-                                title: { display: true, text: '선수별 평균 스코어 (낮을수록 좋음)' }
-                            },
-                            scales: {
-                                y: {
-                                    beginAtZero: false,
-                                    min: 70,
-                                    title: { display: true, text: '타수' }
-                                }
-                            }
-                        }
-                    });
-
-                } catch (error) {
-                    console.error(error);
-                    loadingText.innerText = '오류 발생: ' + error.message;
-                }
 
                 function renderDetails(player) {
                     detailTitle.textContent = `${player.name} 선수의 라운드 기록 (${player.roundCount}전)`;
@@ -256,10 +314,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                             tr.dataset.date = round.date;
                             tr.dataset.course = round.course;
                             
-                            // 스코어에 따른 색상
                             const scoreClass = round.score <= 72 ? 'text-red-600 font-bold' : '';
-
-                            // 일별 순위 계산
                             const dailyRank = calculateDailyRank(round.date, round.course, round.score);
 
                             tr.innerHTML = `
@@ -299,10 +354,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                             });
                         }
                     });
-                    // 스코어 오름차순 정렬
                     participants.sort((a, b) => a.score - b.score);
-                    
-                    // 순위 부여
                     return participants.map((p, i) => ({
                         ...p,
                         rank: i + 1
@@ -310,7 +362,6 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                 }
 
                 function showTooltip(e, participants) {
-                    // 툴팁 내용 생성
                     let html = '';
                     participants.forEach(p => {
                         const rankClass = p.rank === 1 ? 'rank-1' : (p.rank === 2 ? 'rank-2' : (p.rank === 3 ? 'rank-3' : ''));
@@ -324,13 +375,9 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                     });
                     tooltipContent.innerHTML = html;
 
-                    // 툴팁 표시 및 위치 조정
                     tooltip.classList.remove('hidden');
-                    // 약간의 지연 후 opacity 변경으로 페이드인 효과
                     setTimeout(() => tooltip.classList.remove('opacity-0'), 10);
 
-                    // 마우스 위치 기반 (e.clientX, e.clientY는 뷰포트 기준)
-                    // 안전하게 표시하기 위해 약간 오프셋 추가
                     const x = e.clientX + 15;
                     const y = e.clientY + 15;
 
