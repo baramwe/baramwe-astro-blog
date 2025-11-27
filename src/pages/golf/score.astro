@@ -1,0 +1,240 @@
+---
+import BaseHead from '../../components/BaseHead.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
+---
+
+<!doctype html>
+<html lang="ko">
+	<head>
+		<BaseHead title={`골프 스코어 분석 | ${SITE_TITLE}`} description={SITE_DESCRIPTION} />
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+	</head>
+	<body>
+		<Header />
+		<main class="w-full max-w-4xl mx-auto px-4 py-8">
+            <h1 class="text-3xl font-bold text-center mb-8">⛳️ 골프 스코어 분석 (2025)</h1>
+            
+            <!-- 차트 섹션 -->
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+                <h2 class="text-xl font-bold mb-4">🏆 선수별 평균 스코어</h2>
+                <div class="relative h-[400px] w-full flex items-center justify-center">
+                    <p class="text-gray-500" id="loading-text">데이터를 불러오는 중입니다...</p>
+                    <canvas id="scoreChart"></canvas>
+                </div>
+            </div>
+
+            <!-- 통계 테이블 섹션 -->
+            <div class="overflow-x-auto bg-white rounded-xl shadow-lg p-6 mb-8 hidden" id="stats-container">
+                <h2 class="text-xl font-bold mb-4">📊 선수별 상세 통계</h2>
+                <p class="text-sm text-gray-500 mb-4">* 선수를 클릭하면 상세 라운드 기록을 볼 수 있습니다.</p>
+                <table class="w-full text-sm text-left text-gray-500">
+                    <thead class="text-xs text-white uppercase bg-green-600">
+                        <tr>
+                            <th scope="col" class="px-6 py-3">순위</th>
+                            <th scope="col" class="px-6 py-3">이름</th>
+                            <th scope="col" class="px-6 py-3 text-center">핸디캡</th>
+                            <th scope="col" class="px-6 py-3 text-center">평균 타수</th>
+                            <th scope="col" class="px-6 py-3 text-center">베스트</th>
+                            <th scope="col" class="px-6 py-3 text-center">라운드 수</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stats-table-body">
+                        <!-- 데이터가 여기에 추가됩니다 -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 상세 기록 섹션 (히든) -->
+            <div id="detail-section" class="hidden bg-white rounded-xl shadow-lg p-6 fade-in">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold" id="detail-title">선수 상세 기록</h2>
+                    <button id="close-detail" class="text-gray-500 hover:text-gray-700">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left text-gray-500">
+                        <thead class="text-xs text-gray-700 uppercase bg-gray-100">
+                            <tr>
+                                <th scope="col" class="px-6 py-3">날짜</th>
+                                <th scope="col" class="px-6 py-3">골프장</th>
+                                <th scope="col" class="px-6 py-3 text-center">스코어</th>
+                                <th scope="col" class="px-6 py-3 text-center">순위</th>
+                            </tr>
+                        </thead>
+                        <tbody id="detail-table-body">
+                            <!-- 상세 데이터 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+		</main>
+		<Footer />
+
+        <style>
+            .fade-in {
+                animation: fadeIn 0.3s ease-in;
+            }
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            tr.selected-row {
+                background-color: #dcfce7 !important; /* bg-green-100 */
+                border-left: 4px solid #16a34a !important; /* border-green-600 */
+            }
+            tr.cursor-pointer:hover {
+                background-color: #f0fdf4; /* bg-green-50 */
+            }
+        </style>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', async () => {
+                const ctx = document.getElementById('scoreChart');
+                const loadingText = document.getElementById('loading-text');
+                const statsContainer = document.getElementById('stats-container');
+                const tableBody = document.getElementById('stats-table-body');
+                const detailSection = document.getElementById('detail-section');
+                const detailTitle = document.getElementById('detail-title');
+                const detailTableBody = document.getElementById('detail-table-body');
+                const closeDetailBtn = document.getElementById('close-detail');
+
+                let allPlayers = [];
+
+                // 상세 닫기 버튼
+                closeDetailBtn.addEventListener('click', () => {
+                    detailSection.classList.add('hidden');
+                    document.querySelectorAll('#stats-table-body tr').forEach(r => r.classList.remove('selected-row', 'bg-green-100', 'border-green-600'));
+                });
+
+                try {
+                    const response = await fetch('/api/golf-data');
+                    const result = await response.json();
+
+                    if (!result.success) throw new Error('데이터 로드 실패');
+
+                    allPlayers = result.playerStats;
+                    
+                    loadingText.style.display = 'none';
+                    statsContainer.classList.remove('hidden');
+
+                    // 테이블 렌더링
+                    allPlayers.forEach((player, index) => {
+                        const row = document.createElement('tr');
+                        row.className = 'bg-white border-b transition-colors duration-200 cursor-pointer border-l-4 border-transparent';
+                        
+                        row.innerHTML = `
+                            <td class="px-6 py-4 font-medium">${index + 1}</td>
+                            <td class="px-6 py-4 font-bold text-gray-900">${player.name}</td>
+                            <td class="px-6 py-4 text-center font-bold text-blue-600">${player.handicap > 0 ? '+' : ''}${player.handicap}</td>
+                            <td class="px-6 py-4 text-center">${player.averageScore}</td>
+                            <td class="px-6 py-4 text-center text-green-600 font-bold">${player.bestScore}</td>
+                            <td class="px-6 py-4 text-center">${player.roundCount}</td>
+                        `;
+
+                        row.addEventListener('click', () => {
+                            // 선택 스타일 토글
+                            document.querySelectorAll('#stats-table-body tr').forEach(r => {
+                                r.classList.remove('selected-row', 'bg-green-100', 'border-green-600');
+                                r.classList.add('bg-white', 'border-transparent');
+                            });
+                            row.classList.add('selected-row', 'bg-green-100', 'border-green-600');
+                            row.classList.remove('bg-white', 'border-transparent');
+
+                            // 상세 정보 렌더링
+                            renderDetails(player);
+                        });
+
+                        tableBody.appendChild(row);
+                    });
+
+                    // 차트 렌더링
+                    new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: allPlayers.map(p => p.name),
+                            datasets: [{
+                                label: '평균 스코어',
+                                data: allPlayers.map(p => p.averageScore),
+                                backgroundColor: 'rgba(34, 197, 94, 0.6)', // Green
+                                borderColor: 'rgba(34, 197, 94, 1)',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false },
+                                title: { display: true, text: '선수별 평균 스코어 (낮을수록 좋음)' }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: false,
+                                    min: 70,
+                                    title: { display: true, text: '타수' }
+                                }
+                            }
+                        }
+                    });
+
+                } catch (error) {
+                    console.error(error);
+                    loadingText.innerText = '오류 발생: ' + error.message;
+                }
+
+                function renderDetails(player) {
+                    detailTitle.textContent = `${player.name} 선수의 라운드 기록 (${player.roundCount}전)`;
+                    detailTableBody.innerHTML = '';
+
+                    if (player.rounds.length === 0) {
+                        detailTableBody.innerHTML = '<tr><td colspan="4" class="p-4 text-center">기록 없음</td></tr>';
+                    } else {
+                        player.rounds.forEach(round => {
+                            const tr = document.createElement('tr');
+                            tr.className = 'bg-white border-b hover:bg-gray-50';
+                            
+                            // 스코어에 따른 색상
+                            const scoreClass = round.score <= 72 ? 'text-red-600 font-bold' : '';
+
+                            // 일별 순위 계산
+                            const dailyRank = calculateDailyRank(round.date, round.course, round.score);
+
+                            tr.innerHTML = `
+                                <td class="px-6 py-4">${round.date}</td>
+                                <td class="px-6 py-4">${round.course}</td>
+                                <td class="px-6 py-4 text-center ${scoreClass}">${round.score}</td>
+                                <td class="px-6 py-4 text-center font-bold text-blue-600">${dailyRank}위</td>
+                            `;
+                            detailTableBody.appendChild(tr);
+                        });
+                    }
+
+                    detailSection.classList.remove('hidden');
+                    detailSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+
+                function calculateDailyRank(date, course, myScore) {
+                    // 해당 날짜, 코스에 경기한 모든 선수의 스코어 수집
+                    const scores = [];
+                    allPlayers.forEach(p => {
+                        const round = p.rounds.find(r => r.date === date && r.course === course);
+                        if (round) {
+                            scores.push(round.score);
+                        }
+                    });
+
+                    // 오름차순 정렬 (낮은 점수가 1등)
+                    scores.sort((a, b) => a - b);
+
+                    // 내 스코어의 인덱스 찾기 (동점자 처리: 공동 순위는 가장 높은 등수)
+                    return scores.indexOf(myScore) + 1;
+                }
+            });
+        </script>
+	</body>
+</html>
