@@ -59,9 +59,9 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
 
             <!-- 상세 기록 섹션 (히든) -->
             <div id="detail-section" class="hidden bg-white rounded-xl shadow-lg p-6 fade-in">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-bold" id="detail-title">선수 상세 기록</h2>
-                    <button id="close-detail" class="text-gray-500 hover:text-gray-700">
+                <div class="flex justify-between items-start mb-4">
+                    <h2 class="text-xl font-bold flex-1 mr-4 break-keep" id="detail-title">선수 상세 기록</h2>
+                    <button id="close-detail" class="text-gray-500 hover:text-gray-700 flex-shrink-0 mt-1">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                         </svg>
@@ -86,7 +86,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
             </div>
             <!-- 툴팁 팝업 (동반 플레이어 정보) -->
             <div id="hover-tooltip" class="fixed hidden z-50 bg-white rounded-lg shadow-xl border border-gray-200 p-4 min-w-[200px] transform transition-opacity duration-200 opacity-0">
-                <h3 class="text-sm font-bold text-gray-900 mb-2 border-b pb-1">🏌️‍♂️ 해당 라운드 순위</h3>
+                <h3 id="tooltip-title" class="text-sm font-bold text-gray-900 mb-2 border-b pb-1">🏌️‍♂️ 해당 라운드 순위</h3>
                 <div id="tooltip-content" class="text-xs">
                     <!-- 내용이 동적으로 들어갑니다 -->
                 </div>
@@ -142,6 +142,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                 const closeDetailBtn = document.getElementById('close-detail');
                 const tooltip = document.getElementById('hover-tooltip');
                 const tooltipContent = document.getElementById('tooltip-content');
+                const tooltipTitle = document.getElementById('tooltip-title');
                 const yearSelect = document.getElementById('year-select');
 
                 let allPlayers = [];
@@ -271,13 +272,15 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
 
                 // 이벤트 위임: 툴팁 표시 (클릭 시)
                 detailTableBody.addEventListener('click', (e) => {
-                    const target = e.target.closest('.rank-cell');
-                    if (!target) return;
+                    const rankTarget = e.target.closest('.rank-cell');
+                    const regionTarget = e.target.closest('.region-cell');
+                    
+                    if (!rankTarget && !regionTarget) return;
 
                     // 버블링 방지
                     e.stopPropagation();
 
-                    const tr = target.closest('tr');
+                    const tr = (rankTarget || regionTarget).closest('tr');
                     if (!tr || !tr.dataset.date || !tr.dataset.course) return;
 
                     const region = tr.dataset.region || '';
@@ -285,7 +288,16 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                     const course = tr.dataset.course;
 
                     const participants = getRoundParticipants(region, date, course);
-                    showTooltip(e, participants);
+                    
+                    let title = '🏌️‍♂️ 해당 라운드 순위';
+                    let useTourRank = false;
+
+                    if (regionTarget) {
+                        title = `🏆 ${region} 종합 순위`;
+                        useTourRank = true;
+                    }
+
+                    showTooltip(e, participants, title, useTourRank);
                 });
 
                 // 문서 전체 클릭 시 툴팁 닫기
@@ -304,7 +316,41 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                 });
 
                 function renderDetails(player) {
-                    detailTitle.textContent = `${player.name} 선수의 라운드 기록 (${player.roundCount}전)`;
+                    // 순위 집계 (대회 단위 중복 제거)
+                    // tournamentId + rank 조합으로 고유한 대회 기록만 추출
+                    const uniqueRanks = new Set();
+                    player.rounds.forEach(r => {
+                        // tournamentId가 있으면 사용, 없으면 region 사용 (호환성)
+                        const key = r.tournamentId !== undefined ? r.tournamentId : r.region;
+                        uniqueRanks.add(`${key}|${r.rank}`);
+                    });
+
+                    const rankCounts = {};
+                    uniqueRanks.forEach(item => {
+                        const parts = item.split('|');
+                        const rankStr = parts[1]; // "1", "2", "-" 등
+                        const rankNum = parseInt(rankStr);
+                        
+                        if (!isNaN(rankNum)) {
+                            rankCounts[rankNum] = (rankCounts[rankNum] || 0) + 1;
+                        }
+                    });
+
+                    // 통계 텍스트 생성 (모든 순위 표시)
+                    const ranks = Object.keys(rankCounts).map(Number).sort((a, b) => a - b);
+                    const statsParts = [];
+                    
+                    ranks.forEach(rank => {
+                        const label = rank === 1 ? '우승' : (rank === 2 ? '준우승' : `${rank}위`);
+                        statsParts.push(`${label}: ${rankCounts[rank]}회`);
+                    });
+
+                    let statsStr = '';
+                    if (statsParts.length > 0) {
+                        statsStr = ' - ' + statsParts.join(', ');
+                    }
+
+                    detailTitle.textContent = `${player.name} 라운드 기록 (${player.roundCount}전)${statsStr}`;
                     detailTableBody.innerHTML = '';
 
                     if (player.rounds.length === 0) {
@@ -328,7 +374,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                             const dailyRank = calculateDailyRank(round.region || '', round.date, round.course, round.score);
 
                             tr.innerHTML = `
-                                <td class="px-6 py-4">${round.region || '-'}</td>
+                                <td class="px-6 py-4 font-bold text-blue-600 cursor-pointer hover:text-blue-800 transition-colors region-cell">${round.region || '-'}</td>
                                 <td class="px-6 py-4">${round.date}</td>
                                 <td class="px-6 py-4">${round.course}</td>
                                 <td class="px-6 py-4 text-center ${scoreClass}">${round.score}</td>
@@ -369,26 +415,53 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                         if (round) {
                             participants.push({
                                 name: p.name,
-                                score: round.score
+                                score: round.score,
+                                tourRank: round.rank // 투어 순위 (원본 데이터)
                             });
                         }
                     });
+                    // 기본은 스코어 순 정렬
                     participants.sort((a, b) => a.score - b.score);
                     return participants.map((p, i) => ({
                         ...p,
-                        rank: i + 1
+                        rank: i + 1 // 경기 순위 (스코어 기준 계산)
                     }));
                 }
 
-                function showTooltip(e, participants) {
+                function showTooltip(e, participants, title = '🏌️‍♂️ 해당 라운드 순위', useTourRank = false) {
+                    if (tooltipTitle) tooltipTitle.textContent = title;
+                    
+                    // 표시할 데이터 복사
+                    let displayParticipants = [...participants];
+
+                    // 투어 순위 모드면 투어 순위 기준으로 정렬
+                    if (useTourRank) {
+                        displayParticipants.sort((a, b) => {
+                            // 숫자가 아닌 경우(예: -) 뒤로 보냄
+                            const rankA = parseInt(a.tourRank) || 999;
+                            const rankB = parseInt(b.tourRank) || 999;
+                            return rankA - rankB;
+                        });
+                    }
+
                     let html = '';
-                    participants.forEach(p => {
-                        const rankClass = p.rank === 1 ? 'rank-1' : (p.rank === 2 ? 'rank-2' : (p.rank === 3 ? 'rank-3' : ''));
+                    // 레이아웃 설정: 투어 순위 모드일 때는 2열 (순위, 이름), 기본 모드는 3열 (순위, 이름, 점수)
+                    const gridClass = useTourRank ? 'grid-cols-[30px_1fr]' : 'grid-cols-[24px_1fr_30px]';
+
+                    displayParticipants.forEach(p => {
+                        // 표시할 순위 값 결정
+                        const rankValue = useTourRank ? (p.tourRank || '-') : p.rank;
+                        const rankNum = parseInt(rankValue);
+                        const rankClass = rankNum === 1 ? 'rank-1' : (rankNum === 2 ? 'rank-2' : (rankNum === 3 ? 'rank-3' : ''));
+                        
+                        // 점수 표시 여부 (투어 순위 모드에서는 제외)
+                        const scoreHtml = useTourRank ? '' : `<span class="font-bold text-gray-900 text-right">${p.score}</span>`;
+
                         html += `
-                            <div class="grid grid-cols-[24px_1fr_30px] gap-x-3 items-center py-1.5 border-b border-gray-100 last:border-0 whitespace-nowrap min-w-[150px]">
-                                <span class="rank-badge ${rankClass}">${p.rank}</span>
+                            <div class="grid ${gridClass} gap-x-3 items-center py-1.5 border-b border-gray-100 last:border-0 whitespace-nowrap min-w-[150px]">
+                                <span class="rank-badge ${rankClass}">${rankValue}</span>
                                 <span class="font-medium text-gray-800 text-left">${p.name}</span>
-                                <span class="font-bold text-gray-900 text-right">${p.score}</span>
+                                ${scoreHtml}
                             </div>
                         `;
                     });
@@ -397,11 +470,28 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                     tooltip.classList.remove('hidden');
                     setTimeout(() => tooltip.classList.remove('opacity-0'), 10);
 
-                    const x = e.clientX + 15;
-                    const y = e.clientY + 15;
+                    // 위치 계산
+                    const tooltipWidth = tooltip.offsetWidth;
+                    const windowWidth = window.innerWidth;
+                    const mouseX = e.clientX;
+                    const mouseY = e.clientY;
+                    
+                    let left = mouseX + 15; // 기본: 마우스 오른쪽
+                    
+                    // 화면 오른쪽을 벗어나는 경우 왼쪽으로 배치
+                    if (left + tooltipWidth > windowWidth - 10) { // 10px 여백
+                        left = mouseX - tooltipWidth - 15;
+                    }
 
-                    tooltip.style.top = `${y}px`;
-                    tooltip.style.left = `${x}px`;
+                    // 왼쪽으로 배치했을 때 화면 왼쪽을 벗어나는 경우 (너무 좁은 화면 등) 조정
+                    if (left < 10) {
+                        left = 10;
+                    }
+
+                    const top = mouseY + 15; // 마우스 아래쪽
+
+                    tooltip.style.top = `${top}px`;
+                    tooltip.style.left = `${left}px`;
                 }
 
                 function hideTooltip() {

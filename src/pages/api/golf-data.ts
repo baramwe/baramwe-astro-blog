@@ -156,7 +156,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
     // 4. 선수별 통계 집계
     const playerStats: Record<string, any> = {}
 
-    tournaments.forEach(tournament => {
+    tournaments.forEach((tournament, tIndex) => {
         tournament.players.forEach((p: any) => {
             if (!playerStats[p.name]) {
                 playerStats[p.name] = {
@@ -173,6 +173,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
             
             p.scores.forEach((s: any) => {
                 stat.rounds.push({
+                    tournamentId: tIndex,
                     region: s.region,
                     date: s.date,
                     course: s.course,
