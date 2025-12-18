@@ -1,2 +1,3 @@
 #!/bin/sh -x 
-npm run dev
+#npm run dev
+npx wrangler dev

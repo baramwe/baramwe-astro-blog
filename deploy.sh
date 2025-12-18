@@ -1,2 +1,2 @@
 #!/bin/sh -x 
-npm run build && npm run deploy
+npm run build && npx wrangler deploy
