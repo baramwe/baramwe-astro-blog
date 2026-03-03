@@ -212,7 +212,8 @@ export const GET: APIRoute = async ({ request, locals }) => {
         success: true,
         sheets,
         currentSheet: targetSheet,
-        playerStats: resultPlayers
+        playerStats: resultPlayers,
+        tournaments: tournaments
     }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' }

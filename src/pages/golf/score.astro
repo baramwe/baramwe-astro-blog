@@ -15,7 +15,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
 		<Header />
 		<main class="w-full max-w-4xl mx-auto px-4 py-8">
             <h1 class="text-3xl font-bold text-center mb-8 flex justify-center items-center gap-2">
-                ⛳️ 골프 스코어 분석
+                ⛳️ 스코어 분석
                 <span class="relative inline-block ml-2">
                     <select id="year-select" class="appearance-none bg-transparent border-b-2 border-gray-800 text-3xl font-bold text-blue-600 focus:outline-none cursor-pointer py-0 pr-8">
                         <!-- 옵션은 동적으로 채워집니다 -->
@@ -34,6 +34,11 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                     <p class="text-gray-500" id="loading-text">데이터를 불러오는 중입니다...</p>
                     <canvas id="scoreChart"></canvas>
                 </div>
+            </div>
+
+            <!-- 게임 표 섹션 -->
+            <div id="tournaments-container" class="hidden mb-8">
+                <!-- 동적으로 게임 표가 추가됩니다 -->
             </div>
 
             <!-- 통계 테이블 섹션 -->
@@ -148,6 +153,115 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                 let allPlayers = [];
                 let chartInstance = null;
 
+                // 토글 함수 (전역으로 등록)
+                window.toggleTournament = function(toggleId) {
+                    const content = document.getElementById(toggleId);
+                    const icon = document.getElementById(`${toggleId}-icon`);
+                    
+                    if (content.classList.contains('hidden')) {
+                        content.classList.remove('hidden');
+                        icon.classList.add('rotate-180');
+                    } else {
+                        content.classList.add('hidden');
+                        icon.classList.remove('rotate-180');
+                    }
+                };
+
+                // 게임 표 렌더링 함수
+                function renderTournaments(tournaments) {
+                    const container = document.getElementById('tournaments-container');
+                    container.innerHTML = '';
+                    container.classList.remove('hidden');
+
+                    tournaments.forEach((tournament, index) => {
+                        // 대회 제목 추출 (첫 경기의 지역명 사용)
+                        const tournamentName = tournament.games && tournament.games.length > 0 
+                            ? tournament.games[0].region || `경기 ${index + 1}`
+                            : `경기 ${index + 1}`;
+
+                        const tournamentDiv = document.createElement('div');
+                        tournamentDiv.className = 'bg-white rounded-xl shadow-lg mb-8';
+                        
+                        // 마지막 경기만 펼쳐진 상태, 나머지는 접힌 상태
+                        const isOpen = index === tournaments.length - 1;
+                        const toggleId = `tournament-${index}`;
+                        
+                        let html = `
+                            <div class="p-6 cursor-pointer hover:bg-gray-50 transition-colors flex justify-between items-center" onclick="toggleTournament('${toggleId}')">
+                                <h2 class="text-xl font-bold">🏌️ ${tournamentName}</h2>
+                                <svg id="${toggleId}-icon" class="w-6 h-6 transition-transform ${isOpen ? 'rotate-180' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </div>
+                        `;
+                        html += `<div id="${toggleId}" class="overflow-x-auto px-6 pb-6 ${isOpen ? '' : 'hidden'}">`;
+                        html += '<table class="w-full text-sm border-collapse">';
+                        
+                        // 헤더 행
+                        html += '<thead><tr class="bg-green-600 text-white">';
+                        html += '<th class="border border-gray-300 px-3 py-2 text-left sticky left-0 bg-green-600 z-10">PRO</th>';
+                        
+                        tournament.games.forEach(game => {
+                            const gameInfo = `${game.date}<br>${game.course}`;
+                            html += `<th class="border border-gray-300 px-3 py-2 text-center whitespace-pre-line min-w-[120px]">${gameInfo}</th>`;
+                        });
+                        
+                        html += '<th class="border border-gray-300 px-3 py-2 text-center">평균</th>';
+                        html += '<th class="border border-gray-300 px-3 py-2 text-center">Total</th>';
+                        html += '<th class="border border-gray-300 px-3 py-2 text-center">순위</th>';
+                        html += '</tr></thead>';
+                        
+                        // 순위별로 정렬 (오름차순)
+                        const sortedPlayers = [...tournament.players].sort((a, b) => {
+                            const rankA = parseInt(a.rank) || 999;
+                            const rankB = parseInt(b.rank) || 999;
+                            return rankA - rankB;
+                        });
+
+                        // 데이터 행
+                        html += '<tbody>';
+                        sortedPlayers.forEach((player, pIndex) => {
+                            const rowClass = pIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50';
+                            html += `<tr class="${rowClass} hover:bg-green-50 transition-colors">`;
+                            html += `<td class="border border-gray-300 px-3 py-2 font-bold sticky left-0 ${rowClass} z-10">${player.name}</td>`;
+                            
+                            // 각 경기별 스코어
+                            tournament.games.forEach(game => {
+                                const score = player.scores.find(s => s.colIndex === game.colIndex);
+                                const scoreValue = score ? score.score : '-';
+                                const scoreClass = score && score.score <= 72 ? 'text-red-600 font-bold' : '';
+                                html += `<td class="border border-gray-300 px-3 py-2 text-center ${scoreClass}">${scoreValue}</td>`;
+                            });
+                            
+                            // 평균
+                            const avg = player.scores.length > 0 
+                                ? (player.scores.reduce((sum, s) => sum + s.score, 0) / player.scores.length).toFixed(1)
+                                : '-';
+                            html += `<td class="border border-gray-300 px-3 py-2 text-center font-bold">${avg}</td>`;
+                            
+                            // Total
+                            html += `<td class="border border-gray-300 px-3 py-2 text-center font-bold">${player.total || '-'}</td>`;
+                            
+                            // 순위 (배경색으로 강조)
+                            let rankBgClass = '';
+                            let rankTextClass = 'font-bold';
+                            if (player.rank === '1') {
+                                rankBgClass = 'bg-yellow-400 text-yellow-900';  // 금색
+                            } else if (player.rank === '2') {
+                                rankBgClass = 'bg-gray-300 text-gray-900';  // 은색
+                            } else if (player.rank === '3') {
+                                rankBgClass = 'bg-orange-400 text-orange-900';  // 동색
+                            }
+                            html += `<td class="border border-gray-300 px-3 py-2 text-center ${rankTextClass} ${rankBgClass}">${player.rank}</td>`;
+                            html += '</tr>';
+                        });
+                        html += '</tbody></table></div>';
+                        
+                        tournamentDiv.innerHTML = html;
+                        container.appendChild(tournamentDiv);
+                    });
+                }
+
                 // 데이터 로드 함수
                 async function loadData(sheetName = '') {
                     try {
@@ -156,6 +270,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                         loadingText.innerText = '데이터를 불러오는 중입니다...';
                         statsContainer.classList.add('hidden');
                         detailSection.classList.add('hidden');
+                        document.getElementById('tournaments-container').classList.add('hidden');
                         hideTooltip();
                         
                         // 차트 캔버스 초기화 (잔상 제거)
@@ -194,6 +309,11 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                         loadingText.style.display = 'none';
                         statsContainer.classList.remove('hidden');
                         tableBody.innerHTML = ''; // 기존 테이블 초기화
+
+                        // 게임 표 렌더링
+                        if (result.tournaments && result.tournaments.length > 0) {
+                            renderTournaments(result.tournaments);
+                        }
 
                         // 테이블 렌더링
                         allPlayers.forEach((player, index) => {
