@@ -26,10 +26,15 @@ export default defineConfig({
       }
     },
     ssr: {
-      external: ['@prisma/client', '.prisma/client']
+      external: ['@prisma/client', '.prisma/client', 'better-sqlite3', 'path', 'fs']
     },
     optimizeDeps: {
-      exclude: ['@prisma/client', '.prisma/client']
+      exclude: ['@prisma/client', '.prisma/client', 'better-sqlite3']
+    },
+    build: {
+      rollupOptions: {
+        external: ['better-sqlite3', 'path', 'fs']
+      }
     }
   },
 });

@@ -1,9 +1,7 @@
-import path from 'path'
-import fs from 'fs'
-
 // Prisma 클라이언트 및 D1 어댑터 설정
 export interface Env {
   DB: D1Database
+  GCP_SERVICE_ACCOUNT_KEY?: string
 }
 
 export async function getPrismaClient(db: D1Database) {
@@ -32,8 +30,16 @@ export async function getLocalSqliteClient() {
   }
 
   try {
-    // 동적 import로 better-sqlite3 불러오기 (ES 모듈 호환)
-    const { default: Database } = await import('better-sqlite3')
+    // 동적 import로 Node.js 모듈 불러오기
+    const [
+      { default: Database },
+      { default: path },
+      { default: fs }
+    ] = await Promise.all([
+      import('better-sqlite3'),
+      import('path'),
+      import('fs')
+    ])
     
     // D1 로컬 SQLite 파일 경로 찾기 (개선된 버전)
     const possiblePaths = [
@@ -70,7 +76,7 @@ export async function getLocalSqliteClient() {
     if (!dbPath && fs.existsSync('.wrangler')) {
       console.log('🔍 .wrangler 전체 검색 중...')
       
-      function findSqliteFiles(dir) {
+      function findSqliteFiles(dir: string): string | null {
         try {
           const items = fs.readdirSync(dir)
           for (const item of items) {
