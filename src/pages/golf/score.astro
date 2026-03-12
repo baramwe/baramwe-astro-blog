@@ -372,7 +372,31 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                                         title: { display: true, text: '타수' }
                                     }
                                 }
-                            }
+                            },
+                            plugins: [{
+                                id: 'customLabels',
+                                afterDatasetsDraw: function(chart) {
+                                    const ctx = chart.ctx;
+                                    chart.data.datasets.forEach((dataset, i) => {
+                                        const meta = chart.getDatasetMeta(i);
+                                        if (!meta.hidden) {
+                                            meta.data.forEach((bar, index) => {
+                                                const data = dataset.data[index];
+                                                
+                                                ctx.fillStyle = '#15803d'; // 진한 초록색
+                                                ctx.font = 'bold 14px sans-serif';
+                                                ctx.textAlign = 'center';
+                                                ctx.textBaseline = 'bottom';
+                                                
+                                                const x = bar.x;
+                                                const y = bar.y - 5; // 막대 위 5px
+                                                
+                                                ctx.fillText(data, x, y);
+                                            });
+                                        }
+                                    });
+                                }
+                            }]
                         });
 
                     } catch (error) {
