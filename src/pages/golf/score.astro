@@ -44,7 +44,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
             <!-- 통계 테이블 섹션 -->
             <div class="overflow-x-auto bg-white rounded-xl shadow-lg p-6 mb-8 hidden" id="stats-container">
                 <h2 class="text-xl font-bold mb-4">📊 선수별 상세 통계</h2>
-                <p class="text-sm text-gray-500 mb-4">* 선수를 클릭하면 상세 라운드 기록을 볼 수 있습니다.</p>
+                <p class="text-sm text-gray-500 mb-4">* 선수를 클릭하면 상세 라운드 기록과 경기별 추이를 볼 수 있습니다.</p>
                 <table class="w-full text-sm text-left text-gray-500">
                     <thead class="text-xs text-white uppercase bg-green-600">
                         <tr>
@@ -60,6 +60,19 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                         <!-- 데이터가 여기에 추가됩니다 -->
                     </tbody>
                 </table>
+            </div>
+
+            <!-- 경기별 스코어 추이 라인 차트 -->
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-8 hidden" id="line-chart-container">
+                <h2 class="text-xl font-bold mb-4">📈 경기별 스코어 추이</h2>
+                <p class="text-sm text-gray-500 mb-4">* 위쪽이 더 좋은 성적입니다. 선수를 클릭하면 해당 선수가 강조됩니다.</p>
+                <div class="relative h-[450px] w-full">
+                    <canvas id="lineChart"></canvas>
+                </div>
+                <!-- 범례 -->
+                <div id="line-chart-legend" class="mt-4 flex flex-wrap gap-3 justify-center">
+                    <!-- 동적으로 범례가 추가됩니다 -->
+                </div>
             </div>
 
             <!-- 상세 기록 섹션 (히든) -->
@@ -151,7 +164,27 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                 const yearSelect = document.getElementById('year-select');
 
                 let allPlayers = [];
+                let allTournaments = []; // 모든 토너먼트 정보 저장
                 let chartInstance = null;
+                let lineChartInstance = null;
+                let selectedPlayerName = null;
+                let allGames = []; // 모든 게임 정보 저장
+
+                // 선수별 고유 색상 팔레트 (12명까지)
+                const playerColors = [
+                    { bg: 'rgba(239, 68, 68, 0.8)', border: 'rgb(239, 68, 68)' },      // red
+                    { bg: 'rgba(59, 130, 246, 0.8)', border: 'rgb(59, 130, 246)' },    // blue
+                    { bg: 'rgba(34, 197, 94, 0.8)', border: 'rgb(34, 197, 94)' },      // green
+                    { bg: 'rgba(249, 115, 22, 0.8)', border: 'rgb(249, 115, 22)' },    // orange
+                    { bg: 'rgba(168, 85, 247, 0.8)', border: 'rgb(168, 85, 247)' },    // purple
+                    { bg: 'rgba(236, 72, 153, 0.8)', border: 'rgb(236, 72, 153)' },    // pink
+                    { bg: 'rgba(20, 184, 166, 0.8)', border: 'rgb(20, 184, 166)' },    // teal
+                    { bg: 'rgba(234, 179, 8, 0.8)', border: 'rgb(234, 179, 8)' },      // yellow
+                    { bg: 'rgba(99, 102, 241, 0.8)', border: 'rgb(99, 102, 241)' },    // indigo
+                    { bg: 'rgba(107, 114, 128, 0.8)', border: 'rgb(107, 114, 128)' },  // gray
+                    { bg: 'rgba(6, 182, 212, 0.8)', border: 'rgb(6, 182, 212)' },      // cyan
+                    { bg: 'rgba(132, 204, 22, 0.8)', border: 'rgb(132, 204, 22)' },    // lime
+                ];
 
                 // 토글 함수 (전역으로 등록)
                 window.toggleTournament = function(toggleId) {
@@ -262,6 +295,331 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                     });
                 }
 
+                // 라인 차트 렌더링 함수
+                function renderLineChart(tournaments, players) {
+                    const lineChartContainer = document.getElementById('line-chart-container');
+                    const lineChartCtx = document.getElementById('lineChart');
+                    const legendContainer = document.getElementById('line-chart-legend');
+
+                    // 기존 차트 제거
+                    if (lineChartInstance) {
+                        lineChartInstance.destroy();
+                        lineChartInstance = null;
+                    }
+
+                    // 모든 게임 정보 수집 (날짜순 정렬)
+                    allGames = [];
+                    tournaments.forEach((tournament, tIndex) => {
+                        tournament.games.forEach(game => {
+                            allGames.push({
+                                tournamentIndex: tIndex,
+                                region: tournament.games[0]?.region || '',
+                                date: game.date,
+                                course: game.course,
+                                label: `${game.date}\n${game.course}`,
+                                colIndex: game.colIndex,
+                                tournament: tournament
+                            });
+                        });
+                    });
+
+                    // 날짜순 정렬
+                    allGames.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+                    // X축 레이블
+                    const labels = allGames.map((g, idx) => `G${idx + 1}`);
+
+                    // 각 선수별 데이터셋 생성
+                    const datasets = players.map((player, pIndex) => {
+                        const color = playerColors[pIndex % playerColors.length];
+                        const isSelected = player.name === selectedPlayerName;
+
+                        // 각 게임별 스코어 찾기
+                        const data = allGames.map(game => {
+                            const round = player.rounds.find(r =>
+                                r.date.trim() === game.date.trim() &&
+                                r.course.trim() === game.course.trim()
+                            );
+                            return round ? round.score : null;
+                        });
+
+                        return {
+                            label: player.name,
+                            data: data,
+                            borderColor: color.border,
+                            backgroundColor: color.bg,
+                            borderWidth: 2,
+                            pointRadius: 3,
+                            pointHoverRadius: 6,
+                            tension: 0.3,
+                            spanGaps: true,
+                            order: 0,
+                        };
+                    });
+
+                    // Y축 범위 계산 (최소/최대 스코어)
+                    const allScores = datasets.flatMap(d => d.data.filter(v => v !== null));
+                    const minScore = Math.min(...allScores) - 2;
+                    const maxScore = Math.max(...allScores) + 2;
+
+                    // 등수 계산 플러그인
+                    const rankPlugin = {
+                        id: 'rankPlugin',
+                        afterDatasetsDraw: function(chart) {
+                            if (!selectedPlayerName) return;
+
+                            const ctx = chart.ctx;
+                            const meta = chart.getDatasetMeta(
+                                datasets.findIndex(d => d.label === selectedPlayerName)
+                            );
+
+                            if (!meta || meta.hidden) return;
+
+                            meta.data.forEach((point, index) => {
+                                const gameData = allGames[index];
+                                if (!gameData) return;
+
+                                // 해당 게임의 모든 선수 스코어 수집
+                                const gameScores = [];
+                                players.forEach(p => {
+                                    const round = p.rounds.find(r =>
+                                        r.date.trim() === gameData.date.trim() &&
+                                        r.course.trim() === gameData.course.trim()
+                                    );
+                                    if (round) {
+                                        gameScores.push({ name: p.name, score: round.score });
+                                    }
+                                });
+
+                                // 순위 계산
+                                gameScores.sort((a, b) => a.score - b.score);
+                                const rank = gameScores.findIndex(s => s.name === selectedPlayerName) + 1;
+
+                                if (rank === 0) return; // 해당 게임에 참가하지 않음
+
+                                const x = point.x;
+                                const y = point.y;
+
+                                // 등수 배지 그리기
+                                const badgeY = y - 20;
+                                const badgeRadius = 12;
+
+                                // 배경 원
+                                ctx.save();
+                                ctx.beginPath();
+                                ctx.arc(x, badgeY, badgeRadius, 0, Math.PI * 2);
+
+                                // 등수별 색상
+                                if (rank === 1) {
+                                    ctx.fillStyle = '#fbbf24'; // gold
+                                } else if (rank === 2) {
+                                    ctx.fillStyle = '#9ca3af'; // silver
+                                } else if (rank === 3) {
+                                    ctx.fillStyle = '#f97316'; // bronze
+                                } else {
+                                    ctx.fillStyle = '#6b7280'; // gray
+                                }
+                                ctx.fill();
+
+                                // 테두리
+                                ctx.strokeStyle = '#ffffff';
+                                ctx.lineWidth = 2;
+                                ctx.stroke();
+
+                                // 텍스트
+                                ctx.fillStyle = '#ffffff';
+                                ctx.font = 'bold 11px sans-serif';
+                                ctx.textAlign = 'center';
+                                ctx.textBaseline = 'middle';
+                                ctx.fillText(rank, x, badgeY);
+                                ctx.restore();
+                            });
+                        }
+                    };
+
+                    // 라인 차트 생성
+                    lineChartInstance = new Chart(lineChartCtx, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: datasets
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            interaction: {
+                                mode: 'index',
+                                intersect: false,
+                            },
+                            plugins: {
+                                legend: { display: false },
+                                title: {
+                                    display: true,
+                                    text: '경기별 스코어 추이 (낮을수록 좋은 성적)',
+                                    font: { size: 14 }
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        title: function(context) {
+                                            const idx = context[0].dataIndex;
+                                            const game = allGames[idx];
+                                            return game ? `${game.date} - ${game.course}` : '';
+                                        },
+                                        label: function(context) {
+                                            const score = context.raw;
+                                            if (score === null) return null;
+                                            return `${context.dataset.label}: ${score}타`;
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    reverse: true, // 낮은 점수가 위로
+                                    min: minScore,
+                                    max: maxScore,
+                                    title: { display: true, text: '타수 (낮을수록 좋음)' },
+                                    ticks: {
+                                        stepSize: 2
+                                    }
+                                },
+                                x: {
+                                    title: { display: true, text: '경기' },
+                                    ticks: {
+                                        callback: function(value, index) {
+                                            const game = allGames[index];
+                                            return game ? `G${index + 1}` : '';
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        plugins: [rankPlugin]
+                    });
+
+                    // 범례 렌더링
+                    legendContainer.innerHTML = '';
+                    players.forEach((player, pIndex) => {
+                        const color = playerColors[pIndex % playerColors.length];
+                        const isSelected = player.name === selectedPlayerName;
+
+                        const legendItem = document.createElement('div');
+                        legendItem.dataset.player = player.name;
+                        legendItem.dataset.colorIndex = pIndex;
+                        legendItem.className = `flex items-center gap-2 px-3 py-1.5 rounded-full cursor-pointer transition-all ${
+                            isSelected
+                                ? 'bg-gray-800 text-white ring-2 ring-offset-2'
+                                : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                        }`;
+                        legendItem.style.cssText = isSelected ? `--tw-ring-color: ${color.border}` : '';
+
+                        legendItem.innerHTML = `
+                            <span class="w-3 h-3 rounded-full" style="background-color: ${color.border}"></span>
+                            <span class="text-sm font-medium">${player.name}</span>
+                        `;
+
+                        // 범례 클릭 시 선수 선택 (차트 재렌더링 없이 스타일만 업데이트)
+                        legendItem.addEventListener('click', () => {
+                            if (selectedPlayerName === player.name) {
+                                selectedPlayerName = null; // 선택 해제
+                                detailSection.classList.add('hidden');
+                                highlightPlayerInTable(null);
+                            } else {
+                                selectedPlayerName = player.name;
+                                // 통계 테이블 하이라이트
+                                highlightPlayerInTable(player.name);
+                                // 상세 정보도 표시
+                                renderDetails(player);
+                            }
+                            updateChartHighlight();
+                        });
+
+                        legendContainer.appendChild(legendItem);
+                    });
+
+                    lineChartContainer.classList.remove('hidden');
+                }
+
+                // 차트 하이라이트만 업데이트 (재렌더링 없이)
+                function updateChartHighlight() {
+                    if (!lineChartInstance) return;
+
+                    const hasSelection = selectedPlayerName !== null;
+
+                    // 데이터셋 스타일 업데이트
+                    lineChartInstance.data.datasets.forEach((dataset, index) => {
+                        const color = playerColors[index % playerColors.length];
+                        const isSelected = dataset.label === selectedPlayerName;
+
+                        if (hasSelection) {
+                            if (isSelected) {
+                                // 선택된 선수: 굵고 진하게
+                                dataset.borderColor = color.border;
+                                dataset.backgroundColor = color.bg;
+                                dataset.borderWidth = 4;
+                                dataset.pointRadius = 6;
+                                dataset.order = 0;
+                            } else {
+                                // 선택되지 않은 선수: 연하게
+                                dataset.borderColor = color.border.replace('rgb', 'rgba').replace(')', ', 0.4)');
+                                dataset.backgroundColor = color.bg.replace('0.8)', '0.2)');
+                                dataset.borderWidth = 1;
+                                dataset.pointRadius = 2;
+                                dataset.order = 1;
+                            }
+                        } else {
+                            // 선택 없음: 기본 스타일
+                            dataset.borderColor = color.border;
+                            dataset.backgroundColor = color.bg;
+                            dataset.borderWidth = 2;
+                            dataset.pointRadius = 3;
+                            dataset.order = 0;
+                        }
+                    });
+
+                    // 차트 업데이트 (애니메이션 없이)
+                    lineChartInstance.update('none');
+
+                    // 범례 스타일 업데이트
+                    updateLegendHighlight();
+                }
+
+                // 범례 하이라이트 업데이트
+                function updateLegendHighlight() {
+                    const legendContainer = document.getElementById('line-chart-legend');
+                    if (!legendContainer) return;
+
+                    const legendItems = legendContainer.querySelectorAll('div[data-player]');
+                    legendItems.forEach(item => {
+                        const playerName = item.dataset.player;
+                        const isSelected = playerName === selectedPlayerName;
+                        const colorIndex = parseInt(item.dataset.colorIndex);
+                        const color = playerColors[colorIndex % playerColors.length];
+
+                        if (isSelected) {
+                            item.className = 'flex items-center gap-2 px-3 py-1.5 rounded-full cursor-pointer transition-all bg-gray-800 text-white ring-2 ring-offset-2';
+                            item.style.cssText = `--tw-ring-color: ${color.border}`;
+                        } else {
+                            item.className = 'flex items-center gap-2 px-3 py-1.5 rounded-full cursor-pointer transition-all bg-gray-100 hover:bg-gray-200 text-gray-700';
+                            item.style.cssText = '';
+                        }
+                    });
+                }
+
+                // 테이블에서 선수 하이라이트
+                function highlightPlayerInTable(playerName) {
+                    document.querySelectorAll('#stats-table-body tr').forEach(row => {
+                        const nameCell = row.querySelector('td:nth-child(2)');
+                        if (playerName && nameCell && nameCell.textContent === playerName) {
+                            row.classList.add('selected-row', 'bg-green-100', 'border-green-600');
+                            row.classList.remove('bg-white', 'border-transparent');
+                        } else {
+                            row.classList.remove('selected-row', 'bg-green-100', 'border-green-600');
+                            row.classList.add('bg-white', 'border-transparent');
+                        }
+                    });
+                }
+
                 // 데이터 로드 함수
                 async function loadData(sheetName = '') {
                     try {
@@ -271,12 +629,20 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                         statsContainer.classList.add('hidden');
                         detailSection.classList.add('hidden');
                         document.getElementById('tournaments-container').classList.add('hidden');
+                        document.getElementById('line-chart-container').classList.add('hidden');
                         hideTooltip();
-                        
+
+                        // 선택된 선수 초기화
+                        selectedPlayerName = null;
+
                         // 차트 캔버스 초기화 (잔상 제거)
                         if (chartInstance) {
                             chartInstance.destroy();
                             chartInstance = null;
+                        }
+                        if (lineChartInstance) {
+                            lineChartInstance.destroy();
+                            lineChartInstance = null;
                         }
 
                         const url = sheetName ? `/api/golf-data?sheetName=${encodeURIComponent(sheetName)}` : '/api/golf-data';
@@ -312,7 +678,10 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
 
                         // 게임 표 렌더링
                         if (result.tournaments && result.tournaments.length > 0) {
+                            allTournaments = result.tournaments; // 저장
                             renderTournaments(result.tournaments);
+                            // 라인 차트 렌더링
+                            renderLineChart(result.tournaments, allPlayers);
                         }
 
                         // 테이블 렌더링
@@ -337,6 +706,10 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                                 });
                                 row.classList.add('selected-row', 'bg-green-100', 'border-green-600');
                                 row.classList.remove('bg-white', 'border-transparent');
+
+                                // 선택된 선수 설정 및 라인 차트 하이라이트 업데이트
+                                selectedPlayerName = player.name;
+                                updateChartHighlight();
 
                                 // 상세 정보 렌더링
                                 renderDetails(player);
@@ -455,11 +828,25 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                 // 상세 닫기 버튼
                 closeDetailBtn.addEventListener('click', () => {
                     detailSection.classList.add('hidden');
-                    document.querySelectorAll('#stats-table-body tr').forEach(r => r.classList.remove('selected-row', 'bg-green-100', 'border-green-600'));
+                    document.querySelectorAll('#stats-table-body tr').forEach(r => {
+                        r.classList.remove('selected-row', 'bg-green-100', 'border-green-600');
+                        r.classList.add('bg-white', 'border-transparent');
+                    });
+                    // 라인 차트 선택 해제
+                    selectedPlayerName = null;
+                    updateChartHighlight();
                     hideTooltip();
                 });
 
                 function renderDetails(player) {
+                    // 대회 횟수 계산 (고유한 tournamentId 개수)
+                    const uniqueTournaments = new Set();
+                    player.rounds.forEach(r => {
+                        const key = r.tournamentId !== undefined ? r.tournamentId : r.region;
+                        uniqueTournaments.add(key);
+                    });
+                    const tournamentCount = uniqueTournaments.size;
+
                     // 순위 집계 (대회 단위 중복 제거)
                     // tournamentId + rank 조합으로 고유한 대회 기록만 추출
                     const uniqueRanks = new Set();
@@ -474,27 +861,49 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                         const parts = item.split('|');
                         const rankStr = parts[1]; // "1", "2", "-" 등
                         const rankNum = parseInt(rankStr);
-                        
+
                         if (!isNaN(rankNum)) {
                             rankCounts[rankNum] = (rankCounts[rankNum] || 0) + 1;
                         }
                     });
 
-                    // 통계 텍스트 생성 (모든 순위 표시)
+                    // 통계 배지 생성 (시각적 표현)
                     const ranks = Object.keys(rankCounts).map(Number).sort((a, b) => a - b);
-                    const statsParts = [];
-                    
+                    let badgesHtml = '';
+
                     ranks.forEach(rank => {
-                        const label = rank === 1 ? '우승' : (rank === 2 ? '준우승' : `${rank}위`);
-                        statsParts.push(`${label}: ${rankCounts[rank]}회`);
+                        const count = rankCounts[rank];
+                        let bgColor, textColor, icon;
+
+                        if (rank === 1) {
+                            bgColor = 'bg-yellow-400';
+                            textColor = 'text-yellow-900';
+                            icon = '🥇';
+                        } else if (rank === 2) {
+                            bgColor = 'bg-gray-300';
+                            textColor = 'text-gray-800';
+                            icon = '🥈';
+                        } else if (rank === 3) {
+                            bgColor = 'bg-orange-400';
+                            textColor = 'text-orange-900';
+                            icon = '🥉';
+                        } else {
+                            bgColor = 'bg-blue-100';
+                            textColor = 'text-blue-800';
+                            icon = `${rank}위`;
+                        }
+
+                        badgesHtml += `<span class="inline-flex items-center gap-1 ${bgColor} ${textColor} px-2.5 py-1 rounded-full text-sm font-bold ml-1">${icon} ${count}</span>`;
                     });
 
-                    let statsStr = '';
-                    if (statsParts.length > 0) {
-                        statsStr = ' - ' + statsParts.join(', ');
-                    }
-
-                    detailTitle.textContent = `${player.name} 라운드 기록 (${player.roundCount}전)${statsStr}`;
+                    detailTitle.innerHTML = `
+                        <span class="inline-flex items-center gap-2 flex-wrap">
+                            <span class="bg-green-600 text-white px-3 py-1 rounded-lg text-lg font-bold">${player.name}</span>
+                            <span class="bg-blue-600 text-white px-2.5 py-1 rounded-full text-sm font-bold">🏆 ${tournamentCount}대회</span>
+                            <span class="bg-gray-700 text-white px-2.5 py-1 rounded-full text-sm font-bold">⛳ ${player.roundCount}경기</span>
+                            ${badgesHtml}
+                        </span>
+                    `;
                     detailTableBody.innerHTML = '';
 
                     if (player.rounds.length === 0) {
@@ -531,7 +940,6 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                     }
 
                     detailSection.classList.remove('hidden');
-                    detailSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
 
                 function calculateDailyRank(region, date, course, myScore) {
