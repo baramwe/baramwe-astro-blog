@@ -16,13 +16,15 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
 		<main class="w-full max-w-4xl mx-auto px-4 py-8">
             <h1 class="text-3xl font-bold text-center mb-8 flex justify-center items-center gap-2">
                 ⛳️ 스코어 분석
-                <span class="relative inline-block ml-2">
-                    <select id="year-select" class="appearance-none bg-transparent border-b-2 border-gray-800 text-3xl font-bold text-blue-600 focus:outline-none cursor-pointer py-0 pr-8">
+                <span class="relative inline-block ml-2 group">
+                    <select id="year-select" class="appearance-none bg-white/80 backdrop-blur-sm border border-gray-200 rounded-lg text-2xl font-bold text-blue-600 px-4 py-1.5 pr-10 cursor-pointer shadow-lg shadow-blue-500/10 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/20 hover:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400">
                         <!-- 옵션은 동적으로 채워집니다 -->
                         <option>Loading...</option>
                     </select>
-                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                        <svg class="fill-current h-6 w-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-blue-500 transition-transform duration-300 group-hover:translate-y-0.5">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
+                        </svg>
                     </div>
                 </span>
             </h1>
@@ -113,6 +115,15 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
 		<Footer />
 
         <style>
+            #year-select {
+                background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.7) 100%);
+            }
+
+            #year-select option {
+                background: white;
+                padding: 12px;
+            }
+
             .fade-in {
                 animation: fadeIn 0.3s ease-in;
             }
