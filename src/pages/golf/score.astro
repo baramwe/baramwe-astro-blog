@@ -78,7 +78,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
             </div>
 
             <!-- 상세 기록 섹션 (히든) -->
-            <div id="detail-section" class="hidden bg-white rounded-xl shadow-lg p-6 fade-in">
+            <div id="detail-section" class="hidden bg-white rounded-xl shadow-lg p-4 sm:p-6 fade-in">
                 <div class="flex justify-between items-start mb-4">
                     <h2 class="text-xl font-bold flex-1 mr-4 break-keep" id="detail-title">선수 상세 기록</h2>
                     <button id="close-detail" class="text-gray-500 hover:text-gray-700 flex-shrink-0 mt-1">
@@ -87,21 +87,9 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                         </svg>
                     </button>
                 </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-sm text-left text-gray-500">
-                        <thead class="text-xs text-gray-700 uppercase bg-gray-100">
-                            <tr>
-                                <th scope="col" class="px-6 py-3">지역</th>
-                                <th scope="col" class="px-6 py-3">날짜</th>
-                                <th scope="col" class="px-6 py-3">골프장</th>
-                                <th scope="col" class="px-6 py-3 text-center">스코어</th>
-                                <th scope="col" class="px-6 py-3 text-center">순위</th>
-                            </tr>
-                        </thead>
-                        <tbody id="detail-table-body">
-                            <!-- 상세 데이터 -->
-                        </tbody>
-                    </table>
+                <!-- 카드 그리드 컨테이너 -->
+                <div id="detail-cards-container" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <!-- 카드가 동적으로 추가됩니다 -->
                 </div>
             </div>
             <!-- 툴팁 팝업 (동반 플레이어 정보) -->
@@ -157,6 +145,26 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
             .rank-1 { color: #eab308; } /* 1등 금색 */
             .rank-2 { color: #94a3b8; } /* 2등 은색 */
             .rank-3 { color: #b45309; } /* 3등 동색 */
+
+            /* 라운드 카드 스타일 */
+            .round-card {
+                position: relative;
+                overflow: hidden;
+            }
+            .round-card::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 3px;
+                background: linear-gradient(90deg, #3b82f6, #10b981);
+                opacity: 0;
+                transition: opacity 0.3s ease;
+            }
+            .round-card:hover::before {
+                opacity: 1;
+            }
         </style>
 
         <script>
@@ -167,7 +175,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                 const tableBody = document.getElementById('stats-table-body');
                 const detailSection = document.getElementById('detail-section');
                 const detailTitle = document.getElementById('detail-title');
-                const detailTableBody = document.getElementById('detail-table-body');
+                const detailCardsContainer = document.getElementById('detail-cards-container');
                 const closeDetailBtn = document.getElementById('close-detail');
                 const tooltip = document.getElementById('hover-tooltip');
                 const tooltipContent = document.getElementById('tooltip-content');
@@ -799,24 +807,24 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                 });
 
                 // 이벤트 위임: 툴팁 표시 (클릭 시)
-                detailTableBody.addEventListener('click', (e) => {
+                detailCardsContainer.addEventListener('click', (e) => {
                     const rankTarget = e.target.closest('.rank-cell');
                     const regionTarget = e.target.closest('.region-cell');
-                    
+
                     if (!rankTarget && !regionTarget) return;
 
                     // 버블링 방지
                     e.stopPropagation();
 
-                    const tr = (rankTarget || regionTarget).closest('tr');
-                    if (!tr || !tr.dataset.date || !tr.dataset.course) return;
+                    const card = (rankTarget || regionTarget).closest('.round-card');
+                    if (!card || !card.dataset.date || !card.dataset.course) return;
 
-                    const region = tr.dataset.region || '';
-                    const date = tr.dataset.date;
-                    const course = tr.dataset.course;
+                    const region = card.dataset.region || '';
+                    const date = card.dataset.date;
+                    const course = card.dataset.course;
 
                     const participants = getRoundParticipants(region, date, course);
-                    
+
                     let title = '🏌️‍♂️ 해당 라운드 순위';
                     let useTourRank = false;
 
@@ -915,10 +923,10 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                             ${badgesHtml}
                         </span>
                     `;
-                    detailTableBody.innerHTML = '';
+                    detailCardsContainer.innerHTML = '';
 
                     if (player.rounds.length === 0) {
-                        detailTableBody.innerHTML = '<tr><td colspan="5" class="p-4 text-center">기록 없음</td></tr>';
+                        detailCardsContainer.innerHTML = '<div class="col-span-full text-center text-gray-500 py-8">기록 없음</div>';
                     } else {
                         // 날짜 내림차순 정렬 (최신순)
                         const sortedRounds = [...player.rounds].sort((a, b) => {
@@ -928,25 +936,59 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                         });
 
                         sortedRounds.forEach(round => {
-                            const tr = document.createElement('tr');
-                            tr.className = 'bg-white border-b hover:bg-gray-50';
-                            tr.dataset.region = round.region || '';
-                            tr.dataset.date = round.date;
-                            tr.dataset.course = round.course;
-                            
-                            const scoreClass = round.score <= 72 ? 'text-red-600 font-bold' : '';
-                            const dailyRank = calculateDailyRank(round.region || '', round.date, round.course, round.score);
+                            const card = document.createElement('div');
+                            card.className = 'round-card bg-gradient-to-br from-white to-gray-50 border border-gray-200 rounded-xl p-4 hover:shadow-lg hover:border-blue-200 transition-all duration-300';
+                            card.dataset.region = round.region || '';
+                            card.dataset.date = round.date;
+                            card.dataset.course = round.course;
 
-                            tr.innerHTML = `
-                                <td class="px-6 py-4 font-bold text-blue-600 cursor-pointer hover:text-blue-800 transition-colors region-cell">${round.region || '-'}</td>
-                                <td class="px-6 py-4">${round.date}</td>
-                                <td class="px-6 py-4">${round.course}</td>
-                                <td class="px-6 py-4 text-center ${scoreClass}">${round.score}</td>
-                                <td class="px-6 py-4 text-center font-bold text-blue-600 cursor-pointer hover:text-blue-800 transition-colors rank-cell relative">
-                                    ${dailyRank}위
-                                </td>
+                            const dailyRank = calculateDailyRank(round.region || '', round.date, round.course, round.score);
+                            const isGoodScore = round.score <= 72;
+
+                            // 순위별 배지 스타일
+                            let rankBadgeClass = 'bg-gray-100 text-gray-700';
+                            if (dailyRank === 1) {
+                                rankBadgeClass = 'bg-yellow-400 text-yellow-900';
+                            } else if (dailyRank === 2) {
+                                rankBadgeClass = 'bg-gray-300 text-gray-800';
+                            } else if (dailyRank === 3) {
+                                rankBadgeClass = 'bg-orange-400 text-orange-900';
+                            }
+
+                            card.innerHTML = `
+                                <div class="flex justify-between items-start mb-3">
+                                    <span class="region-cell inline-flex items-center gap-1.5 text-blue-600 font-bold cursor-pointer hover:text-blue-800 transition-colors">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                        </svg>
+                                        ${round.region || '-'}
+                                    </span>
+                                    <span class="rank-cell ${rankBadgeClass} px-2.5 py-1 rounded-full text-sm font-bold cursor-pointer hover:scale-105 transition-transform">
+                                        ${dailyRank}위
+                                    </span>
+                                </div>
+                                <div class="space-y-2 text-sm text-gray-600 mb-3">
+                                    <div class="flex items-center gap-2">
+                                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                        </svg>
+                                        <span>${round.date}</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                        <span class="truncate">${round.course}</span>
+                                    </div>
+                                </div>
+                                <div class="flex justify-center pt-2 border-t border-gray-100">
+                                    <span class="text-2xl font-bold ${isGoodScore ? 'text-red-500' : 'text-gray-800'}">
+                                        ${round.score}<span class="text-base font-normal text-gray-500 ml-1">타</span>
+                                    </span>
+                                </div>
                             `;
-                            detailTableBody.appendChild(tr);
+                            detailCardsContainer.appendChild(card);
                         });
                     }
 
