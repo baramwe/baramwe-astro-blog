@@ -43,25 +43,34 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                 <!-- 동적으로 게임 표가 추가됩니다 -->
             </div>
 
-            <!-- 통계 테이블 섹션 -->
-            <div class="overflow-x-auto bg-white rounded-xl shadow-lg p-6 mb-8 hidden" id="stats-container">
+            <!-- 통계 섹션 -->
+            <div class="bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-8 hidden" id="stats-container">
                 <h2 class="text-xl font-bold mb-4">📊 선수별 상세 통계</h2>
                 <p class="text-sm text-gray-500 mb-4">* 선수를 클릭하면 상세 라운드 기록과 경기별 추이를 볼 수 있습니다.</p>
-                <table class="w-full text-sm text-left text-gray-500">
-                    <thead class="text-xs text-white uppercase bg-green-600">
-                        <tr>
-                            <th scope="col" class="px-6 py-3">순위</th>
-                            <th scope="col" class="px-6 py-3">이름</th>
-                            <th scope="col" class="px-6 py-3 text-center">핸디캡</th>
-                            <th scope="col" class="px-6 py-3 text-center">평균 타수</th>
-                            <th scope="col" class="px-6 py-3 text-center">베스트</th>
-                            <th scope="col" class="px-6 py-3 text-center">라운드 수</th>
-                        </tr>
-                    </thead>
-                    <tbody id="stats-table-body">
-                        <!-- 데이터가 여기에 추가됩니다 -->
-                    </tbody>
-                </table>
+
+                <!-- 모바일 카드 뷰 (md 미만에서 표시) -->
+                <div id="stats-cards-container" class="grid grid-cols-1 sm:grid-cols-2 gap-3 md:hidden">
+                    <!-- 카드가 동적으로 추가됩니다 -->
+                </div>
+
+                <!-- 데스크톱 테이블 뷰 (md 이상에서 표시) -->
+                <div class="hidden md:block overflow-x-auto">
+                    <table class="w-full text-sm text-left text-gray-500">
+                        <thead class="text-xs text-white uppercase bg-green-600">
+                            <tr>
+                                <th scope="col" class="px-6 py-3">순위</th>
+                                <th scope="col" class="px-6 py-3">이름</th>
+                                <th scope="col" class="px-6 py-3 text-center">핸디캡</th>
+                                <th scope="col" class="px-6 py-3 text-center">평균 타수</th>
+                                <th scope="col" class="px-6 py-3 text-center">베스트</th>
+                                <th scope="col" class="px-6 py-3 text-center">라운드 수</th>
+                            </tr>
+                        </thead>
+                        <tbody id="stats-table-body">
+                            <!-- 데이터가 여기에 추가됩니다 -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             <!-- 경기별 스코어 추이 라인 차트 -->
@@ -165,6 +174,26 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
             .round-card:hover::before {
                 opacity: 1;
             }
+
+            /* 선수 통계 카드 스타일 */
+            .stats-player-card {
+                position: relative;
+                overflow: hidden;
+            }
+            .stats-player-card::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 3px;
+                background: linear-gradient(90deg, #22c55e, #16a34a);
+                opacity: 0;
+                transition: opacity 0.3s ease;
+            }
+            .stats-player-card:hover::before {
+                opacity: 1;
+            }
         </style>
 
         <script>
@@ -173,6 +202,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                 const loadingText = document.getElementById('loading-text');
                 const statsContainer = document.getElementById('stats-container');
                 const tableBody = document.getElementById('stats-table-body');
+                const statsCardsContainer = document.getElementById('stats-cards-container');
                 const detailSection = document.getElementById('detail-section');
                 const detailTitle = document.getElementById('detail-title');
                 const detailCardsContainer = document.getElementById('detail-cards-container');
@@ -627,14 +657,22 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
 
                 // 테이블에서 선수 하이라이트
                 function highlightPlayerInTable(playerName) {
+                    // 테이블 행 하이라이트
                     document.querySelectorAll('#stats-table-body tr').forEach(row => {
-                        const nameCell = row.querySelector('td:nth-child(2)');
-                        if (playerName && nameCell && nameCell.textContent === playerName) {
+                        if (playerName && row.dataset.player === playerName) {
                             row.classList.add('selected-row', 'bg-green-100', 'border-green-600');
                             row.classList.remove('bg-white', 'border-transparent');
                         } else {
                             row.classList.remove('selected-row', 'bg-green-100', 'border-green-600');
                             row.classList.add('bg-white', 'border-transparent');
+                        }
+                    });
+                    // 카드 하이라이트
+                    document.querySelectorAll('.stats-player-card').forEach(card => {
+                        if (playerName && card.dataset.player === playerName) {
+                            card.classList.add('ring-2', 'ring-green-500', 'bg-green-50');
+                        } else {
+                            card.classList.remove('ring-2', 'ring-green-500', 'bg-green-50');
                         }
                     });
                 }
@@ -694,6 +732,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                         loadingText.style.display = 'none';
                         statsContainer.classList.remove('hidden');
                         tableBody.innerHTML = ''; // 기존 테이블 초기화
+                        statsCardsContainer.innerHTML = ''; // 기존 카드 초기화
 
                         // 게임 표 렌더링
                         if (result.tournaments && result.tournaments.length > 0) {
@@ -703,11 +742,61 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                             renderLineChart(result.tournaments, allPlayers);
                         }
 
-                        // 테이블 렌더링
+                        // 선수 클릭 핸들러
+                        function handlePlayerClick(player, element, isCard = false) {
+                            // 테이블 선택 스타일 토글
+                            document.querySelectorAll('#stats-table-body tr').forEach(r => {
+                                r.classList.remove('selected-row', 'bg-green-100', 'border-green-600');
+                                r.classList.add('bg-white', 'border-transparent');
+                            });
+                            // 카드 선택 스타일 토글
+                            document.querySelectorAll('.stats-player-card').forEach(c => {
+                                c.classList.remove('ring-2', 'ring-green-500', 'bg-green-50');
+                            });
+
+                            if (isCard) {
+                                element.classList.add('ring-2', 'ring-green-500', 'bg-green-50');
+                                // 대응하는 테이블 행도 선택
+                                const correspondingRow = document.querySelector(`#stats-table-body tr[data-player="${player.name}"]`);
+                                if (correspondingRow) {
+                                    correspondingRow.classList.add('selected-row', 'bg-green-100', 'border-green-600');
+                                    correspondingRow.classList.remove('bg-white', 'border-transparent');
+                                }
+                            } else {
+                                element.classList.add('selected-row', 'bg-green-100', 'border-green-600');
+                                element.classList.remove('bg-white', 'border-transparent');
+                                // 대응하는 카드도 선택
+                                const correspondingCard = document.querySelector(`.stats-player-card[data-player="${player.name}"]`);
+                                if (correspondingCard) {
+                                    correspondingCard.classList.add('ring-2', 'ring-green-500', 'bg-green-50');
+                                }
+                            }
+
+                            // 선택된 선수 설정 및 라인 차트 하이라이트 업데이트
+                            selectedPlayerName = player.name;
+                            updateChartHighlight();
+
+                            // 상세 정보 렌더링
+                            renderDetails(player);
+                        }
+
+                        // 테이블 & 카드 렌더링
                         allPlayers.forEach((player, index) => {
+                            // 순위별 배지 스타일
+                            let rankBadgeClass = 'bg-gray-200 text-gray-700';
+                            if (index === 0) {
+                                rankBadgeClass = 'bg-yellow-400 text-yellow-900';
+                            } else if (index === 1) {
+                                rankBadgeClass = 'bg-gray-300 text-gray-800';
+                            } else if (index === 2) {
+                                rankBadgeClass = 'bg-orange-400 text-orange-900';
+                            }
+
+                            // 테이블 행 생성
                             const row = document.createElement('tr');
                             row.className = 'bg-white border-b transition-colors duration-200 cursor-pointer border-l-4 border-transparent';
-                            
+                            row.dataset.player = player.name;
+
                             row.innerHTML = `
                                 <td class="px-6 py-4 font-medium">${index + 1}</td>
                                 <td class="px-6 py-4 font-bold text-gray-900">${player.name}</td>
@@ -717,24 +806,44 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                                 <td class="px-6 py-4 text-center">${player.roundCount}</td>
                             `;
 
-                            row.addEventListener('click', () => {
-                                // 선택 스타일 토글
-                                document.querySelectorAll('#stats-table-body tr').forEach(r => {
-                                    r.classList.remove('selected-row', 'bg-green-100', 'border-green-600');
-                                    r.classList.add('bg-white', 'border-transparent');
-                                });
-                                row.classList.add('selected-row', 'bg-green-100', 'border-green-600');
-                                row.classList.remove('bg-white', 'border-transparent');
-
-                                // 선택된 선수 설정 및 라인 차트 하이라이트 업데이트
-                                selectedPlayerName = player.name;
-                                updateChartHighlight();
-
-                                // 상세 정보 렌더링
-                                renderDetails(player);
-                            });
-
+                            row.addEventListener('click', () => handlePlayerClick(player, row, false));
                             tableBody.appendChild(row);
+
+                            // 카드 생성
+                            const card = document.createElement('div');
+                            card.className = 'stats-player-card bg-gradient-to-br from-white to-gray-50 border border-gray-200 rounded-xl p-4 cursor-pointer hover:shadow-lg hover:border-green-300 transition-all duration-300';
+                            card.dataset.player = player.name;
+
+                            card.innerHTML = `
+                                <div class="flex items-center justify-between mb-3">
+                                    <div class="flex items-center gap-2">
+                                        <span class="${rankBadgeClass} w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold">
+                                            ${index + 1}
+                                        </span>
+                                        <span class="font-bold text-gray-900 text-lg">${player.name}</span>
+                                    </div>
+                                    <span class="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-sm font-bold">
+                                        ${player.handicap > 0 ? '+' : ''}${player.handicap}
+                                    </span>
+                                </div>
+                                <div class="grid grid-cols-3 gap-2 text-center">
+                                    <div class="bg-gray-50 rounded-lg p-2">
+                                        <div class="text-xs text-gray-500 mb-1">평균</div>
+                                        <div class="text-lg font-bold text-gray-800">${player.averageScore}</div>
+                                    </div>
+                                    <div class="bg-green-50 rounded-lg p-2">
+                                        <div class="text-xs text-gray-500 mb-1">베스트</div>
+                                        <div class="text-lg font-bold text-green-600">${player.bestScore}</div>
+                                    </div>
+                                    <div class="bg-gray-50 rounded-lg p-2">
+                                        <div class="text-xs text-gray-500 mb-1">라운드</div>
+                                        <div class="text-lg font-bold text-gray-800">${player.roundCount}</div>
+                                    </div>
+                                </div>
+                            `;
+
+                            card.addEventListener('click', () => handlePlayerClick(player, card, true));
+                            statsCardsContainer.appendChild(card);
                         });
 
                         // 차트 렌더링
