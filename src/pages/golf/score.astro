@@ -578,7 +578,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                                 // 통계 테이블 하이라이트
                                 highlightPlayerInTable(player.name);
                                 // 상세 정보도 표시
-                                renderDetails(player);
+                                renderDetails(player, false);
                             }
                             updateChartHighlight();
                         });
@@ -966,7 +966,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                     hideTooltip();
                 });
 
-                function renderDetails(player) {
+                function renderDetails(player, scroll = true) {
                     // 대회 횟수 계산 (고유한 tournamentId 개수)
                     const uniqueTournaments = new Set();
                     player.rounds.forEach(r => {
@@ -1102,6 +1102,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                     }
 
                     detailSection.classList.remove('hidden');
+                    if (scroll) detailSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
 
                 function calculateDailyRank(region, date, course, myScore) {
