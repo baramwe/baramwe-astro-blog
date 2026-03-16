@@ -76,7 +76,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
             <!-- 경기별 스코어 추이 라인 차트 -->
             <div class="bg-white rounded-xl shadow-lg p-6 mb-8 hidden" id="line-chart-container">
                 <h2 class="text-xl font-bold mb-4">📈 경기별 스코어 추이</h2>
-                <p class="text-sm text-gray-500 mb-4">* 위쪽이 더 좋은 성적입니다. 선수를 클릭하면 해당 선수가 강조됩니다.</p>
+                <p class="text-sm text-gray-500 mb-4">* 위쪽이 더 좋은 성적입니다. 아래 선수 이름을 클릭하면 해당 선수 라인이 강조됩니다.</p>
                 <div class="relative h-[450px] w-full">
                     <canvas id="lineChart"></canvas>
                 </div>
@@ -395,11 +395,11 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                         return {
                             label: player.name,
                             data: data,
-                            borderColor: color.border,
+                            borderColor: color.border.replace('rgb', 'rgba').replace(')', ', 0.5)'),
                             backgroundColor: color.bg,
-                            borderWidth: 2,
-                            pointRadius: 3,
-                            pointHoverRadius: 6,
+                            borderWidth: 1.5,
+                            pointRadius: 1,
+                            pointHoverRadius: 5,
                             tension: 0.3,
                             spanGaps: true,
                             order: 0,
@@ -602,26 +602,29 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
 
                         if (hasSelection) {
                             if (isSelected) {
-                                // 선택된 선수: 굵고 진하게
+                                // 선택된 선수: 굵고 선명하게, 앞으로
                                 dataset.borderColor = color.border;
                                 dataset.backgroundColor = color.bg;
                                 dataset.borderWidth = 4;
-                                dataset.pointRadius = 6;
+                                dataset.pointRadius = 5;
+                                dataset.pointHoverRadius = 8;
                                 dataset.order = 0;
                             } else {
-                                // 선택되지 않은 선수: 연하게
-                                dataset.borderColor = color.border.replace('rgb', 'rgba').replace(')', ', 0.4)');
-                                dataset.backgroundColor = color.bg.replace('0.8)', '0.2)');
+                                // 선택되지 않은 선수: 거의 보이지 않게
+                                dataset.borderColor = color.border.replace('rgb', 'rgba').replace(')', ', 0.08)');
+                                dataset.backgroundColor = color.bg.replace('0.8)', '0.05)');
                                 dataset.borderWidth = 1;
-                                dataset.pointRadius = 2;
+                                dataset.pointRadius = 0;
+                                dataset.pointHoverRadius = 0;
                                 dataset.order = 1;
                             }
                         } else {
-                            // 선택 없음: 기본 스타일
-                            dataset.borderColor = color.border;
+                            // 선택 없음: 얇고 반투명한 기본 스타일
+                            dataset.borderColor = color.border.replace('rgb', 'rgba').replace(')', ', 0.5)');
                             dataset.backgroundColor = color.bg;
-                            dataset.borderWidth = 2;
-                            dataset.pointRadius = 3;
+                            dataset.borderWidth = 1.5;
+                            dataset.pointRadius = 1;
+                            dataset.pointHoverRadius = 5;
                             dataset.order = 0;
                         }
                     });
