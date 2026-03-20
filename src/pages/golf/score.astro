@@ -440,11 +440,11 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                                     }
                                 });
 
-                                // 순위 계산
-                                gameScores.sort((a, b) => a.score - b.score);
-                                const rank = gameScores.findIndex(s => s.name === selectedPlayerName) + 1;
+                                // 순위 계산 - 공동 순위 처리
+                                const selectedPlayer = gameScores.find(s => s.name === selectedPlayerName);
+                                if (!selectedPlayer) return; // 해당 게임에 참가하지 않음
 
-                                if (rank === 0) return; // 해당 게임에 참가하지 않음
+                                const rank = gameScores.filter(s => s.score < selectedPlayer.score).length + 1;
 
                                 const x = point.x;
                                 const y = point.y;
@@ -508,6 +508,10 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                                     font: { size: 14 }
                                 },
                                 tooltip: {
+                                    itemSort: function(a, b) {
+                                        // 스코어 오름차순 정렬 (낮은 점수 = 높은 순위가 위로)
+                                        return a.raw - b.raw;
+                                    },
                                     callbacks: {
                                         title: function(context) {
                                             const idx = context[0].dataIndex;
@@ -517,7 +521,21 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                                         label: function(context) {
                                             const score = context.raw;
                                             if (score === null) return null;
-                                            return `${context.dataset.label}: ${score}타`;
+
+                                            // 해당 게임의 모든 스코어 수집
+                                            const idx = context.dataIndex;
+                                            const gameScores = [];
+                                            context.chart.data.datasets.forEach(ds => {
+                                                const dsScore = ds.data[idx];
+                                                if (dsScore !== null) {
+                                                    gameScores.push(dsScore);
+                                                }
+                                            });
+
+                                            // 공동 순위 계산: 나보다 낮은 스코어 개수 + 1
+                                            const rank = gameScores.filter(s => s < score).length + 1;
+
+                                            return `${rank}위 ${context.dataset.label}: ${score}타`;
                                         }
                                     }
                                 }
@@ -1125,9 +1143,9 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                 function getRoundParticipants(region, date, course) {
                     const participants = [];
                     allPlayers.forEach(p => {
-                        const round = p.rounds.find(r => 
+                        const round = p.rounds.find(r =>
                             (r.region || '').trim() === region.trim() &&
-                            r.date.trim() === date.trim() && 
+                            r.date.trim() === date.trim() &&
                             r.course.trim() === course.trim()
                         );
                         if (round) {
@@ -1140,9 +1158,12 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                     });
                     // 기본은 스코어 순 정렬
                     participants.sort((a, b) => a.score - b.score);
-                    return participants.map((p, i) => ({
+
+                    // 공동 순위 계산: 나보다 낮은 스코어 개수 + 1
+                    const scores = participants.map(p => p.score);
+                    return participants.map(p => ({
                         ...p,
-                        rank: i + 1 // 경기 순위 (스코어 기준 계산)
+                        rank: scores.filter(s => s < p.score).length + 1
                     }));
                 }
 
