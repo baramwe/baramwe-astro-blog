@@ -51,6 +51,8 @@
     "preview": "astro build && wrangler dev",
     "db:migrate": "wrangler d1 execute bl-house --local --file=./migrations/0001_initial_schema.sql",
     "db:migrate:remote": "wrangler d1 execute bl-house --file=./migrations/0001_initial_schema.sql",
+    "db:migrate:auth": "wrangler d1 execute bl-house --local --file=./migrations/0002_auth_schema.sql",
+    "db:migrate:auth:remote": "wrangler d1 execute bl-house --file=./migrations/0002_auth_schema.sql",
     "db:studio": "wrangler d1 execute bl-house --local --command='SELECT name FROM sqlite_master WHERE type=\"table\";'",
     "db:generate": "prisma generate",
     "db:reset": "wrangler d1 execute bl-house --local --command='DROP TABLE IF EXISTS reservations; DROP TABLE IF EXISTS room_prices; DROP TABLE IF EXISTS rooms; DROP TABLE IF EXISTS room_types; DROP TABLE IF EXISTS hotels;'",

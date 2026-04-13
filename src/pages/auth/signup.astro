@@ -1,0 +1,64 @@
+---
+export const prerender = false
+---
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>회원가입</title>
+</head>
+<body style="font-family:system-ui;max-width:420px;margin:60px auto;padding:0 16px">
+  <h1 style="font-size:22px;margin-bottom:24px">회원가입</h1>
+
+  <form id="signup-form" style="display:flex;flex-direction:column;gap:8px">
+    <input id="email" type="email" required placeholder="이메일" style="padding:10px;border:1px solid #ccc;border-radius:6px" />
+    <input id="password" type="password" required minlength="8" placeholder="비밀번호 (8자 이상)" style="padding:10px;border:1px solid #ccc;border-radius:6px" />
+    <button type="submit" style="padding:10px;background:#1f6feb;color:#fff;border:0;border-radius:6px">인증 코드 받기</button>
+  </form>
+
+  <form id="verify-form" style="display:none;flex-direction:column;gap:8px;margin-top:16px">
+    <input id="code" type="text" inputmode="numeric" autocomplete="one-time-code" required maxlength="10" placeholder="6자리 인증 코드" style="padding:10px;border:1px solid #ccc;border-radius:6px" />
+    <button type="submit" style="padding:10px;background:#16a34a;color:#fff;border:0;border-radius:6px">인증 완료</button>
+  </form>
+
+  <p id="msg" style="margin-top:16px;color:#b91c1c;min-height:20px"></p>
+  <p style="margin-top:24px;font-size:14px"><a href="/auth/login">이미 가입하셨나요? 로그인</a></p>
+
+  <script is:inline>
+    const $ = (id) => document.getElementById(id)
+    const msg = (t, color = '#b91c1c') => { const m = $('msg'); m.style.color = color; m.textContent = t }
+
+    $('signup-form').addEventListener('submit', async (e) => {
+      e.preventDefault()
+      msg('전송 중...', '#374151')
+      const res = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: $('email').value, password: $('password').value }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) return msg(data.error || '오류')
+      msg('인증 코드를 이메일로 보냈습니다.', '#16a34a')
+      $('verify-form').style.display = 'flex'
+    })
+
+    $('verify-form').addEventListener('submit', async (e) => {
+      e.preventDefault()
+      msg('확인 중...', '#374151')
+      const code = ($('code').value || '').replace(/\D/g, '')
+      if (code.length !== 6) return msg('6자리 숫자를 입력해주세요.')
+      const res = await fetch('/api/auth/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: $('email').value, code }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) return msg(data.error || '오류')
+      msg('가입 완료! 이동합니다...', '#16a34a')
+      const params = new URLSearchParams(location.search)
+      location.href = params.get('next') || '/'
+    })
+  </script>
+</body>
+</html>

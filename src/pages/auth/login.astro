@@ -1,0 +1,46 @@
+---
+export const prerender = false
+---
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>로그인</title>
+</head>
+<body style="font-family:system-ui;max-width:420px;margin:60px auto;padding:0 16px">
+  <h1 style="font-size:22px;margin-bottom:24px">로그인</h1>
+
+  <form id="login-form" style="display:flex;flex-direction:column;gap:8px">
+    <input id="email" type="email" required placeholder="이메일" style="padding:10px;border:1px solid #ccc;border-radius:6px" />
+    <input id="password" type="password" required placeholder="비밀번호" style="padding:10px;border:1px solid #ccc;border-radius:6px" />
+    <button type="submit" style="padding:10px;background:#1f6feb;color:#fff;border:0;border-radius:6px">로그인</button>
+  </form>
+
+  <p id="msg" style="margin-top:16px;color:#b91c1c;min-height:20px"></p>
+  <p style="margin-top:24px;font-size:14px">
+    <a href="/auth/signup">처음이신가요? 회원가입</a>
+    &nbsp;·&nbsp;
+    <a href="/auth/forgot">비밀번호 찾기</a>
+  </p>
+
+  <script is:inline>
+    const $ = (id) => document.getElementById(id)
+    const msg = (t, color = '#b91c1c') => { const m = $('msg'); m.style.color = color; m.textContent = t }
+
+    $('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault()
+      msg('확인 중...', '#374151')
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: $('email').value, password: $('password').value }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) return msg(data.error || '오류')
+      const params = new URLSearchParams(location.search)
+      location.href = params.get('next') || '/'
+    })
+  </script>
+</body>
+</html>
