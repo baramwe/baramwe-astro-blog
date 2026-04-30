@@ -81,18 +81,26 @@ export const GET: APIRoute = async ({ request, locals }) => {
             currentTournament = {
                 headerRow: row,
                 games: [], // 각 열(Column)별 경기 정보
-                players: []
+                players: [],
+                avgColIndex: -1,
+                totalColIndex: -1,
+                rankColIndex: -1,
             }
             tournaments.push(currentTournament)
 
             // 헤더 파싱 (날짜, 골프장)
-            // 1열(이름) 이후부터 "평균" 전까지가 경기 데이터
+            // 1열(이름) 이후부터 "평균"/"Total"/"순위" 라벨의 위치를 기록.
+            // '순위'를 만나면 즉시 종료하여 그 우측에 추가된 셀(예: '블루티')은 무시한다.
             for (let j = 1; j < row.length; j++) {
                 const cell = row[j]
                 if (!cell) continue;
-                if (cell === '평균' || cell === 'Total' || cell === '순위') break;
 
-                // 줄바꿈으로 지역/날짜/골프장 분리
+                const cellStr = cell.toString().trim()
+                if (cellStr === '평균') { currentTournament.avgColIndex = j; continue }
+                if (cellStr === 'Total') { currentTournament.totalColIndex = j; continue }
+                if (cellStr === '순위') { currentTournament.rankColIndex = j; break }
+
+                // 경기 정보 셀: 줄바꿈으로 지역/날짜/골프장 분리
                 // 기존: 날짜 / 골프장
                 // 변경: 지역 / 날짜 / 골프장
                 const parts = cell.split('\n')
@@ -109,7 +117,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
                     date = parts[0] || ''
                     course = parts.length > 1 ? parts[1] : ''
                 }
-                
+
                 currentTournament.games.push({
                     colIndex: j,
                     region: region.trim(),
@@ -127,7 +135,13 @@ export const GET: APIRoute = async ({ request, locals }) => {
         if (currentTournament) {
             const name = row[0]
             const scores = []
-            
+
+            // 헤더에서 캡처한 컬럼 인덱스 사용 (없으면 -)
+            const rankIdx = currentTournament.rankColIndex
+            const totalIdx = currentTournament.totalColIndex
+            const rankValue = rankIdx >= 0 ? (row[rankIdx] ?? '-') : '-'
+            const totalValue = totalIdx >= 0 ? parseInt(row[totalIdx]) || 0 : 0
+
             // 각 경기별 스코어 파싱
             for (const game of currentTournament.games) {
                 const scoreStr = row[game.colIndex]
@@ -137,7 +151,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
                     scores.push({
                         ...game,
                         score,
-                        rank: row[row.length - 1] // 순위는 마지막 열에 있다고 가정
+                        rank: rankValue
                     })
                 }
             }
@@ -146,8 +160,8 @@ export const GET: APIRoute = async ({ request, locals }) => {
                 currentTournament.players.push({
                     name,
                     scores,
-                    total: parseInt(row[row.length - 2]) || 0, // Total은 끝에서 두번째
-                    rank: row[row.length - 1] || '-' // 순위는 끝에서 첫번째
+                    total: totalValue,
+                    rank: rankValue || '-'
                 })
             }
         }
