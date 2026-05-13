@@ -66,7 +66,9 @@ const SYSTEM_PROMPT = `당신은 친한 친구들끼리 모인 골프 모임의 
 - 구체적인 숫자(평균 타수, 베스트 스코어, 순위)를 가볍게 인용.
 - 머리말/꼬리말/마크다운/이모지 남발 금지. 자연스러운 줄글 1~3문단으로.
 - 출력은 한국어 본문만. 따옴표나 코드블록으로 감싸지 말 것.
-- 매우 중요: 절대로 외국어 단어를 섞지 말 것. 한자(平均/實力 등), 영어(Recently, average), 프랑스어/스페인어/이탈리아어/일본어/베트남어 단어 모두 금지. 골프 용어도 한국어로(예: "평균 타수", "베스트 스코어"). 외래어가 꼭 필요하면 한글 표기만 허용(예: "버디", "이글", "샷").`
+- 매우 중요: 절대로 외국어 단어를 섞지 말 것. 한자(平均/實力 등), 영어(Recently, average), 프랑스어/스페인어/이탈리아어/일본어/베트남어 단어 모두 금지. 골프 용어도 한국어로(예: "평균 타수", "베스트 스코어"). 외래어가 꼭 필요하면 한글 표기만 허용(예: "버디", "이글", "샷").
+- 대회는 "표 1"·"표 2"가 아니라 컨텍스트에 적힌 실제 대회 지명으로 부를 것. (예: 컨텍스트가 "[제주 라운드]"라면 "제주 라운드에서…" 식으로)
+- 선수 호칭은 가끔(전체 언급의 30~50% 정도) 성을 떼고 이름만 부르면 친근감이 산다. 예: "박성규" → "성규", "피영창" → "영창", "김기대" → "기대". 한 사람을 세 번 언급할 때 한두 번 정도가 적당. 단, 두 글자 이름(예: "허민")이나 영문/특이 이름은 그대로 풀네임 유지. 매번이 아니라 자연스러운 곳에서만.`
 
 function buildContext(req: CommentaryRequest): string {
   const sortedStats = [...(req.playerStats || [])].sort(
@@ -82,12 +84,14 @@ function buildContext(req: CommentaryRequest): string {
   })
 
   const tournamentLines = (req.tournaments || []).map((t, idx) => {
+    const tournamentName =
+      (t.games && t.games[0]?.region?.trim()) || `경기 ${idx + 1}`
     const games = (t.games || [])
       .map((g) => `${g.date || '?'}(${g.course || '?'})`)
       .join(', ')
     const playerCount = (t.players || []).length
     if (playerCount === 0) {
-      return `[표 ${idx + 1}] 일정: ${games || '미정'} — 기록 없음(아직 안 침)`
+      return `[${tournamentName}] 일정: ${games || '미정'} — 기록 없음(아직 안 침)`
     }
     const top = [...(t.players || [])]
       .sort(
@@ -97,7 +101,7 @@ function buildContext(req: CommentaryRequest): string {
       .slice(0, 3)
       .map((p) => `${p.rank}위 ${p.name}(${p.total ?? '-'})`)
       .join(', ')
-    return `[표 ${idx + 1}] 일정: ${games} | 참가 ${playerCount}명 | 상위: ${top || '-'}`
+    return `[${tournamentName}] 일정: ${games} | 참가 ${playerCount}명 | 상위: ${top || '-'}`
   })
 
   return `[대회 시트: ${req.sheetName || '-'}]
