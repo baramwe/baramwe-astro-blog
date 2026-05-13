@@ -50,7 +50,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                             <div class="flex flex-col leading-tight">
                                 <span class="text-[11px] font-semibold tracking-wider text-emerald-600 uppercase">Tournament Commentator</span>
                                 <span id="commentary-title" class="text-sm sm:text-base font-bold bg-gradient-to-r from-emerald-700 via-teal-700 to-amber-600 bg-clip-text text-transparent">
-                                    거친 친구의 골프 대회 해설
+                                    AI 친구의 한마디
                                 </span>
                             </div>
                         </div>
@@ -1051,8 +1051,8 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                     }
                     if (title) {
                         title.textContent = sheetName
-                            ? `${sheetName} 대회 · 거친 친구의 한마디`
-                            : '거친 친구의 골프 대회 해설';
+                            ? `${sheetName} 대회 · AI 친구의 한마디`
+                            : 'AI 친구의 한마디';
                     }
                     if (meta) {
                         const now = new Date();
