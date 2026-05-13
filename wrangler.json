@@ -1,8 +1,6 @@
 {
-  "name": "baramwe-astro-blog",
+  "name": "baramwe",
   "compatibility_date": "2025-04-01",
-  "workers_dev": true,
-  "preview_urls": true,
   "compatibility_flags": ["nodejs_compat"],
   "main": "./dist/_worker.js/index.js",
   "assets": {
