@@ -28,7 +28,67 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                     </div>
                 </span>
             </h1>
-            
+
+            <!-- 골프 대회 해설자 AI 카드 -->
+            <div id="commentary-card" class="relative mb-8 overflow-hidden rounded-2xl border border-white/50 bg-gradient-to-br from-emerald-50/80 via-white/60 to-amber-50/70 shadow-lg backdrop-blur-xl">
+                <div class="pointer-events-none absolute -top-24 -right-24 h-64 w-64 rounded-full bg-gradient-to-br from-emerald-300/30 to-teal-300/30 blur-3xl"></div>
+                <div class="pointer-events-none absolute -bottom-20 -left-20 h-56 w-56 rounded-full bg-gradient-to-tr from-amber-200/30 to-orange-200/30 blur-3xl"></div>
+
+                <div class="relative p-5 sm:p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-2.5">
+                            <div class="relative flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 via-teal-500 to-amber-500 shadow-md shadow-emerald-500/30">
+                                <svg class="h-4 w-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M3 11l18-5v12L3 14v-3z"></path>
+                                    <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"></path>
+                                </svg>
+                                <span class="absolute -top-0.5 -right-0.5 flex h-2 w-2">
+                                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                                    <span class="relative inline-flex h-2 w-2 rounded-full bg-amber-500"></span>
+                                </span>
+                            </div>
+                            <div class="flex flex-col leading-tight">
+                                <span class="text-[11px] font-semibold tracking-wider text-emerald-600 uppercase">Tournament Commentator</span>
+                                <span id="commentary-title" class="text-sm sm:text-base font-bold bg-gradient-to-r from-emerald-700 via-teal-700 to-amber-600 bg-clip-text text-transparent">
+                                    거친 친구의 골프 대회 해설
+                                </span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span id="commentary-meta" class="hidden sm:inline text-[11px] text-slate-400 font-medium"></span>
+                            <button id="commentary-refresh-btn" type="button" title="새로고침" class="group flex h-8 w-8 items-center justify-center rounded-lg bg-white/60 hover:bg-white text-slate-500 hover:text-emerald-600 border border-white/80 transition-all">
+                                <svg class="h-3.5 w-3.5 transition-transform group-hover:rotate-180 duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 로딩 -->
+                    <div id="commentary-loading">
+                        <div class="flex items-center gap-2 text-xs text-emerald-600/80 mb-3">
+                            <span class="ai-dot"></span>
+                            <span class="ai-dot" style="animation-delay: 0.15s"></span>
+                            <span class="ai-dot" style="animation-delay: 0.3s"></span>
+                            <span class="ml-1 font-medium">대회 결과를 곱씹는 중…</span>
+                        </div>
+                        <div class="space-y-2">
+                            <div class="h-3 rounded-md bg-gradient-to-r from-slate-200/70 via-slate-100/70 to-slate-200/70 bg-[length:200%_100%] animate-shimmer w-[96%]"></div>
+                            <div class="h-3 rounded-md bg-gradient-to-r from-slate-200/70 via-slate-100/70 to-slate-200/70 bg-[length:200%_100%] animate-shimmer w-[88%]"></div>
+                            <div class="h-3 rounded-md bg-gradient-to-r from-slate-200/70 via-slate-100/70 to-slate-200/70 bg-[length:200%_100%] animate-shimmer w-[93%]"></div>
+                            <div class="h-3 rounded-md bg-gradient-to-r from-slate-200/70 via-slate-100/70 to-slate-200/70 bg-[length:200%_100%] animate-shimmer w-[82%]"></div>
+                            <div class="h-3 rounded-md bg-gradient-to-r from-slate-200/70 via-slate-100/70 to-slate-200/70 bg-[length:200%_100%] animate-shimmer w-[90%]"></div>
+                        </div>
+                    </div>
+
+                    <!-- 해설 결과 -->
+                    <div id="commentary-body" class="hidden text-[13px] sm:text-sm leading-relaxed text-slate-700 whitespace-pre-line"></div>
+
+                    <!-- 에러 -->
+                    <p id="commentary-error" class="hidden text-sm text-slate-500"></p>
+                </div>
+            </div>
+
             <!-- 차트 섹션 -->
             <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
                 <h2 class="text-xl font-bold mb-4">🏆 선수별 평균 스코어</h2>
@@ -194,6 +254,34 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
             .stats-player-card:hover::before {
                 opacity: 1;
             }
+
+            /* AI 해설 카드 애니메이션 */
+            @keyframes shimmer {
+                0% { background-position: 200% 0; }
+                100% { background-position: -200% 0; }
+            }
+            .animate-shimmer {
+                animation: shimmer 1.8s linear infinite;
+            }
+            @keyframes aiDot {
+                0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+                40% { transform: scale(1); opacity: 1; }
+            }
+            .ai-dot {
+                display: inline-block;
+                width: 6px;
+                height: 6px;
+                border-radius: 9999px;
+                background: linear-gradient(135deg, #10b981, #f59e0b);
+                animation: aiDot 1.2s ease-in-out infinite;
+            }
+            @keyframes commentaryFadeIn {
+                from { opacity: 0; transform: translateY(4px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            #commentary-body {
+                animation: commentaryFadeIn 0.45s ease-out forwards;
+            }
         </style>
 
         <script>
@@ -216,6 +304,8 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                 let allTournaments = []; // 모든 토너먼트 정보 저장
                 let chartInstance = null;
                 let lineChartInstance = null;
+                let commentaryInflight = null;
+                let commentaryCurrentSheet = '';
                 let selectedPlayerName = null;
                 let allGames = []; // 모든 게임 정보 저장
 
@@ -763,6 +853,9 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                             renderLineChart(result.tournaments, allPlayers);
                         }
 
+                        // AI 해설 비동기 호출 (현재 시트 기준)
+                        loadCommentary(result.currentSheet || sheetName || '');
+
                         // 선수 클릭 핸들러
                         function handlePlayerClick(player, element, isCard = false) {
                             // 테이블 선택 스타일 토글
@@ -926,6 +1019,93 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                         loadingText.innerText = '오류 발생: ' + error.message;
                         loadingText.classList.add('text-red-500');
                     }
+                }
+
+                // ====== AI 해설 호출 ======
+                function setCommentaryState(state) {
+                    const loading = document.getElementById('commentary-loading');
+                    const bodyEl = document.getElementById('commentary-body');
+                    const errorEl = document.getElementById('commentary-error');
+                    if (!loading || !bodyEl || !errorEl) return;
+                    loading.classList.toggle('hidden', state !== 'loading');
+                    bodyEl.classList.toggle('hidden', state !== 'ready');
+                    errorEl.classList.toggle('hidden', state !== 'error');
+                }
+
+                function showCommentaryError(message) {
+                    const errorEl = document.getElementById('commentary-error');
+                    if (errorEl) errorEl.textContent = message || '해설을 불러오지 못했습니다.';
+                    setCommentaryState('error');
+                }
+
+                function renderCommentary(text, sheetName) {
+                    const bodyEl = document.getElementById('commentary-body');
+                    const title = document.getElementById('commentary-title');
+                    const meta = document.getElementById('commentary-meta');
+                    if (bodyEl) {
+                        // 애니메이션 재생을 위해 클래스 재적용
+                        bodyEl.style.animation = 'none';
+                        bodyEl.offsetHeight; // reflow
+                        bodyEl.style.animation = '';
+                        bodyEl.textContent = text;
+                    }
+                    if (title) {
+                        title.textContent = sheetName
+                            ? `${sheetName} 대회 · 거친 친구의 한마디`
+                            : '거친 친구의 골프 대회 해설';
+                    }
+                    if (meta) {
+                        const now = new Date();
+                        const hh = String(now.getHours()).padStart(2, '0');
+                        const mm = String(now.getMinutes()).padStart(2, '0');
+                        meta.textContent = `${hh}:${mm} 갱신`;
+                    }
+                    setCommentaryState('ready');
+                }
+
+                async function loadCommentary(sheetName) {
+                    commentaryCurrentSheet = sheetName || '';
+
+                    if (!allPlayers || allPlayers.length === 0) {
+                        showCommentaryError('선수 데이터가 없어 해설을 만들 수 없습니다.');
+                        return;
+                    }
+
+                    // 이전 호출 취소
+                    if (commentaryInflight) {
+                        try { commentaryInflight.abort(); } catch {}
+                    }
+                    commentaryInflight = new AbortController();
+
+                    setCommentaryState('loading');
+
+                    try {
+                        const res = await fetch('/api/golf-commentary', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                sheetName: commentaryCurrentSheet,
+                                playerStats: allPlayers,
+                                tournaments: allTournaments,
+                            }),
+                            signal: commentaryInflight.signal,
+                        });
+                        const json = await res.json();
+                        if (!json.success) throw new Error(json.message || '해설 생성 실패');
+                        renderCommentary(json.commentary || '', commentaryCurrentSheet);
+                    } catch (err) {
+                        if (err.name === 'AbortError') return;
+                        console.error('commentary error:', err);
+                        showCommentaryError(err.message || '해설을 불러오지 못했습니다.');
+                    }
+                }
+
+                // 새로고침 버튼
+                const commentaryRefreshBtn = document.getElementById('commentary-refresh-btn');
+                if (commentaryRefreshBtn) {
+                    commentaryRefreshBtn.addEventListener('click', () => {
+                        loadCommentary(commentaryCurrentSheet);
+                    });
                 }
 
                 // 초기 로드
