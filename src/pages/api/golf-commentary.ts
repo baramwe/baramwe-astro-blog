@@ -39,7 +39,11 @@ const GOLF_QUOTES: string[] = [
 ]
 
 function pickRandomQuote(): string {
-  return GOLF_QUOTES[Math.floor(Math.random() * GOLF_QUOTES.length)]
+  // 3시간 윈도우마다 한 번씩만 바뀐다 — AI Gateway 캐시(cacheTtl=10800)와 주기를 맞춰
+  // 같은 윈도우 안의 호출은 동일 prompt → 캐시 응답 반환, 뉴런 소비 절감.
+  const THREE_HOURS_MS = 3 * 60 * 60 * 1000
+  const windowIdx = Math.floor(Date.now() / THREE_HOURS_MS)
+  return GOLF_QUOTES[windowIdx % GOLF_QUOTES.length]
 }
 
 interface PlayerRound {
@@ -324,7 +328,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         gateway: {
           id: GATEWAY_ID,
           skipCache: false,
-          cacheTtl: 600,
+          cacheTtl: 10800,
         },
       },
     )
@@ -370,7 +374,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         status: 200,
         headers: {
           'Content-Type': 'application/json',
-          'Cache-Control': 'public, max-age=0, s-maxage=600, must-revalidate',
+          'Cache-Control': 'public, max-age=0, s-maxage=10800, must-revalidate',
         },
       },
     )
