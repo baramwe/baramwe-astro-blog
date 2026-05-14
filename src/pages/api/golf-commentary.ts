@@ -39,10 +39,10 @@ const GOLF_QUOTES: string[] = [
 ]
 
 function pickRandomQuote(): string {
-  // 3시간 윈도우마다 한 번씩만 바뀐다 — AI Gateway 캐시(cacheTtl=10800)와 주기를 맞춰
+  // 1시간 30분 윈도우마다 한 번씩만 바뀐다 — AI Gateway 캐시(cacheTtl=5400)와 주기를 맞춰
   // 같은 윈도우 안의 호출은 동일 prompt → 캐시 응답 반환, 뉴런 소비 절감.
-  const THREE_HOURS_MS = 3 * 60 * 60 * 1000
-  const windowIdx = Math.floor(Date.now() / THREE_HOURS_MS)
+  const NINETY_MIN_MS = 90 * 60 * 1000
+  const windowIdx = Math.floor(Date.now() / NINETY_MIN_MS)
   return GOLF_QUOTES[windowIdx % GOLF_QUOTES.length]
 }
 
@@ -328,7 +328,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         gateway: {
           id: GATEWAY_ID,
           skipCache: false,
-          cacheTtl: 10800,
+          cacheTtl: 5400,
         },
       },
     )
@@ -374,16 +374,45 @@ export const POST: APIRoute = async ({ request, locals }) => {
         status: 200,
         headers: {
           'Content-Type': 'application/json',
-          'Cache-Control': 'public, max-age=0, s-maxage=10800, must-revalidate',
+          'Cache-Control': 'public, max-age=0, s-maxage=5400, must-revalidate',
         },
       },
     )
   } catch (error) {
-    console.error('golf-commentary error', error)
+    const msg = error instanceof Error ? error.message : String(error)
+    console.error('golf-commentary error', msg)
+
+    // Workers AI 일일 무료 한도(10,000 neurons) 소진 시 — 사용자에게 위트있게 안내.
+    const isQuotaExceeded =
+      msg.includes('4006') ||
+      msg.includes('daily free allocation') ||
+      msg.includes('10,000 neurons') ||
+      msg.toLowerCase().includes('used up')
+
+    if (isQuotaExceeded) {
+      return new Response(
+        JSON.stringify({
+          success: true,
+          sheetName: body.sheetName,
+          commentary:
+            '오늘은 여기까지! 서버 운영자 지갑이 텅 비어서 AI 친구가 잠시 입을 닫았어. 내일 자정 지나면 다시 입 풀게 — 그때 또 떠들자~',
+          generatedAt: new Date().toISOString(),
+        }),
+        {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            // 한도 리셋 전까지 짧게만 캐시 (KST 09:00 리셋 후 새 응답 받을 수 있게)
+            'Cache-Control': 'public, max-age=0, s-maxage=300, must-revalidate',
+          },
+        },
+      )
+    }
+
     return new Response(
       JSON.stringify({
         success: false,
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: msg,
       }),
       { status: 500, headers: { 'Content-Type': 'application/json' } },
     )
