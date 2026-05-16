@@ -168,10 +168,21 @@ export const GET: APIRoute = async ({ request, locals }) => {
     }
 
     // 4. 선수별 통계 집계
+    // 미시작 대회 필터링: 모든 선수의 Total이 0이거나 데이터가 없는 대회는 제외
+    const activeTournaments = tournaments.filter((tournament: any) => {
+        if (!tournament.players || tournament.players.length === 0) return false
+        // 모든 선수의 total이 0이면 미시작 대회로 판단
+        const hasValidScore = tournament.players.some((p: any) => p.total > 0)
+        return hasValidScore
+    })
+
     const playerStats: Record<string, any> = {}
 
-    tournaments.forEach((tournament, tIndex) => {
+    activeTournaments.forEach((tournament, tIndex) => {
         tournament.players.forEach((p: any) => {
+            // Total이 0인 선수는 해당 대회 통계에서 제외 (미참가 또는 미시작)
+            if (p.total <= 0) return
+
             if (!playerStats[p.name]) {
                 playerStats[p.name] = {
                     name: p.name,
@@ -227,7 +238,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
         sheets,
         currentSheet: targetSheet,
         playerStats: resultPlayers,
-        tournaments: tournaments
+        tournaments: activeTournaments
     }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' }
