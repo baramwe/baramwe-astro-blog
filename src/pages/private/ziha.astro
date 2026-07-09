@@ -25,14 +25,14 @@ const cookie = Astro.request.headers.get('cookie') ?? '';
 const cookieMatch = cookie.match(/ziha_auth=([^;]+)/);
 const authed = Astro.request.method === 'GET' && cookieMatch?.[1] === todayToken;
 
-type Bookmark = { id: number; title: string; url: string; star: number };
+type Bookmark = { id: number; title: string; url: string; star: number; memo: string | null };
 let bookmarks: Bookmark[] = [];
 
 if (authed) {
   const db = getDB(Astro.locals, Astro.request);
   if (db) {
     const { results } = await db
-      .prepare('SELECT id, title, url, star FROM bookmarks ORDER BY star DESC, title ASC')
+      .prepare('SELECT id, title, url, star, memo, sort FROM bookmarks ORDER BY CASE WHEN sort = 0 THEN 0 WHEN sort = 1 THEN 1 ELSE 2 END ASC, title ASC')
       .all<Bookmark>();
     bookmarks = results;
   }
@@ -45,7 +45,7 @@ if (authed) {
     String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
   const items = bookmarks.map(b =>
-    `<li>${b.star > 0 ? `<span class="star">${stars(b.star)}</span>` : ''}<a href="${esc(b.url)}" target="_blank" rel="noopener">${esc(b.title)}</a></li>`
+    `<li>${b.star > 0 ? `<span class="star">${stars(b.star)}</span>` : ''}<a href="${esc(b.url)}" target="_blank" rel="noopener">${esc(b.title)}</a>${b.memo ? `<span class="memo">${esc(b.memo)}</span>` : ''}</li>`
   ).join('\n');
 
   const html = `<!DOCTYPE html>
@@ -55,16 +55,18 @@ if (authed) {
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>북마크</title>
   <style>
-    body { font-family: system-ui, sans-serif; margin: 0; padding: 1rem 1.5rem 5rem; background: #fafafa; font-size: .875rem; }
+    body { font-family: system-ui, sans-serif; margin: 0; padding: 1rem 1.5rem 5rem; background: #fafafa; font-size: 1.04rem; }
     ul { list-style: none; margin: 0; padding: 0; }
-    li { padding: .2rem 0; display: flex; align-items: baseline; gap: .3rem; }
+    li { padding: .3rem 0; display: flex; align-items: baseline; gap: .4rem; }
     a { color: #1a0dab; text-decoration: none; }
     a:hover { text-decoration: underline; }
-    .star { color: #f5a623; margin-right: .1rem; font-size: .75rem; }
+    .star { color: #f5a623; margin-right: .1rem; font-size: .88rem; }
+    .memo { color: #888; font-size: .88rem; margin-left: .35rem; }
+    .btn-open { background: #1a56db; color: #fff; }
     #search-bar { position: sticky; top: 0; background: #fafafa; padding: .5rem 0; display: flex; gap: .5rem; align-items: center; z-index: 10; border-bottom: 1px solid #e8e8e8; margin-bottom: .75rem; }
-    #search-bar input { flex: 1; padding: .4rem .6rem; border: 1px solid #ccc; border-radius: 4px; font-size: .875rem; }
-    #search-bar select { padding: .4rem .5rem; border: 1px solid #ccc; border-radius: 4px; font-size: .875rem; }
-    #search-bar button { padding: .4rem .8rem; border: none; border-radius: 4px; cursor: pointer; font-size: .875rem; }
+    #search-bar input { flex: 1; padding: .4rem .6rem; border: 1px solid #ccc; border-radius: 4px; font-size: 1.04rem; }
+    #search-bar select { padding: .4rem .5rem; border: 1px solid #ccc; border-radius: 4px; font-size: 1.04rem; }
+    #search-bar button { padding: .4rem .8rem; border: none; border-radius: 4px; cursor: pointer; font-size: 1.04rem; }
     .btn-dark  { background: #333; color: #fff; }
     .btn-grey  { background: #888; color: #fff; }
     #ziha-mgmt { position: fixed; bottom: 1rem; right: 1rem; z-index: 9999; display: flex; flex-direction: column; align-items: flex-end; gap: .5rem; }
@@ -82,7 +84,8 @@ if (authed) {
     .panel-section.active { display: block; }
     #p-result { list-style: none; margin: .4rem 0 0; padding: 0; max-height: 260px; overflow-y: auto; }
     #p-result li { display: flex; align-items: center; gap: .4rem; padding: .25rem 0; border-bottom: 1px solid #f0f0f0; }
-    #p-result .item-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #p-result .item-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #1a0dab; text-decoration: none; }
+    #p-result .item-title:hover { text-decoration: underline; }
     #p-msg { color: #080; font-size: .75rem; margin-top: .4rem; min-height: 1em; }
   </style>
 </head>
@@ -99,6 +102,7 @@ if (authed) {
       <option value="3_eq">★★★ 정확히</option>
     </select>
     <button class="btn-dark" id="sbtn">검색</button>
+    <button class="btn-open" id="sbtn-open">열기</button>
     <button class="btn-grey" id="sbtn-reset">초기화</button>
   </div>
 
@@ -111,10 +115,12 @@ if (authed) {
       <div id="panel-tabs">
         <button class="active" data-tab="add">추가</button>
         <button data-tab="edit">검색/편집</button>
+        <button data-tab="replace">주소변경</button>
       </div>
       <div class="panel-section active" id="tab-add">
         <input type="text" id="p-title" placeholder="제목" />
         <input type="text" id="p-url"   placeholder="URL" />
+        <input type="text" id="p-memo"  placeholder="메모 (선택, 최대 100자)" maxlength="100" />
         <select id="p-star">
           <option value="0">별 없음</option>
           <option value="1">★</option>
@@ -137,6 +143,38 @@ if (authed) {
           <button class="btn btn-primary btn-sm" id="ps-btn" style="flex-shrink:0;">검색</button>
         </div>
         <ul id="p-result"></ul>
+        <div id="p-edit-form" style="display:none;margin-top:.6rem;border-top:1px solid #eee;padding-top:.6rem;">
+          <input type="hidden" id="pe-id" />
+          <input type="text"   id="pe-title" placeholder="제목" />
+          <input type="text"   id="pe-url"   placeholder="URL" />
+          <input type="text"   id="pe-memo"  placeholder="메모 (선택, 최대 100자)" maxlength="100" />
+          <div style="display:flex;gap:.4rem;">
+            <select id="pe-star" style="flex:1;">
+              <option value="0">별 없음</option>
+              <option value="1">★</option>
+              <option value="2">★★</option>
+              <option value="3">★★★</option>
+            </select>
+            <select id="pe-sort" style="flex:1;">
+              <option value="0">비공개 (sort=0)</option>
+              <option value="1">🔴 즐겨찾기 (sort=1)</option>
+              <option value="">기본 (sort=null)</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:.4rem;margin-top:.3rem;">
+            <button class="btn btn-primary" id="pe-save" style="flex:1;">저장</button>
+            <button class="btn btn-grey"    id="pe-cancel" style="flex:1;">취소</button>
+          </div>
+        </div>
+      </div>
+      <div class="panel-section" id="tab-replace">
+        <p style="color:#555;font-size:.75rem;margin:0 0 .5rem;">URL 중 일치하는 텍스트를 일괄 교체합니다.</p>
+        <label style="font-size:.75rem;color:#666;">찾을 텍스트 (URL 내)</label>
+        <input type="text" id="pr-from" placeholder="예: kr43.topgirl.co" />
+        <label style="font-size:.75rem;color:#666;">바꿀 텍스트</label>
+        <input type="text" id="pr-to"   placeholder="예: kr99.topgirl.co" />
+        <button class="btn btn-primary" id="pr-check" style="width:100%;margin-top:.2rem;">변경하기</button>
+        <p id="pr-msg" style="font-size:.75rem;margin:.4rem 0 0;min-height:1em;"></p>
       </div>
       <p id="p-msg"></p>
     </div>
@@ -188,7 +226,7 @@ if (authed) {
       if (star_op) p.set('star_op', star_op);
       const { rows } = await fetch('/api/ziha-bookmarks?' + p).then(r => r.json());
       document.getElementById('bm-list').innerHTML = rows.length
-        ? rows.map(r => '<li>' + (r.star > 0 ? '<span class="star">' + '★'.repeat(r.star) + '</span>' : '') + '<a href="' + esc(r.url) + '" target="_blank" rel="noopener">' + esc(r.title) + '</a></li>').join('')
+        ? rows.map(r => '<li>' + (r.star > 0 ? '<span class="star">' + '★'.repeat(r.star) + '</span>' : '') + '<a href="' + esc(r.url) + '" target="_blank" rel="noopener">' + esc(r.title) + '</a>' + (r.memo ? '<span class="memo">' + esc(r.memo) + '</span>' : '') + '</li>').join('')
         : '<li style="color:#999;">결과 없음</li>';
     }
 
@@ -196,19 +234,35 @@ if (authed) {
     document.getElementById('sq').addEventListener('keydown', e => { if (e.key === 'Enter') mainSearch(); });
     document.getElementById('sbtn-reset').addEventListener('click', () => location.reload());
 
+    document.getElementById('sbtn-open').addEventListener('click', async () => {
+      const q = document.getElementById('sq').value.trim();
+      const { star, star_op } = parseStarParam(document.getElementById('sstar').value);
+      const p = new URLSearchParams();
+      if (q)       p.set('q', q);
+      if (star)    p.set('star', star);
+      if (star_op) p.set('star_op', star_op);
+      const { rows } = await fetch('/api/ziha-bookmarks?' + p).then(r => r.json());
+      rows.forEach((r, i) => setTimeout(() => {
+        const w = window.open(r.url, '_blank', 'noopener,noreferrer');
+        if (w) { w.blur(); window.focus(); }
+      }, i * 100));
+    });
+
     // 추가
     document.getElementById('p-add').addEventListener('click', async () => {
       const title = document.getElementById('p-title').value.trim();
       const url   = document.getElementById('p-url').value.trim();
+      const memo  = document.getElementById('p-memo').value.trim();
       const star  = parseInt(document.getElementById('p-star').value);
       if (!title || !url) { msg('제목과 URL을 입력하세요.', false); return; }
       const res = await fetch('/api/ziha-bookmarks', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, url, star }),
+        body: JSON.stringify({ title, url, star, memo: memo || undefined }),
       });
       if (res.ok) {
         document.getElementById('p-title').value = '';
         document.getElementById('p-url').value   = '';
+        document.getElementById('p-memo').value  = '';
         document.getElementById('p-star').value  = '0';
         msg('추가됨. 새로고침 시 목록에 반영됩니다.');
       } else { msg('저장 실패', false); }
@@ -230,8 +284,8 @@ if (authed) {
         const li = document.createElement('li');
         li.innerHTML =
           '<span class="star" style="color:#f5a623;font-size:.7rem;flex-shrink:0;">' + '★'.repeat(r.star) + '</span>' +
-          '<span class="item-title" title="' + esc(r.url) + '">' + esc(r.title) + '</span>' +
-          '<button class="btn btn-primary btn-sm" data-id="' + r.id + '" data-title="' + esc(r.title) + '" data-url="' + esc(r.url) + '" data-star="' + r.star + '">편집</button>' +
+          '<a class="item-title" href="' + esc(r.url) + '" target="_blank" rel="noopener">' + esc(r.title) + (r.memo ? ' <span style="color:#aaa;font-size:.7rem;">— ' + esc(r.memo) + '</span>' : '') + '</a>' +
+          '<button class="btn btn-primary btn-sm" data-id="' + r.id + '" data-title="' + esc(r.title) + '" data-url="' + esc(r.url) + '" data-star="' + r.star + '" data-memo="' + esc(r.memo || '') + '" data-sort="' + (r.sort == null ? '' : r.sort) + '">편집</button>' +
           '<button class="btn btn-danger  btn-sm" data-del="' + r.id + '">삭제</button>';
         ul.appendChild(li);
       }
@@ -240,24 +294,85 @@ if (authed) {
           if (!confirm('삭제할까요?')) return;
           await fetch('/api/ziha-bookmarks', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: Number(btn.dataset.del) }) });
           msg('삭제됨.');
+          document.getElementById('p-edit-form').style.display = 'none';
           panelSearch();
         });
       });
       ul.querySelectorAll('[data-id]').forEach(btn => {
         btn.addEventListener('click', () => {
-          const newTitle = prompt('제목', btn.dataset.title);  if (newTitle === null) return;
-          const newUrl   = prompt('URL',  btn.dataset.url);    if (newUrl   === null) return;
-          const newStar  = prompt('별 (0~3)', btn.dataset.star); if (newStar === null) return;
-          fetch('/api/ziha-bookmarks', {
-            method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: Number(btn.dataset.id), title: newTitle, url: newUrl, star: Number(newStar) }),
-          }).then(() => { msg('수정됨.'); panelSearch(); });
+          document.getElementById('pe-id').value    = btn.dataset.id;
+          document.getElementById('pe-title').value = btn.dataset.title;
+          document.getElementById('pe-url').value   = btn.dataset.url;
+          document.getElementById('pe-memo').value  = btn.dataset.memo;
+          document.getElementById('pe-star').value  = btn.dataset.star;
+          document.getElementById('pe-sort').value  = btn.dataset.sort;
+          document.getElementById('p-edit-form').style.display = 'block';
+          document.getElementById('pe-title').focus();
         });
       });
     }
 
     document.getElementById('ps-btn').addEventListener('click', panelSearch);
     document.getElementById('ps-q').addEventListener('keydown', e => { if (e.key === 'Enter') panelSearch(); });
+
+    document.getElementById('pe-save').addEventListener('click', async () => {
+      const id    = Number(document.getElementById('pe-id').value);
+      const title = document.getElementById('pe-title').value.trim();
+      const url   = document.getElementById('pe-url').value.trim();
+      const memo  = document.getElementById('pe-memo').value.trim();
+      const star  = Number(document.getElementById('pe-star').value);
+      const sortRaw = document.getElementById('pe-sort').value;
+      const sort  = sortRaw === '' ? null : Number(sortRaw);
+      if (!title || !url) { msg('제목과 URL을 입력하세요.', false); return; }
+      const res = await fetch('/api/ziha-bookmarks', {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, title, url, memo, star, sort }),
+      });
+      if (res.ok) {
+        msg('수정됨.');
+        document.getElementById('p-edit-form').style.display = 'none';
+        panelSearch();
+      } else { msg('수정 실패', false); }
+    });
+
+    document.getElementById('pe-cancel').addEventListener('click', () => {
+      document.getElementById('p-edit-form').style.display = 'none';
+    });
+
+    // 주소변경
+    function prMsg(t, ok = true) {
+      const el = document.getElementById('pr-msg');
+      el.style.color = ok ? '#080' : '#c00';
+      el.textContent = t;
+    }
+
+    document.getElementById('pr-check').addEventListener('click', async () => {
+      const from = document.getElementById('pr-from').value.trim();
+      const to   = document.getElementById('pr-to').value.trim();
+      if (!from) { prMsg('찾을 텍스트를 입력하세요.', false); return; }
+
+      const { count } = await fetch('/api/ziha-bookmarks', {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ from, to, preview: true }),
+      }).then(r => r.json());
+
+      if (count === 0) { prMsg('일치하는 링크가 없습니다.', false); return; }
+
+      if (!confirm(count + '개의 링크 URL에서 "' + from + '" → "' + to + '" 로 교체하시겠습니까?')) return;
+
+      const res = await fetch('/api/ziha-bookmarks', {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ from, to, preview: false }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        prMsg(data.updated + '개 링크 URL 교체 완료.');
+        document.getElementById('pr-from').value = '';
+        document.getElementById('pr-to').value   = '';
+      } else {
+        prMsg('교체 실패: ' + (data.error ?? ''), false);
+      }
+    });
   })();
   </script>
 </body>
