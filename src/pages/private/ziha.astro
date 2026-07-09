@@ -1,0 +1,320 @@
+---
+export const prerender = false;
+
+import { generateDailyToken, verifyDailyToken } from '../../lib/daily-token';
+import { getDB } from '../../lib/auth/db';
+
+// POST: 토큰 검증
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const input = (form.get('token') ?? '').toString().trim().toLowerCase();
+  if (await verifyDailyToken(input)) {
+    const token = await generateDailyToken();
+    return new Response(null, {
+      status: 302,
+      headers: {
+        Location: '/private/ziha',
+        'Set-Cookie': `ziha_auth=${token}; HttpOnly; SameSite=Strict; Path=/private/ziha; Max-Age=86400`,
+      },
+    });
+  }
+}
+
+const todayToken = await generateDailyToken();
+const cookie = Astro.request.headers.get('cookie') ?? '';
+const cookieMatch = cookie.match(/ziha_auth=([^;]+)/);
+const authed = Astro.request.method === 'GET' && cookieMatch?.[1] === todayToken;
+
+type Bookmark = { id: number; title: string; url: string; star: number };
+let bookmarks: Bookmark[] = [];
+
+if (authed) {
+  const db = getDB(Astro.locals, Astro.request);
+  if (db) {
+    const { results } = await db
+      .prepare('SELECT id, title, url, star FROM bookmarks ORDER BY star DESC, title ASC')
+      .all<Bookmark>();
+    bookmarks = results;
+  }
+}
+
+// 인증된 경우 북마크 페이지 반환
+if (authed) {
+  const stars = (n: number) => '★'.repeat(n);
+  const esc = (s: string) =>
+    String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+  const items = bookmarks.map(b =>
+    `<li>${b.star > 0 ? `<span class="star">${stars(b.star)}</span>` : ''}<a href="${esc(b.url)}" target="_blank" rel="noopener">${esc(b.title)}</a></li>`
+  ).join('\n');
+
+  const html = `<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>북마크</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; padding: 1rem 1.5rem 5rem; background: #fafafa; font-size: .875rem; }
+    ul { list-style: none; margin: 0; padding: 0; }
+    li { padding: .2rem 0; display: flex; align-items: baseline; gap: .3rem; }
+    a { color: #1a0dab; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .star { color: #f5a623; margin-right: .1rem; font-size: .75rem; }
+    #search-bar { position: sticky; top: 0; background: #fafafa; padding: .5rem 0; display: flex; gap: .5rem; align-items: center; z-index: 10; border-bottom: 1px solid #e8e8e8; margin-bottom: .75rem; }
+    #search-bar input { flex: 1; padding: .4rem .6rem; border: 1px solid #ccc; border-radius: 4px; font-size: .875rem; }
+    #search-bar select { padding: .4rem .5rem; border: 1px solid #ccc; border-radius: 4px; font-size: .875rem; }
+    #search-bar button { padding: .4rem .8rem; border: none; border-radius: 4px; cursor: pointer; font-size: .875rem; }
+    .btn-dark  { background: #333; color: #fff; }
+    .btn-grey  { background: #888; color: #fff; }
+    #ziha-mgmt { position: fixed; bottom: 1rem; right: 1rem; z-index: 9999; display: flex; flex-direction: column; align-items: flex-end; gap: .5rem; }
+    #ziha-toggle { background: #333; color: #fff; border: none; border-radius: 50%; width: 2.5rem; height: 2.5rem; font-size: 1.2rem; cursor: pointer; }
+    #ziha-panel { display: none; background: #fff; border: 1px solid #ccc; border-radius: 8px; padding: 1rem; width: 420px; box-shadow: 0 4px 16px rgba(0,0,0,.2); font-size: .8rem; }
+    #ziha-panel input, #ziha-panel select { width: 100%; padding: .35rem .5rem; border: 1px solid #ccc; border-radius: 4px; font-size: .8rem; box-sizing: border-box; margin-bottom: .3rem; }
+    .btn { padding: .35rem .7rem; border: none; border-radius: 4px; cursor: pointer; font-size: .8rem; }
+    .btn-sm { padding: .2rem .4rem; font-size: .72rem; }
+    .btn-primary { background: #333; color: #fff; }
+    .btn-danger  { background: #c00; color: #fff; }
+    #panel-tabs { display: flex; gap: .5rem; margin-bottom: .75rem; border-bottom: 1px solid #ddd; padding-bottom: .5rem; }
+    #panel-tabs button { background: none; border: none; cursor: pointer; font-size: .8rem; padding: .2rem .4rem; border-radius: 3px; }
+    #panel-tabs button.active { background: #333; color: #fff; }
+    .panel-section { display: none; }
+    .panel-section.active { display: block; }
+    #p-result { list-style: none; margin: .4rem 0 0; padding: 0; max-height: 260px; overflow-y: auto; }
+    #p-result li { display: flex; align-items: center; gap: .4rem; padding: .25rem 0; border-bottom: 1px solid #f0f0f0; }
+    #p-result .item-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #p-msg { color: #080; font-size: .75rem; margin-top: .4rem; min-height: 1em; }
+  </style>
+</head>
+<body>
+  <div id="search-bar">
+    <input type="text" id="sq" placeholder="제목 검색" />
+    <select id="sstar">
+      <option value="">★ 전체</option>
+      <option value="1_gte">★ 이상</option>
+      <option value="2_gte">★★ 이상</option>
+      <option value="3_gte">★★★</option>
+      <option value="1_eq">★ 정확히</option>
+      <option value="2_eq">★★ 정확히</option>
+      <option value="3_eq">★★★ 정확히</option>
+    </select>
+    <button class="btn-dark" id="sbtn">검색</button>
+    <button class="btn-grey" id="sbtn-reset">초기화</button>
+  </div>
+
+  <ul id="bm-list">
+    ${items}
+  </ul>
+
+  <div id="ziha-mgmt">
+    <div id="ziha-panel">
+      <div id="panel-tabs">
+        <button class="active" data-tab="add">추가</button>
+        <button data-tab="edit">검색/편집</button>
+      </div>
+      <div class="panel-section active" id="tab-add">
+        <input type="text" id="p-title" placeholder="제목" />
+        <input type="text" id="p-url"   placeholder="URL" />
+        <select id="p-star">
+          <option value="0">별 없음</option>
+          <option value="1">★</option>
+          <option value="2">★★</option>
+          <option value="3">★★★</option>
+        </select>
+        <button class="btn btn-primary" id="p-add">저장</button>
+      </div>
+      <div class="panel-section" id="tab-edit">
+        <div style="display:flex;gap:.3rem;margin-bottom:.4rem;">
+          <input type="text" id="ps-q" placeholder="제목 검색" style="margin:0;" />
+          <select id="ps-star" style="margin:0;width:auto;flex-shrink:0;">
+            <option value="">전체</option>
+            <option value="1_gte">★ 이상</option>
+            <option value="2_gte">★★ 이상</option>
+            <option value="3_gte">★★★</option>
+            <option value="1_eq">★ 정확히</option>
+            <option value="2_eq">★★ 정확히</option>
+          </select>
+          <button class="btn btn-primary btn-sm" id="ps-btn" style="flex-shrink:0;">검색</button>
+        </div>
+        <ul id="p-result"></ul>
+      </div>
+      <p id="p-msg"></p>
+    </div>
+    <button id="ziha-toggle" title="북마크 관리">⚙️</button>
+  </div>
+
+  <script>
+  (function () {
+    // 탭 전환
+    document.querySelectorAll('#panel-tabs button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#panel-tabs button').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.panel-section').forEach(s => s.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+      });
+    });
+
+    // 패널 토글
+    document.getElementById('ziha-toggle').addEventListener('click', () => {
+      const p = document.getElementById('ziha-panel');
+      p.style.display = p.style.display === 'none' ? 'block' : 'none';
+    });
+
+    function msg(t, ok = true) {
+      const el = document.getElementById('p-msg');
+      el.style.color = ok ? '#080' : '#c00';
+      el.textContent = t;
+      setTimeout(() => el.textContent = '', 3000);
+    }
+
+    function parseStarParam(val) {
+      if (!val) return {};
+      const [star, op] = val.split('_');
+      return { star, star_op: op };
+    }
+
+    function esc(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // 메인 검색
+    async function mainSearch() {
+      const q    = document.getElementById('sq').value.trim();
+      const { star, star_op } = parseStarParam(document.getElementById('sstar').value);
+      const p = new URLSearchParams();
+      if (q)       p.set('q', q);
+      if (star)    p.set('star', star);
+      if (star_op) p.set('star_op', star_op);
+      const { rows } = await fetch('/api/ziha-bookmarks?' + p).then(r => r.json());
+      document.getElementById('bm-list').innerHTML = rows.length
+        ? rows.map(r => '<li>' + (r.star > 0 ? '<span class="star">' + '★'.repeat(r.star) + '</span>' : '') + '<a href="' + esc(r.url) + '" target="_blank" rel="noopener">' + esc(r.title) + '</a></li>').join('')
+        : '<li style="color:#999;">결과 없음</li>';
+    }
+
+    document.getElementById('sbtn').addEventListener('click', mainSearch);
+    document.getElementById('sq').addEventListener('keydown', e => { if (e.key === 'Enter') mainSearch(); });
+    document.getElementById('sbtn-reset').addEventListener('click', () => location.reload());
+
+    // 추가
+    document.getElementById('p-add').addEventListener('click', async () => {
+      const title = document.getElementById('p-title').value.trim();
+      const url   = document.getElementById('p-url').value.trim();
+      const star  = parseInt(document.getElementById('p-star').value);
+      if (!title || !url) { msg('제목과 URL을 입력하세요.', false); return; }
+      const res = await fetch('/api/ziha-bookmarks', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, url, star }),
+      });
+      if (res.ok) {
+        document.getElementById('p-title').value = '';
+        document.getElementById('p-url').value   = '';
+        document.getElementById('p-star').value  = '0';
+        msg('추가됨. 새로고침 시 목록에 반영됩니다.');
+      } else { msg('저장 실패', false); }
+    });
+
+    // 패널 검색
+    async function panelSearch() {
+      const q    = document.getElementById('ps-q').value.trim();
+      const { star, star_op } = parseStarParam(document.getElementById('ps-star').value);
+      const p = new URLSearchParams();
+      if (q)       p.set('q', q);
+      if (star)    p.set('star', star);
+      if (star_op) p.set('star_op', star_op);
+      const { rows } = await fetch('/api/ziha-bookmarks?' + p).then(r => r.json());
+      const ul = document.getElementById('p-result');
+      ul.innerHTML = '';
+      if (!rows.length) { ul.innerHTML = '<li style="color:#999;padding:.3rem 0;">결과 없음</li>'; return; }
+      for (const r of rows) {
+        const li = document.createElement('li');
+        li.innerHTML =
+          '<span class="star" style="color:#f5a623;font-size:.7rem;flex-shrink:0;">' + '★'.repeat(r.star) + '</span>' +
+          '<span class="item-title" title="' + esc(r.url) + '">' + esc(r.title) + '</span>' +
+          '<button class="btn btn-primary btn-sm" data-id="' + r.id + '" data-title="' + esc(r.title) + '" data-url="' + esc(r.url) + '" data-star="' + r.star + '">편집</button>' +
+          '<button class="btn btn-danger  btn-sm" data-del="' + r.id + '">삭제</button>';
+        ul.appendChild(li);
+      }
+      ul.querySelectorAll('[data-del]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          if (!confirm('삭제할까요?')) return;
+          await fetch('/api/ziha-bookmarks', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: Number(btn.dataset.del) }) });
+          msg('삭제됨.');
+          panelSearch();
+        });
+      });
+      ul.querySelectorAll('[data-id]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const newTitle = prompt('제목', btn.dataset.title);  if (newTitle === null) return;
+          const newUrl   = prompt('URL',  btn.dataset.url);    if (newUrl   === null) return;
+          const newStar  = prompt('별 (0~3)', btn.dataset.star); if (newStar === null) return;
+          fetch('/api/ziha-bookmarks', {
+            method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: Number(btn.dataset.id), title: newTitle, url: newUrl, star: Number(newStar) }),
+          }).then(() => { msg('수정됨.'); panelSearch(); });
+        });
+      });
+    }
+
+    document.getElementById('ps-btn').addEventListener('click', panelSearch);
+    document.getElementById('ps-q').addEventListener('keydown', e => { if (e.key === 'Enter') panelSearch(); });
+  })();
+  </script>
+</body>
+</html>`;
+
+  return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+}
+
+const isError = Astro.request.method === 'POST';
+---
+
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>인증</title>
+    <style>
+      body { font-family: system-ui, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #f5f5f5; }
+      input[type="text"], input[type="password"] { padding: .6rem .8rem; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; width: 100%; box-sizing: border-box; }
+      button { padding: .6rem; background: #333; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; width: 100%; }
+      button:hover { background: #555; }
+      .error { color: #c00; font-size: .875rem; }
+    </style>
+  </head>
+  <body>
+    <div style="display:flex;flex-direction:column;gap:1rem;width:280px;">
+      <form method="POST" style="background:#fff;padding:2rem;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.1);display:flex;flex-direction:column;gap:1rem;">
+        <label style="font-weight:600">오늘의 코드</label>
+        <input type="text" name="token" autocomplete="off" autofocus placeholder="xxxxxxxx" />
+        {isError && <span class="error">잘못된 코드입니다.</span>}
+        <button type="submit">확인</button>
+      </form>
+
+      <details style="background:#fff;padding:1rem 1.5rem;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.1);font-size:.875rem;">
+        <summary style="cursor:pointer;font-weight:600;color:#555;">코드 계산기</summary>
+        <div style="margin-top:.75rem;display:flex;flex-direction:column;gap:.5rem;">
+          <input id="calc-secret" type="password" placeholder="비밀키 입력" style="letter-spacing:.15em;" />
+          <button id="calc-btn" type="button">오늘 코드 보기</button>
+          <code id="calc-result" style="display:none;text-align:center;font-size:1.4rem;letter-spacing:.2em;padding:.5rem;background:#f0f0f0;border-radius:4px;"></code>
+        </div>
+      </details>
+    </div>
+
+    <script>
+      document.getElementById('calc-btn').addEventListener('click', async () => {
+        const secret = document.getElementById('calc-secret').value.trim();
+        if (!secret) return;
+        const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+        const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret),
+          { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+        const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(date));
+        const token = [...new Uint8Array(sig)].map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 8);
+        const result = document.getElementById('calc-result');
+        result.textContent = token;
+        result.style.display = 'block';
+      });
+    </script>
+  </body>
+</html>
