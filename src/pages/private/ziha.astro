@@ -23,7 +23,11 @@ if (Astro.request.method === 'POST') {
 const todayToken = await generateDailyToken();
 const cookie = Astro.request.headers.get('cookie') ?? '';
 const cookieMatch = cookie.match(/ziha_auth=([^;]+)/);
-const authed = Astro.request.method === 'GET' && cookieMatch?.[1] === todayToken;
+// 로컬 dev(npm run dev) 및 preview(wrangler dev)에서는 코드 입력 없이 바로 접근 허용.
+// 프로덕션 도메인은 localhost가 아니므로 배포 시에는 적용되지 않는다.
+const reqHost = new URL(Astro.request.url).hostname;
+const isLocal = import.meta.env.DEV || reqHost === 'localhost' || reqHost === '127.0.0.1';
+const authed = Astro.request.method === 'GET' && (isLocal || cookieMatch?.[1] === todayToken);
 
 type Bookmark = { id: number; title: string; url: string; star: number; memo: string | null };
 let bookmarks: Bookmark[] = [];
@@ -55,10 +59,12 @@ if (authed) {
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>북마크</title>
   <style>
+    * { box-sizing: border-box; }
+    html, body { max-width: 100%; overflow-x: hidden; }
     body { font-family: system-ui, sans-serif; margin: 0; padding: 1rem 1.5rem 5rem; background: #fafafa; font-size: 1.04rem; }
     ul { list-style: none; margin: 0; padding: 0; }
-    li { padding: .3rem 0; display: flex; align-items: baseline; gap: .4rem; }
-    a { color: #1a0dab; text-decoration: none; }
+    li { padding: .3rem 0; display: flex; align-items: baseline; gap: .4rem; min-width: 0; }
+    a { color: #1a0dab; text-decoration: none; overflow-wrap: anywhere; word-break: break-word; min-width: 0; }
     a:hover { text-decoration: underline; }
     .star { color: #f5a623; margin-right: .1rem; font-size: .88rem; }
     .memo { color: #888; font-size: .88rem; margin-left: .35rem; }
@@ -71,7 +77,7 @@ if (authed) {
     .btn-grey  { background: #888; color: #fff; }
     #ziha-mgmt { position: fixed; bottom: 1rem; right: 1rem; z-index: 9999; display: flex; flex-direction: column; align-items: flex-end; gap: .5rem; }
     #ziha-toggle { background: #333; color: #fff; border: none; border-radius: 50%; width: 2.5rem; height: 2.5rem; font-size: 1.2rem; cursor: pointer; }
-    #ziha-panel { display: none; background: #fff; border: 1px solid #ccc; border-radius: 8px; padding: 1rem; width: 420px; box-shadow: 0 4px 16px rgba(0,0,0,.2); font-size: .8rem; }
+    #ziha-panel { display: none; background: #fff; border: 1px solid #ccc; border-radius: 8px; padding: 1rem; width: 540px; box-shadow: 0 4px 16px rgba(0,0,0,.2); font-size: .8rem; }
     #ziha-panel input, #ziha-panel select { width: 100%; padding: .35rem .5rem; border: 1px solid #ccc; border-radius: 4px; font-size: .8rem; box-sizing: border-box; margin-bottom: .3rem; }
     .btn { padding: .35rem .7rem; border: none; border-radius: 4px; cursor: pointer; font-size: .8rem; }
     .btn-sm { padding: .2rem .4rem; font-size: .72rem; }
@@ -87,6 +93,37 @@ if (authed) {
     #p-result .item-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #1a0dab; text-decoration: none; }
     #p-result .item-title:hover { text-decoration: underline; }
     #p-msg { color: #080; font-size: .75rem; margin-top: .4rem; min-height: 1em; }
+    #rank-result { list-style: none; margin: .4rem 0 0; padding: 0; max-height: 380px; overflow-y: auto; }
+    #rank-result li { display: flex; align-items: center; gap: .5rem; padding: .32rem .1rem; border-bottom: 1px solid #f0f0f0; }
+    #rank-result .rank-no { flex: 0 0 1.7rem; text-align: right; color: #888; font-size: .74rem; font-variant-numeric: tabular-nums; }
+    #rank-result .item-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #1a0dab; text-decoration: none; }
+    #rank-result .item-title:hover { text-decoration: underline; }
+    #rank-result .rank-cnt { flex: 0 0 auto; color: #f5a623; font-size: .74rem; }
+    @media (max-width: 640px) {
+      body { padding: .75rem .85rem 5.5rem; font-size: 1rem; }
+      li { align-items: flex-start; flex-wrap: wrap; gap: .18rem .35rem; }
+      li a { flex: 1 1 0; }
+      .star { flex: 0 0 auto; line-height: 1.5; }
+      .memo { flex: 1 0 100%; margin-left: 0; padding-left: 0; overflow-wrap: anywhere; }
+      #search-bar { flex-wrap: wrap; gap: .4rem; padding: .5rem 0; }
+      #search-bar input { flex: 1 1 100%; width: 100%; min-width: 0; }
+      #search-bar select { flex: 1 1 100%; width: 100%; min-width: 0; }
+      #search-bar button { flex: 1 1 calc(33.333% - .4rem); min-width: 0; padding: .45rem .35rem; white-space: nowrap; }
+      #ziha-mgmt { left: .75rem; right: .75rem; bottom: .75rem; align-items: flex-end; pointer-events: none; }
+      #ziha-toggle, #ziha-panel { pointer-events: auto; }
+      #ziha-panel { width: 100%; max-width: none; max-height: calc(100vh - 6rem); overflow-y: auto; padding: .85rem; }
+      #panel-tabs { gap: .35rem; }
+      #panel-tabs button { flex: 1; }
+      #tab-edit > div[style*="display:flex"] { flex-wrap: wrap; }
+      #ps-q { flex: 1 1 100%; width: 100%; }
+      #ps-star { flex: 1 1 auto; min-width: 0; }
+      #ps-btn { flex: 0 0 auto; }
+      #p-result li { align-items: flex-start; flex-wrap: nowrap; }
+      #p-result .item-title { white-space: normal; overflow-wrap: anywhere; }
+      #p-result .btn-sm { flex: 0 0 auto; }
+      #p-edit-form div[style*="display:flex"] { flex-wrap: wrap; }
+      #p-edit-form div[style*="display:flex"] > * { min-width: 0; }
+    }
   </style>
 </head>
 <body>
@@ -116,6 +153,7 @@ if (authed) {
         <button class="active" data-tab="add">추가</button>
         <button data-tab="edit">검색/편집</button>
         <button data-tab="replace">주소변경</button>
+        <button data-tab="rank">순위</button>
       </div>
       <div class="panel-section active" id="tab-add">
         <input type="text" id="p-title" placeholder="제목" />
@@ -176,6 +214,10 @@ if (authed) {
         <button class="btn btn-primary" id="pr-check" style="width:100%;margin-top:.2rem;">변경하기</button>
         <p id="pr-msg" style="font-size:.75rem;margin:.4rem 0 0;min-height:1em;"></p>
       </div>
+      <div class="panel-section" id="tab-rank">
+        <p style="color:#555;font-size:.72rem;margin:0 0 .5rem;">제목에서 추출한 배우 언급 순위 TOP 30. 이름을 누르면 검색 페이지가 새 창으로 열립니다.</p>
+        <ul id="rank-result"><li style="color:#999;padding:.3rem 0;">집계 준비 중…</li></ul>
+      </div>
       <p id="p-msg"></p>
     </div>
     <button id="ziha-toggle" title="북마크 관리">⚙️</button>
@@ -190,6 +232,7 @@ if (authed) {
         document.querySelectorAll('.panel-section').forEach(s => s.classList.remove('active'));
         btn.classList.add('active');
         document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+        if (btn.dataset.tab === 'rank') computeRank();
       });
     });
 
@@ -214,6 +257,66 @@ if (authed) {
 
     function esc(s) {
       return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // 제목에서 배우이름(한글 성+이름) 추출
+    var RANK_SITE = ['AVTopGirl','AVSogirl','AV탑걸','AV쏘걸','MissAV','MGStage','FANZA','Sogirl','TopGirl','탑걸','쏘걸'];
+    var RANK_TAGS = ['유모자막','무모자막','자막판','자막','유모','무모','REMOVE','고화질','무삭제','모자이크','풀버전','유출','미리보기','합집'];
+    function extractNames(title) {
+      var t = String(title || '').split('|')[0];
+      // NOTE: 이 스크립트는 .astro 백틱 템플릿 리터럴 안에 있어 정규식 백슬래시를 이중(\\)으로 써야 함
+      t = t.replace(/\\([^)]*\\)/g, ' ');
+      RANK_SITE.concat(RANK_TAGS).forEach(function (w) { t = t.split(w).join(' '); });
+      t = t.replace(/\\d+\\s*세/g, ' ');
+      t = t.replace(/[A-Za-z]+[A-Za-z0-9]*\\s*-?\\s*\\d+[A-Za-z]*/g, ' '); // 작품코드 제거
+      t = t.replace(/[^가-힣,\\s]/g, ' ');
+      var out = [];
+      t.split(',').forEach(function (c) {
+        c = c.replace(/\\s+/g, ' ').trim();
+        if (c && c.indexOf(' ') !== -1 && c.length <= 12) out.push(c); // 성+이름 2단어만
+      });
+      return out;
+    }
+
+    // 순위 링크의 도메인은 북마크 URL 중 가장 많이 쓰인 topgirl 호스트에서 유도 → 주소변경 시 자동 반영
+    function deriveSearchHost(rows) {
+      var count = {}, best = 'kr45.topgirl.co', max = 0;
+      rows.forEach(function (r) {
+        try {
+          var h = new URL(r.url).hostname;
+          if (/topgirl/i.test(h)) count[h] = (count[h] || 0) + 1;
+        } catch (e) {}
+      });
+      for (var h in count) if (count[h] > max) { max = count[h]; best = h; }
+      return best;
+    }
+
+    async function computeRank() {
+      var box = document.getElementById('rank-result');
+      box.innerHTML = '<li style="color:#999;padding:.3rem 0;">집계 중…</li>';
+      try {
+        var res = await fetch('/api/ziha-bookmarks').then(function (r) { return r.json(); });
+        var rows = res.rows || [];
+        var host = deriveSearchHost(rows);
+        var counter = {};
+        rows.forEach(function (r) {
+          extractNames(r.title).forEach(function (name) { counter[name] = (counter[name] || 0) + 1; });
+        });
+        var top = Object.keys(counter)
+          .map(function (name) { return [name, counter[name]]; })
+          .sort(function (a, b) { return b[1] - a[1] || a[0].localeCompare(b[0]); })
+          .slice(0, 30);
+        box.innerHTML = top.length
+          ? top.map(function (e, i) {
+              var link = 'https://' + host + '/video/search?keyword=' + encodeURIComponent(e[0]);
+              return '<li><span class="rank-no">' + (i + 1) + '</span>' +
+                '<a class="item-title" href="' + esc(link) + '" target="_blank" rel="noopener">' + esc(e[0]) + '</a>' +
+                '<span class="rank-cnt">' + e[1] + '회</span></li>';
+            }).join('')
+          : '<li style="color:#999;padding:.3rem 0;">데이터 없음</li>';
+      } catch (e) {
+        box.innerHTML = '<li style="color:#c00;padding:.3rem 0;">집계 실패</li>';
+      }
     }
 
     // 메인 검색
