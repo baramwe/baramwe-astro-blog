@@ -32,3 +32,7 @@ pnpm-debug.log*
 !package*.json
 !tsconfig.json
 !wrangler.json
+
+# D1 덤프/백업 (실데이터 포함 — 커밋 금지)
+# 루트에 한정: migrations/, queries/ 의 .sql 은 계속 추적됨
+/*.sql

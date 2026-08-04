@@ -36,7 +36,7 @@ if (authed) {
   const db = getDB(Astro.locals, Astro.request);
   if (db) {
     const { results } = await db
-      .prepare('SELECT id, title, url, star, memo, sort FROM bookmarks ORDER BY CASE WHEN sort = 0 THEN 0 WHEN sort = 1 THEN 1 ELSE 2 END ASC, title ASC')
+      .prepare('SELECT id, title, url, star, memo, sort FROM bookmarks ORDER BY CASE WHEN sort = 0 THEN 0 WHEN sort = 1 THEN 1 ELSE 2 END ASC, id DESC')
       .all<Bookmark>();
     bookmarks = results;
   }

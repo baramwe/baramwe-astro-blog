@@ -35,7 +35,7 @@ export const GET: APIRoute = async ({ locals, request, url }) => {
   }
 
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''
-  const stmt  = `SELECT id, title, url, star, memo, sort FROM bookmarks ${where} ORDER BY CASE WHEN sort = 0 THEN 0 WHEN sort = 1 THEN 1 ELSE 2 END ASC, title ASC`
+  const stmt  = `SELECT id, title, url, star, memo, sort FROM bookmarks ${where} ORDER BY CASE WHEN sort = 0 THEN 0 WHEN sort = 1 THEN 1 ELSE 2 END ASC, id DESC`
 
   const { results } = await db.prepare(stmt).bind(...bindings).all()
   return json({ rows: results })
