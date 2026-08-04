@@ -43,7 +43,7 @@
   },
   "scripts": {
     "astro": "astro",
-    "build": "prisma generate && astro build",
+    "build": "prisma generate --no-engine && astro build",
     "cf-typegen": "wrangler types",
     "check": "astro build && tsc && wrangler deploy --dry-run",
     "deploy": "wrangler deploy",
