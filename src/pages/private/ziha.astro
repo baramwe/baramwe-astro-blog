@@ -215,7 +215,7 @@ if (authed) {
         <p id="pr-msg" style="font-size:.75rem;margin:.4rem 0 0;min-height:1em;"></p>
       </div>
       <div class="panel-section" id="tab-rank">
-        <p style="color:#555;font-size:.72rem;margin:0 0 .5rem;">제목에서 추출한 배우 언급 순위 TOP 30. 이름을 누르면 검색 페이지가 새 창으로 열립니다.</p>
+        <p style="color:#555;font-size:.72rem;margin:0 0 .5rem;">제목에서 추출한 배우 언급 순위 TOP 50. 이름을 누르면 검색 페이지가 새 창으로 열립니다.</p>
         <ul id="rank-result"><li style="color:#999;padding:.3rem 0;">집계 준비 중…</li></ul>
       </div>
       <p id="p-msg"></p>
@@ -302,10 +302,19 @@ if (authed) {
         rows.forEach(function (r) {
           extractNames(r.title).forEach(function (name) { counter[name] = (counter[name] || 0) + 1; });
         });
+        // 메모에 '은퇴'가 들어간 북마크가 하나라도 있으면 그 배우는 순위에서 완전히 제외.
+        // 설명이 긴 제목은 extractNames가 이름을 못 뽑으므로, 집계된 이름이 제목에 포함되는지로 판정한다.
+        var retiredTitles = rows
+          .filter(function (r) { return String(r.memo || '').indexOf('은퇴') !== -1; })
+          .map(function (r) { return String(r.title || '').replace(/\s+/g, ' '); });
+        var names = Object.keys(counter);
+        retiredTitles.forEach(function (t) {
+          names.forEach(function (name) { if (t.indexOf(name) !== -1) delete counter[name]; });
+        });
         var top = Object.keys(counter)
           .map(function (name) { return [name, counter[name]]; })
           .sort(function (a, b) { return b[1] - a[1] || a[0].localeCompare(b[0]); })
-          .slice(0, 30);
+          .slice(0, 50);
         box.innerHTML = top.length
           ? top.map(function (e, i) {
               var link = 'https://' + host + '/video/search?keyword=' + encodeURIComponent(e[0]);
