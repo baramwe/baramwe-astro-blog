@@ -33,4 +33,291 @@ import Layout from '../layouts/BlogPost.astro';
 함께라면, 오늘도 굿샷!
 여러분의 골프 여정을 따뜻하게 응원합니다.
 	</p>
+
+	<section id="rules" class="rules" aria-labelledby="rules-title">
+		<header class="rules-head">
+			<div class="rules-badge">
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+					<path d="M6 21V4a1 1 0 0 1 1-1h11l-2.5 4L18 11H7" />
+					<circle cx="6" cy="21" r="1.2" />
+				</svg>
+			</div>
+			<h2 id="rules-title">BLUEWINE RULES</h2>
+			<p class="rules-sub">블루와인 라운딩 로컬룰 &middot; 즐겁게, 공정하게, 빠르게</p>
+		</header>
+
+		<div class="rule-grid">
+			<article class="rule-card">
+				<div class="rule-top">
+					<svg class="rule-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<circle cx="12" cy="12" r="9" />
+						<path d="M5.6 5.6l12.8 12.8" />
+					</svg>
+					<h3>멀리건</h3>
+				</div>
+				<p class="rule-lead">없음</p>
+			</article>
+
+			<article class="rule-card">
+				<div class="rule-top">
+					<svg class="rule-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<path d="M4 20l6-6" />
+						<path d="M9 13l4-4 3 3-4 4z" />
+						<path d="M14 6l4 4 2-2a2.8 2.8 0 0 0-4-4z" />
+					</svg>
+					<h3>컨시드</h3>
+				</div>
+				<ul>
+					<li>34인치 퍼터 기준, 그립 끝까지 적용<br /><span class="muted">(동반자 중 가장 긴 퍼터를 가진 사람 기준으로 OK 허용)</span></li>
+				</ul>
+			</article>
+
+			<article class="rule-card">
+				<div class="rule-top">
+					<svg class="rule-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<path d="M12 21V4" />
+						<path d="M12 4l7 2.5L12 9" />
+						<path d="M8 21h8" />
+					</svg>
+					<h3>티샷 <span class="chip">OB / 해저드</span></h3>
+				</div>
+				<ul>
+					<li><b>OB</b> &mdash; 선택적으로 리티 가능. 리티 안 할 시 깃대 기준 가장 먼 공의 페어웨이 플레이 <span class="muted">(페어웨이가 없으면 러프 플레이)</span></li>
+					<li><b>티샷 해저드</b> &mdash; 리티 없이 깃대 기준 가장 먼 공의 페어웨이 또는 러프 플레이</li>
+					<li><b>세컨 해저드</b> &mdash; 공이 해저드 경계를 최종 통과한 지점 기준 페어웨이 또는 러프 드롭 가능</li>
+					<li><b>공 수색 시간</b> &mdash; 최대 3분 제한. 시간 초과 시 해저드 / 분실구 처리, 분실구 방향에 OB 구역이 있으면 OB 처리</li>
+				</ul>
+			</article>
+
+			<article class="rule-card">
+				<div class="rule-top">
+					<svg class="rule-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<path d="M3 17c3-4 6-2 9-6s6-2 9-6" />
+						<path d="M3 21h18" />
+					</svg>
+					<h3>디봇 / 진흙 / 벙커 발자국</h3>
+				</div>
+				<p class="rule-lead">라이 개선 조건</p>
+				<ul>
+					<li><b>디봇</b> &mdash; 페어웨이 공만 바로 옆 잔디로 리플레이스 가능 <span class="muted">(러프는 불가)</span></li>
+					<li><b>진흙</b> &mdash; 동반자 확인 후 공을 닦고 원위치 플레이 <span class="muted">(프리퍼드 라이)</span></li>
+					<li><b>벙커 발자국</b> &mdash; 동반자 확인 후 벙커 정리 후 같은 자리 플레이</li>
+				</ul>
+			</article>
+
+			<article class="rule-card">
+				<div class="rule-top">
+					<svg class="rule-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<path d="M12 12c2.5 0 4-1.6 4-3.5S14.5 5 12 5 8 6.6 8 8.5 9.5 12 12 12z" />
+						<path d="M12 12v9" />
+						<path d="M12 16c-2 0-3.5-1-4.5-2.5M12 16c2 0 3.5-1 4.5-2.5" />
+					</svg>
+					<h3>화단</h3>
+				</div>
+				<ul>
+					<li>플레이 가능 시 그대로 치거나, <b>1벌타</b> 후 언플레이어블 선언</li>
+					<li><b>언플레이어블</b> &mdash; 해저드 룰과 동일하게 볼 위치의 같은 선상 페어웨이 플레이 가능</li>
+					<li>단, 캐디가 로컬룰 <b>&lsquo;무벌타 드롭&rsquo;</b> 구역으로 인정한 경우만 핀보다 먼 곳으로 한 클럽 이내 무벌타 드롭 <span class="muted">(3분 내에 본인 볼을 찾아야 함)</span></li>
+				</ul>
+			</article>
+
+			<article class="rule-card">
+				<div class="rule-top">
+					<svg class="rule-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<path d="M7 3L4 21" />
+						<path d="M17 3l3 18" />
+						<path d="M12 4v2.5M12 10v2.5M12 16v2.5" />
+					</svg>
+					<h3>카트 도로 <span class="chip">무벌타 드롭</span></h3>
+				</div>
+				<p class="rule-lead">기본 원칙</p>
+				<ul>
+					<li>공이 카트 도로 위나 스탠스(발)에 걸린 경우, <b>도로 중앙 선</b>을 기준으로 드롭 위치를 결정</li>
+				</ul>
+				<p class="rule-lead">드롭 위치 결정</p>
+				<ul>
+					<li>도로 중앙 기준 <b>우측 &rarr; 우측</b> 방향, <b>좌측 &rarr; 좌측</b> 방향으로 한 클럽 이내 드롭</li>
+					<li>드롭 위치에 볼을 놓고 칠 공간이 없는 경우(해저드, OB 말뚝), 동반자 확인 후 건너편 도로 한 클럽 이내 드롭 가능</li>
+					<li>나무, 급경사, 자갈, 바위 등이 있는 경우도 한 클럽 이내 드롭이 원칙</li>
+				</ul>
+				<p class="rule-note">카트 도로 구제의 핵심은 <b>&lsquo;이득을 보는 구제&rsquo;</b>가 아니라 <b>&lsquo;방해요소(카트 도로)로부터의 구제&rsquo;</b>일 뿐입니다.</p>
+			</article>
+		</div>
+
+		<aside class="rule-manner">
+			<svg class="rule-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+				<path d="M12 3l7.5 3v5.5c0 4.3-3.1 7.7-7.5 9-4.4-1.3-7.5-4.7-7.5-9V6z" />
+				<path d="M9.2 12.2l2 2 3.6-3.9" />
+			</svg>
+			<div>
+				<h3>매너 및 플레이 주의사항</h3>
+				<p>의심스럽거나 오해를 살 만한 행동 금지 &mdash; 벙커 &middot; 러프에서 볼 위치를 인위적으로 변경하거나 확인용으로 집어 드는 행위 포함</p>
+			</div>
+		</aside>
+	</section>
+
+	<script is:inline>
+		// /about#rules 또는 /about?rules 로 들어오면 룰 섹션이 상단에 오도록 스크롤
+		if (location.hash === "#rules" || /(^|[?&])rules(=|&|$)/.test(location.search)) {
+			const go = () => document.getElementById("rules")?.scrollIntoView();
+			go();
+			// 히어로 이미지 로딩으로 레이아웃이 밀리는 경우 보정
+			window.addEventListener("load", go);
+		}
+	</script>
+
+	<style>
+		.rules {
+			margin: 3.5em 0 1em;
+			scroll-margin-top: 1.2rem;
+			--rule-accent: #15803d;
+			--rule-accent-soft: #f0fdf4;
+			--rule-line: #d7e6da;
+		}
+		.rules-head {
+			text-align: center;
+			margin-bottom: 1.8em;
+		}
+		.rules-badge {
+			width: 48px;
+			height: 48px;
+			margin: 0 auto 0.6em;
+			display: grid;
+			place-items: center;
+			border-radius: 50%;
+			background: var(--rule-accent);
+			color: #fff;
+		}
+		.rules-badge svg {
+			width: 26px;
+			height: 26px;
+		}
+		.rules-head h2 {
+			font-size: 1.7rem;
+			letter-spacing: 0.12em;
+			margin: 0;
+		}
+		.rules-sub {
+			margin: 0.35em 0 0;
+			font-size: 0.88rem;
+			color: rgb(var(--gray));
+		}
+		.rule-grid {
+			display: grid;
+			grid-template-columns: 1fr;
+			gap: 1em;
+		}
+		.rule-card {
+			background: #fff;
+			border: 1px solid var(--rule-line);
+			border-radius: 14px;
+			padding: 1.1em 1.2em 1.2em;
+			box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+		}
+		.rule-top {
+			display: flex;
+			align-items: center;
+			gap: 0.55em;
+			margin-bottom: 0.6em;
+			padding-bottom: 0.6em;
+			border-bottom: 1px dashed var(--rule-line);
+		}
+		.rule-icon {
+			width: 22px;
+			height: 22px;
+			flex: none;
+			color: var(--rule-accent);
+		}
+		.rule-card h3,
+		.rule-manner h3 {
+			margin: 0;
+			font-size: 1.06rem;
+			letter-spacing: -0.01em;
+		}
+		.chip {
+			display: inline-block;
+			margin-left: 0.4em;
+			padding: 0.1em 0.5em;
+			border-radius: 999px;
+			background: var(--rule-accent-soft);
+			color: var(--rule-accent);
+			font-size: 0.72rem;
+			font-weight: 700;
+			vertical-align: middle;
+		}
+		.rule-lead {
+			margin: 0.7em 0 0.35em;
+			font-size: 0.83rem;
+			font-weight: 700;
+			letter-spacing: 0.04em;
+			color: var(--rule-accent);
+		}
+		.rule-lead:first-of-type {
+			margin-top: 0;
+		}
+		.rule-card ul {
+			margin: 0;
+			padding: 0;
+			list-style: none;
+		}
+		.rule-card li {
+			position: relative;
+			padding-left: 1em;
+			margin: 0.45em 0;
+			font-size: 0.94rem;
+			line-height: 1.6;
+		}
+		.rule-card li::before {
+			content: "";
+			position: absolute;
+			left: 0;
+			top: 0.62em;
+			width: 5px;
+			height: 5px;
+			border-radius: 50%;
+			background: var(--rule-accent);
+			opacity: 0.55;
+		}
+		.rule-card .muted {
+			color: rgb(var(--gray));
+			font-size: 0.92em;
+		}
+		.rule-note {
+			margin: 0.9em 0 0;
+			padding: 0.7em 0.9em;
+			border-left: 3px solid var(--rule-accent);
+			border-radius: 0 8px 8px 0;
+			background: var(--rule-accent-soft);
+			font-size: 0.9rem;
+			line-height: 1.6;
+		}
+		.rule-manner {
+			display: flex;
+			align-items: flex-start;
+			gap: 0.8em;
+			margin-top: 1em;
+			padding: 1.1em 1.2em;
+			border-radius: 14px;
+			background: #0f2f1c;
+			color: #e7f3ea;
+		}
+		.rule-manner .rule-icon {
+			color: #7ee2a8;
+			margin-top: 0.15em;
+		}
+		.rule-manner h3 {
+			color: #fff;
+		}
+		.rule-manner p {
+			margin: 0.35em 0 0;
+			font-size: 0.92rem;
+			line-height: 1.65;
+			color: #c7ddcd;
+		}
+		@media (max-width: 640px) {
+			.rules-head h2 {
+				font-size: 1.4rem;
+			}
+		}
+	</style>
 </Layout>
