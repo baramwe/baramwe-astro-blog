@@ -65,6 +65,7 @@ const mbtiImage = '/mbti.png';
 						<img src={mbtiImage} width="680" height="340" alt="골프 MBTI" />
 					</a>
 					<div class="caption">당신의 골프 스타일을 확인하세요</div><br>
+					{/* 숨김: 2025 Japan Fukuoka Championship (동영상 포함) — 다시 노출하려면 아래 주석 해제
 					<div class="clip">
 						<video id="golf-clip-0" width="680" height="382" muted preload="metadata" playsinline>
 							<source src="https://baramwe.github.io/image/golf/ai/2025_fukuoka.mp4#t=0.1" type="video/mp4" />
@@ -72,6 +73,7 @@ const mbtiImage = '/mbti.png';
 						</video>
 						<div class="clip-caption">2025 Japan Fukuoka Championship</div>
 					</div>
+					*/}
 					<div class="clip">
 						<video id="golf-clip" width="680" height="382" muted preload="metadata" playsinline>
 							<source src="https://baramwe.github.io/image/golf/ai/20250802.mp4#t=0.1" type="video/mp4" />
@@ -136,7 +138,7 @@ const mbtiImage = '/mbti.png';
 					} catch(_) {}
 				}, {passive:true});
 			}
-			wire('golf-clip-0');
+			// wire('golf-clip-0'); // 숨김 처리된 Fukuoka 클립
 			wire('golf-clip');
 			wire('golf-clip-2');
 			wire('golf-clip-3');
