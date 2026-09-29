@@ -29,8 +29,8 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                 </span>
             </h1>
 
-            <!-- 골프 대회 해설자 AI 카드 -->
-            <div id="commentary-card" class="relative mb-8 overflow-hidden rounded-2xl border border-white/50 bg-gradient-to-br from-emerald-50/80 via-white/60 to-amber-50/70 shadow-lg backdrop-blur-xl">
+            <!-- 골프 대회 해설자 AI 카드 (임시 비활성화: hidden + COMMENTARY_ENABLED=false) -->
+            <div id="commentary-card" class="hidden relative mb-8 overflow-hidden rounded-2xl border border-white/50 bg-gradient-to-br from-emerald-50/80 via-white/60 to-amber-50/70 shadow-lg backdrop-blur-xl">
                 <div class="pointer-events-none absolute -top-24 -right-24 h-64 w-64 rounded-full bg-gradient-to-br from-emerald-300/30 to-teal-300/30 blur-3xl"></div>
                 <div class="pointer-events-none absolute -bottom-20 -left-20 h-56 w-56 rounded-full bg-gradient-to-tr from-amber-200/30 to-orange-200/30 blur-3xl"></div>
 
@@ -304,6 +304,8 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                 let allTournaments = []; // 모든 토너먼트 정보 저장
                 let chartInstance = null;
                 let lineChartInstance = null;
+                // AI 해설 기능 스위치. false 면 카드가 숨겨지고 /api/golf-commentary 를 호출하지 않는다.
+                const COMMENTARY_ENABLED = false;
                 let commentaryInflight = null;
                 let commentaryCurrentSheet = '';
                 let selectedPlayerName = null;
@@ -1064,6 +1066,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
                 }
 
                 async function loadCommentary(sheetName) {
+                    if (!COMMENTARY_ENABLED) return;
                     commentaryCurrentSheet = sheetName || '';
 
                     if (!allPlayers || allPlayers.length === 0) {
