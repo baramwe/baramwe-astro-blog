@@ -46,6 +46,8 @@ import Layout from '../layouts/BlogPost.astro';
 			<p class="rules-sub">블루와인 라운딩 로컬룰 &middot; 즐겁게, 공정하게, 빠르게</p>
 		</header>
 
+		<p class="rule-note rule-priority">골프장의 로컬룰보다 <b>블루와인 룰이 우선</b>합니다. <span class="muted">(높은 벙커 턱 무벌타 드롭 X, 화단 무벌타 드롭 X)</span></p>
+
 		<div class="rule-grid">
 			<article class="rule-card">
 				<div class="rule-top">
@@ -100,7 +102,7 @@ import Layout from '../layouts/BlogPost.astro';
 				<p class="rule-lead">라이 개선 조건</p>
 				<ul>
 					<li><b>디봇</b> &mdash; 페어웨이 공만 바로 옆 잔디로 리플레이스 가능 <span class="muted">(러프는 불가)</span></li>
-					<li><b>진흙</b> &mdash; 동반자 확인 후 공을 닦고 원위치 플레이 <span class="muted">(프리퍼드 라이)</span></li>
+					<li><b>진흙</b> &mdash; 그린 주변 에이프론, 페어웨이 공만 프리퍼드 라이 적용 <span class="muted">(동반자 확인 후 공을 닦고 원위치 플레이)</span></li>
 					<li><b>벙커 발자국</b> &mdash; 동반자 확인 후 벙커 정리 후 같은 자리 플레이</li>
 				</ul>
 			</article>
@@ -117,7 +119,6 @@ import Layout from '../layouts/BlogPost.astro';
 				<ul>
 					<li>플레이 가능 시 그대로 치거나, <b>1벌타</b> 후 언플레이어블 선언</li>
 					<li><b>언플레이어블</b> &mdash; 해저드 룰과 동일하게 볼 위치의 같은 선상 페어웨이 플레이 가능</li>
-					<li>단, 캐디가 로컬룰 <b>&lsquo;무벌타 드롭&rsquo;</b> 구역으로 인정한 경우만 핀보다 먼 곳으로 두 클럽 이내 무벌타 드롭 <span class="muted">(3분 내에 본인 볼을 찾아야 함)</span></li>
 				</ul>
 			</article>
 
@@ -201,6 +202,9 @@ import Layout from '../layouts/BlogPost.astro';
 			margin: 0.35em 0 0;
 			font-size: 0.88rem;
 			color: rgb(var(--gray));
+		}
+		.rule-priority {
+			margin: 0 0 1em;
 		}
 		.rule-grid {
 			display: grid;
