@@ -1,0 +1,81 @@
+---
+import GolfLayout from '../../../../../../layouts/GolfLayout.astro'
+import { getDB } from '../../../../../../lib/auth/db'
+import { countryName, getRound } from '../../../../../../lib/golf/repo'
+export const prerender = false
+
+const db = getDB(Astro.locals, Astro.request)!
+const round = await getRound(db, Astro.locals.golf!.user.id, String(Astro.params.id))
+if (!round) return new Response('Not found', { status: 404 })
+
+const holeCount = round.pars.length
+const hasHoles = round.players.some((p) => p.strokes.some((s) => s !== null))
+const halves = holeCount === 18 ? [[0, 9, 'OUT'], [9, 18, 'IN']] as const : [[0, 9, 'OUT']] as const
+const parSum = (a: number, b: number) => round.pars.slice(a, b).reduce((x, y) => x + y, 0)
+const totalPar = parSum(0, holeCount)
+
+// 스코어 표기: 버디 이하 파란 원, 보기 사각, 더블+ 진한 사각
+const cellClass = (s: number | null, par: number) => {
+  if (s === null) return 'text-gray-300'
+  const d = s - par
+  if (d <= -2) return 'bg-blue-600 text-white rounded-full'
+  if (d === -1) return 'ring-1 ring-blue-600 text-blue-700 rounded-full'
+  if (d === 1) return 'ring-1 ring-gray-400'
+  if (d >= 2) return 'bg-gray-700 text-white'
+  return ''
+}
+const toPar = (t: number) => (t - totalPar === 0 ? 'E' : t - totalPar > 0 ? `+${t - totalPar}` : `${t - totalPar}`)
+---
+<GolfLayout title={`${round.club_name} ${round.played_on}`} active="rounds">
+  <div class="g-card mb-4">
+    <div class="text-xs text-gray-500">{round.played_on} · {countryName(round.country_code)}{round.tee ? ` · ${round.tee} 티` : ''}</div>
+    <h1 class="text-xl font-bold">{round.club_name}</h1>
+    <div class="text-sm text-gray-600">{round.front_course}{round.back_course ? ` → ${round.back_course}` : ' (9홀)'} · PAR {totalPar}</div>
+    {round.memo && <p class="mt-3 text-gray-800">“{round.memo}”</p>}
+  </div>
+
+  <div class="g-card mb-4 !p-0 overflow-hidden">
+    <ul class="divide-y divide-gray-100">
+      {round.players.map((p) => (
+        <li class="flex items-center px-4 py-3">
+          <span class={`flex-1 ${p.is_self ? 'font-semibold' : ''}`}>{p.display_name}</span>
+          {p.front_total !== null && <span class="text-xs text-gray-500 mr-3 tabular-nums">{p.front_total}{p.back_total !== null ? ` / ${p.back_total}` : ''}</span>}
+          {p.putts_total !== null && <span class="text-xs text-gray-500 mr-3">퍼팅 {p.putts_total}</span>}
+          <span class="text-2xl font-bold tabular-nums text-emerald-800">{p.total}</span>
+          <span class="w-10 text-right text-sm text-gray-500 tabular-nums">{toPar(p.total)}</span>
+        </li>
+      ))}
+    </ul>
+  </div>
+
+  {hasHoles && halves.map(([a, b, label]) => (
+    <div class="g-card mb-4 !p-2 overflow-x-auto">
+      <table class="w-full text-center text-sm tabular-nums">
+        <thead>
+          <tr class="text-xs text-gray-500">
+            <th class="text-left px-2 py-1 font-normal">홀</th>
+            {round.pars.slice(a, b).map((_, i) => <th class="px-1 py-1 font-normal min-w-[1.75rem]">{a + i + 1}</th>)}
+            <th class="px-2 py-1 font-semibold">{label}</th>
+          </tr>
+          <tr class="text-xs text-gray-500 border-b border-gray-200">
+            <td class="text-left px-2 py-1">PAR</td>
+            {round.pars.slice(a, b).map((par) => <td class="py-1">{par}</td>)}
+            <td class="py-1 font-semibold">{parSum(a, b)}</td>
+          </tr>
+        </thead>
+        <tbody>
+          {round.players.map((p) => (
+            <tr class="border-b border-gray-50">
+              <td class="text-left px-2 py-1.5 whitespace-nowrap max-w-[5rem] truncate">{p.display_name}</td>
+              {p.strokes.slice(a, b).map((s, i) => (
+                <td class="py-1.5"><span class={`inline-flex w-6 h-6 items-center justify-center ${cellClass(s, round.pars[a + i])}`}>{s ?? '·'}</span></td>
+              ))}
+              <td class="py-1.5 font-semibold">{p.strokes.slice(a, b).every((s) => s !== null) ? p.strokes.slice(a, b).reduce((x, y) => x! + y!, 0) : '-'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  ))}
+
+</GolfLayout>

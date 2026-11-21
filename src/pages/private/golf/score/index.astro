@@ -1,0 +1,44 @@
+---
+import GolfLayout from '../../../../layouts/GolfLayout.astro'
+import RoundList from '../../../../components/golf/RoundList.astro'
+import { getDB } from '../../../../lib/auth/db'
+import { homeSummary, listRounds } from '../../../../lib/golf/repo'
+export const prerender = false
+
+const userId = Astro.locals.golf!.user.id
+const db = getDB(Astro.locals, Astro.request)!
+const year = String(new Date().getFullYear())
+const [summary, recent] = await Promise.all([homeSummary(db, userId, year), listRounds(db, userId, 5)])
+
+const stats = [
+  { label: `${year} 라운드`, value: summary.year_rounds ?? 0 },
+  { label: `${year} 평균`, value: summary.year_avg ?? '-' },
+  { label: '베스트', value: summary.best ?? '-', sub: summary.best_on ?? '' },
+]
+---
+<GolfLayout title="홈" active="home">
+  <section class="grid grid-cols-3 gap-2 mb-5">
+    {stats.map((s) => (
+      <div class="g-card text-center !p-3">
+        <div class="text-xs text-gray-500">{s.label}</div>
+        <div class="text-2xl font-bold text-emerald-800 mt-1">{s.value}</div>
+        {s.sub && <div class="text-[11px] text-gray-400">{s.sub}</div>}
+      </div>
+    ))}
+  </section>
+  <p class="text-[11px] text-gray-400 -mt-3 mb-5">평균·베스트는 18홀 라운드 기준</p>
+
+  <div class="flex items-center justify-between mb-2">
+    <h2 class="font-semibold">최근 라운드</h2>
+    {summary.rounds > 5 && <a href="/private/golf/score/rounds" class="text-sm text-emerald-700">전체 {summary.rounds}개 →</a>}
+  </div>
+
+  {recent.length === 0 ? (
+    <div class="g-card text-center text-sm text-gray-600 space-y-3">
+      <p>아직 기록이 없어요.</p>
+      <a href="/private/golf/score/rounds/new" class="g-btn inline-block">첫 라운드 입력하기</a>
+    </div>
+  ) : (
+    <RoundList rounds={recent} />
+  )}
+</GolfLayout>

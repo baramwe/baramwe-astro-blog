@@ -1,0 +1,14 @@
+---
+import GolfLayout from '../../../../layouts/GolfLayout.astro'
+import ClubManager from '../../../../components/golf/ClubManager.tsx'
+import { getDB } from '../../../../lib/auth/db'
+import { COUNTRIES, listClubsWithCourses } from '../../../../lib/golf/repo'
+export const prerender = false
+
+const db = getDB(Astro.locals, Astro.request)!
+const clubs = await listClubsWithCourses(db)
+---
+<GolfLayout title="골프장" active="clubs">
+  <h1 class="text-lg font-bold mb-3">골프장 · 코스</h1>
+  <ClubManager client:load clubs={clubs} countries={COUNTRIES} />
+</GolfLayout>

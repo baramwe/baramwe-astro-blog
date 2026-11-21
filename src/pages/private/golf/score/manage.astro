@@ -1,0 +1,44 @@
+---
+import GolfLayout from '../../../../layouts/GolfLayout.astro'
+import { getDB } from '../../../../lib/auth/db'
+import { listRounds } from '../../../../lib/golf/repo'
+export const prerender = false
+
+// 기록 관리 (헤더 ⚙ 로만 진입). 라운드 수정/삭제는 여기서만 한다.
+const db = getDB(Astro.locals, Astro.request)!
+const rounds = await listRounds(db, Astro.locals.golf!.user.id, 1000)
+---
+<GolfLayout title="기록 관리" active="manage">
+  <h1 class="text-lg font-bold mb-1">기록 관리</h1>
+  <p class="text-xs text-gray-500 mb-3">라운드 수정·삭제. 삭제는 되돌릴 수 없어요.</p>
+
+  {rounds.length === 0 ? (
+    <p class="g-card text-sm text-gray-600 text-center">기록이 없어요.</p>
+  ) : (
+    <ul class="g-card !p-0 divide-y divide-gray-100">
+      {rounds.map((r) => (
+        <li class="flex items-center gap-2 px-3 py-2.5" data-row={r.id}>
+          <a href={`/private/golf/score/rounds/${r.id}`} class="flex-1 min-w-0">
+            <div class="text-xs text-gray-500">{r.played_on}</div>
+            <div class="text-sm truncate">{r.club_name} <span class="font-semibold tabular-nums">{r.my_total ?? '-'}</span></div>
+          </a>
+          <a href={`/private/golf/score/rounds/${r.id}/edit`} class="g-btn-ghost text-xs">수정</a>
+          <button class="g-btn-ghost text-xs text-red-700" data-del={r.id} data-label={`${r.played_on} ${r.club_name}`}>삭제</button>
+        </li>
+      ))}
+    </ul>
+  )}
+
+  <script is:inline>
+    document.querySelectorAll('button[data-del]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        if (!confirm(`${btn.dataset.label} 라운드를 삭제할까요?`)) return
+        btn.disabled = true
+        const res = await fetch(`/api/golf/rounds/${btn.dataset.del}`, { method: 'DELETE' })
+        if (res.ok) return document.querySelector(`[data-row="${btn.dataset.del}"]`)?.remove()
+        alert('삭제에 실패했습니다.')
+        btn.disabled = false
+      })
+    })
+  </script>
+</GolfLayout>

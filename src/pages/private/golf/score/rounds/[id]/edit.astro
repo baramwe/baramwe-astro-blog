@@ -1,0 +1,18 @@
+---
+import GolfLayout from '../../../../../../layouts/GolfLayout.astro'
+import RoundForm from '../../../../../../components/golf/RoundForm.tsx'
+import { getDB } from '../../../../../../lib/auth/db'
+import { COUNTRIES, ensureSelfPlayer, getRound, listClubsWithCourses, listPlayers } from '../../../../../../lib/golf/repo'
+export const prerender = false
+
+const userId = Astro.locals.golf!.user.id
+const db = getDB(Astro.locals, Astro.request)!
+const round = await getRound(db, userId, String(Astro.params.id))
+if (!round) return new Response('Not found', { status: 404 })
+const self = await ensureSelfPlayer(db, userId)
+const [clubs, players] = await Promise.all([listClubsWithCourses(db), listPlayers(db, userId)])
+---
+<GolfLayout title="라운드 수정" active="manage">
+  <h1 class="text-lg font-bold mb-3">라운드 수정</h1>
+  <RoundForm client:load clubs={clubs} players={players} selfId={self.id} countries={COUNTRIES} initial={round} />
+</GolfLayout>
