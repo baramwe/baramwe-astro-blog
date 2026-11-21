@@ -1,5 +1,7 @@
 // Web Crypto 기반 PBKDF2-SHA256. Workers 런타임 호환.
-const ITERATIONS = 210_000
+// Cloudflare Workers 는 PBKDF2 반복 횟수 100,000 초과를 지원하지 않는다 (NotSupportedError).
+// npm run dev(Node) 에서는 제한이 없어 더 큰 값도 동작하므로, 로컬에서 통과했다고 올리면 운영 로그인이 500 으로 깨진다.
+const ITERATIONS = 100_000
 const HASH_BITS = 256
 const SALT_BYTES = 16
 
