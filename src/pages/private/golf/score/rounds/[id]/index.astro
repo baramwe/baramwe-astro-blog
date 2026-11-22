@@ -31,7 +31,7 @@ const toPar = (t: number) => (t - totalPar === 0 ? 'E' : t - totalPar > 0 ? `+${
     <div class="text-xs text-gray-500">{round.played_on} · {countryName(round.country_code)}{round.tee ? ` · ${round.tee} 티` : ''}</div>
     <h1 class="text-xl font-bold">{round.club_name}</h1>
     <div class="text-sm text-gray-600">{round.front_course}{round.back_course ? ` → ${round.back_course}` : ' (9홀)'} · PAR {totalPar}</div>
-    {round.memo && <p class="mt-3 text-gray-800">“{round.memo}”</p>}
+    {round.memo && <p class="mt-3 text-gray-800">{round.memo}</p>}
   </div>
 
   <div class="g-card mb-4 !p-0 overflow-hidden">

@@ -64,17 +64,14 @@ const sortHref = (k: RoundSort) => `/private/golf/score?y=${selected}${k === 'ne
     {period ? (
       <>
       <div class="mb-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
-        <div class="flex items-baseline gap-2 min-w-0">
-          <h2 class="font-semibold">{periodLabel}</h2>
-          <p class="text-xs text-gray-500">{period.rounds}라운드{period.full_rounds !== period.rounds ? ` · 18홀 ${period.full_rounds}` : ''}</p>
-        </div>
-        <nav aria-label="정렬" class="inline-flex shrink-0 rounded-full bg-gray-100 p-0.5 text-xs">
+        <h2 class="text-lg font-semibold">{periodLabel}</h2>
+        <nav aria-label="정렬" class="inline-flex shrink-0 rounded-full bg-gray-100 p-0.5 text-sm">
           {SORTS.map((o) => (
             <a
               href={sortHref(o.key)}
               aria-current={sort === o.key ? 'true' : undefined}
               class:list={[
-                'round-sort rounded-full px-2.5 py-1 transition',
+                'round-sort rounded-full px-3 py-1 transition',
                 sort === o.key ? 'bg-white font-semibold text-emerald-800 shadow-sm' : 'text-gray-500 hover:text-emerald-700',
               ]}
             >{o.label}</a>

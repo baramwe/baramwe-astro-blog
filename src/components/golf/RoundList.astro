@@ -4,20 +4,20 @@ import { countryName, type RoundListItem } from '../../lib/golf/repo'
 interface Props { rounds: RoundListItem[] }
 const { rounds } = Astro.props
 ---
-<ul class="space-y-2">
+<ul class="space-y-2.5">
   {rounds.map((r) => (
     <li>
-      <a href={`/private/golf/score/rounds/${r.id}`} class="g-card !p-3 flex items-center gap-3 hover:border-emerald-400">
+      <a href={`/private/golf/score/rounds/${r.id}`} class="g-card !px-3.5 !py-4 flex items-center gap-3 hover:border-emerald-400">
         <div class="flex-1 min-w-0">
-          <div class="text-xs text-gray-500">{r.played_on} · {countryName(r.country_code)}{r.region ? ` ${r.region}` : ''}</div>
-          <div class="font-semibold truncate">
+          <div class="text-[13px] text-gray-500">{r.played_on} · {countryName(r.country_code)}{r.region ? ` ${r.region}` : ''}</div>
+          <div class="text-[17px] font-semibold truncate mt-0.5">
             {r.club_name}
-            <span class="text-xs font-normal text-gray-500 ml-1">{r.front_course}{r.back_course ? ` · ${r.back_course}` : ' (9홀)'}</span>
+            <span class="text-[13px] font-normal text-gray-500 ml-1">{r.front_course}{r.back_course ? ` · ${r.back_course}` : ' (9홀)'}</span>
           </div>
-          {r.companions && <div class="text-xs text-gray-500 truncate">with {r.companions}</div>}
-          {r.memo && <div class="text-sm text-gray-700 truncate mt-0.5">“{r.memo}”</div>}
+          {r.companions && <div class="text-[13px] text-gray-500 truncate">with {r.companions}</div>}
+          {r.memo && <div class="text-[15px] text-gray-700 truncate mt-1">{r.memo}</div>}
         </div>
-        <div class="text-2xl font-bold text-emerald-800 tabular-nums">{r.my_total ?? '-'}</div>
+        <div class="text-[1.75rem] font-bold text-emerald-800 tabular-nums">{r.my_total ?? '-'}</div>
       </a>
     </li>
   ))}
