@@ -167,7 +167,22 @@ export interface RoundListItem {
 }
 
 /** year: 'YYYY' 면 해당 연도만, 없으면 전체 */
-export async function listRounds(db: D1Database, ownerId: string, limit = 200, year?: string): Promise<RoundListItem[]> {
+export const ROUND_SORTS = ['new', 'old', 'best', 'worst'] as const
+export type RoundSort = (typeof ROUND_SORTS)[number]
+
+// 화이트리스트 ORDER BY. BEST/WORST 는 18홀 라운드를 먼저(9홀·미기록은 뒤로) 놓고 타수로 정렬
+const ROUND_ORDER: Record<RoundSort, string> = {
+  new: 'r.played_on DESC, r.created_at DESC',
+  old: 'r.played_on ASC, r.created_at ASC',
+  best: 'r.back_course_id IS NULL, my_total IS NULL, my_total ASC, r.played_on DESC',
+  worst: 'r.back_course_id IS NULL, my_total IS NULL, my_total DESC, r.played_on DESC',
+}
+
+export function parseRoundSort(v: string | null | undefined): RoundSort {
+  return (ROUND_SORTS as readonly string[]).includes(v ?? '') ? (v as RoundSort) : 'new'
+}
+
+export async function listRounds(db: D1Database, ownerId: string, limit = 200, year?: string, sort: RoundSort = 'new'): Promise<RoundListItem[]> {
   const { results } = await db.prepare(
     `SELECT r.id, r.played_on, c.name AS club_name, c.country_code, c.region,
             fc.name AS front_course, bc.name AS back_course, r.memo,
@@ -180,7 +195,7 @@ export async function listRounds(db: D1Database, ownerId: string, limit = 200, y
        JOIN golf_courses fc ON fc.id = r.front_course_id
        LEFT JOIN golf_courses bc ON bc.id = r.back_course_id
       WHERE r.owner_user_id = ? AND (? IS NULL OR substr(r.played_on, 1, 4) = ?)
-      ORDER BY r.played_on DESC, r.created_at DESC
+      ORDER BY ${ROUND_ORDER[sort]}
       LIMIT ?`
   ).bind(ownerId, year ?? null, year ?? null, limit).all<RoundListItem>()
   return results

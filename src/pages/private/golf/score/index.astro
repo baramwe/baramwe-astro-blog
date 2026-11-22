@@ -3,7 +3,7 @@ import GolfLayout from '../../../../layouts/GolfLayout.astro'
 import RoundList from '../../../../components/golf/RoundList.astro'
 import YearChips from '../../../../components/golf/YearChips.astro'
 import { getDB } from '../../../../lib/auth/db'
-import { homeSummary, listRoundYears, listRounds, periodSummary } from '../../../../lib/golf/repo'
+import { homeSummary, listRoundYears, listRounds, parseRoundSort, periodSummary, type RoundSort } from '../../../../lib/golf/repo'
 export const prerender = false
 
 const userId = Astro.locals.golf!.user.id
@@ -14,11 +14,13 @@ const year = String(new Date().getFullYear())
 const yParam = Astro.url.searchParams.get('y')
 const selected = yParam === 'all' || /^\d{4}$/.test(yParam ?? '') ? yParam! : null
 const filterYear = selected && selected !== 'all' ? selected : undefined
+// ?s=new(기본)|old|best|worst — 연도/전체 목록에서만 사용
+const sort = selected ? parseRoundSort(Astro.url.searchParams.get('s')) : 'new'
 
 const [summary, years, rounds, period] = await Promise.all([
   homeSummary(db, userId, year),
   listRoundYears(db, userId),
-  listRounds(db, userId, selected ? 2000 : 5, filterYear),
+  listRounds(db, userId, selected ? 2000 : 5, filterYear, sort),
   selected ? periodSummary(db, userId, filterYear) : Promise.resolve(null),
 ])
 
@@ -36,6 +38,13 @@ const stats = period
       { label: '베스트', value: summary.best ?? '-', sub: summary.best_on ?? '' },
     ]
 const periodLabel = selected === 'all' ? '전체 기록' : `${selected}년`
+const SORTS: { key: RoundSort; label: string }[] = [
+  { key: 'new', label: '최신순' },
+  { key: 'old', label: '시간순' },
+  { key: 'best', label: 'BEST' },
+  { key: 'worst', label: 'WORST' },
+]
+const sortHref = (k: RoundSort) => `/private/golf/score?y=${selected}${k === 'new' ? '' : `&s=${k}`}`
 ---
 <GolfLayout title="홈" active="home">
   <section id="stats" class="grid grid-cols-3 gap-2 mb-5">
@@ -49,14 +58,33 @@ const periodLabel = selected === 'all' ? '전체 기록' : `${selected}년`
   </section>
   <p class="text-[11px] text-gray-400 -mt-3 mb-3">평균·베스트는 18홀 라운드 기준</p>
 
-  {years.length > 0 && <YearChips years={years} selected={selected} total={summary.rounds} />}
+  {years.length > 0 && <YearChips years={years} selected={selected} total={summary.rounds} sort={sort} />}
 
   <section id="rounds" class="scroll-mt-28">
     {period ? (
-      <div class="mb-2 flex items-baseline justify-between gap-3">
-        <h2 class="font-semibold">{periodLabel}</h2>
-        <p class="text-xs text-gray-500">{period.rounds}라운드{period.full_rounds !== period.rounds ? ` · 18홀 ${period.full_rounds}` : ''}</p>
+      <>
+      <div class="mb-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
+        <div class="flex items-baseline gap-2 min-w-0">
+          <h2 class="font-semibold">{periodLabel}</h2>
+          <p class="text-xs text-gray-500">{period.rounds}라운드{period.full_rounds !== period.rounds ? ` · 18홀 ${period.full_rounds}` : ''}</p>
+        </div>
+        <nav aria-label="정렬" class="inline-flex shrink-0 rounded-full bg-gray-100 p-0.5 text-xs">
+          {SORTS.map((o) => (
+            <a
+              href={sortHref(o.key)}
+              aria-current={sort === o.key ? 'true' : undefined}
+              class:list={[
+                'round-sort rounded-full px-2.5 py-1 transition',
+                sort === o.key ? 'bg-white font-semibold text-emerald-800 shadow-sm' : 'text-gray-500 hover:text-emerald-700',
+              ]}
+            >{o.label}</a>
+          ))}
+        </nav>
       </div>
+      {(sort === 'best' || sort === 'worst') && period.full_rounds !== period.rounds && (
+        <p class="-mt-1 mb-2 text-[11px] text-gray-400">18홀 라운드 먼저, 9홀은 뒤에 표시</p>
+      )}
+      </>
     ) : (
       <div class="flex items-center justify-between mb-2">
         <h2 class="font-semibold">최근 라운드</h2>
