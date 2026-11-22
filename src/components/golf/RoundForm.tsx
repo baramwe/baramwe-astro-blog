@@ -321,8 +321,11 @@ export default function RoundForm({ clubs, players, selfId, countries, initial }
 
       <section className="g-card">
         <label className="block">
-          <span className="text-xs text-gray-500">한줄평 (선택, 100자)</span>
-          <input className="g-input" value={memo} maxLength={100} placeholder="오늘의 라운드 한마디" onChange={(e) => setMemo(e.target.value)} />
+          <span className="flex justify-between text-xs text-gray-500">
+            <span>한줄평 (선택)</span>
+            <span className="tabular-nums">{memo.length}/300</span>
+          </span>
+          <textarea className="g-input resize-y" rows={3} value={memo} maxLength={300} placeholder="오늘의 라운드 한마디" onChange={(e) => setMemo(e.target.value)} />
         </label>
       </section>
 

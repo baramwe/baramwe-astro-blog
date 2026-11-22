@@ -16,7 +16,7 @@ export interface Course { id: string; club_id: string; name: string; pars: numbe
 export type ClubWithCourses = Club & { courses: Course[] }
 
 export const COUNTRIES: Record<string, string> = {
-  KR: '한국', JP: '일본', TH: '태국', VN: '베트남', PH: '필리핀', CN: '중국', TW: '대만',
+  KR: '한국', JP: '일본', TH: '태국', VN: '베트남', PH: '필리핀', CN: '중국', TW: '대만', MN: '몽골',
   MY: '말레이시아', ID: '인도네시아', US: '미국', AU: '호주', NZ: '뉴질랜드', ES: '스페인', GB: '영국', XX: '미상',
 }
 export const countryName = (code: string) => COUNTRIES[code] ?? code
@@ -54,20 +54,38 @@ function parsePars(v: unknown): number[] {
   })
 }
 
-export async function createClub(db: D1Database, userId: string, body: any): Promise<string> {
+function parseClub(body: any) {
   const name = cleanText(body?.name, 60, '골프장 이름')!
   const country = String(body?.country_code ?? '').trim().toUpperCase()
   if (!/^[A-Z]{2}$/.test(country)) throw new GolfError('국가 코드가 올바르지 않습니다.')
   const region = cleanText(body?.region, 40, '지역', false)
+  return { name, country, region }
+}
 
+/** (name, country_code) UNIQUE — exceptId 는 수정 중인 자기 자신 */
+async function assertClubNameFree(db: D1Database, name: string, country: string, exceptId?: string) {
   const dup = await db.prepare(`SELECT id FROM golf_clubs WHERE name = ? AND country_code = ?`)
     .bind(name, country).first<{ id: string }>()
-  if (dup) throw new GolfError('이미 등록된 골프장입니다.', 409)
+  if (dup && dup.id !== exceptId) throw new GolfError('이미 등록된 골프장입니다.', 409)
+}
+
+export async function createClub(db: D1Database, userId: string, body: any): Promise<string> {
+  const { name, country, region } = parseClub(body)
+  await assertClubNameFree(db, name, country)
 
   const id = uuid()
   await db.prepare(`INSERT INTO golf_clubs (id, name, country_code, region, created_by) VALUES (?, ?, ?, ?, ?)`)
     .bind(id, name, country, region, userId).run()
   return id
+}
+
+/** 골프장 이름·국가·지역 수정 */
+export async function updateClub(db: D1Database, clubId: string, body: any): Promise<void> {
+  const { name, country, region } = parseClub(body)
+  await assertClubNameFree(db, name, country, clubId)
+  const res = await db.prepare(`UPDATE golf_clubs SET name = ?, country_code = ?, region = ? WHERE id = ?`)
+    .bind(name, country, region, clubId).run()
+  if (!res.meta.changes) throw new GolfError('골프장을 찾을 수 없습니다.', 404)
 }
 
 export async function createCourse(db: D1Database, userId: string, clubId: string, body: any): Promise<string> {
@@ -143,14 +161,15 @@ export async function listPlayers(db: D1Database, ownerId: string): Promise<Play
 // ───────────────────────── 라운드 ─────────────────────────
 
 export interface RoundListItem {
-  id: string; played_on: string; club_name: string; country_code: string
+  id: string; played_on: string; club_name: string; country_code: string; region: string | null
   front_course: string; back_course: string | null; memo: string | null
   my_total: number | null; companions: string | null
 }
 
-export async function listRounds(db: D1Database, ownerId: string, limit = 200): Promise<RoundListItem[]> {
+/** year: 'YYYY' 면 해당 연도만, 없으면 전체 */
+export async function listRounds(db: D1Database, ownerId: string, limit = 200, year?: string): Promise<RoundListItem[]> {
   const { results } = await db.prepare(
-    `SELECT r.id, r.played_on, c.name AS club_name, c.country_code,
+    `SELECT r.id, r.played_on, c.name AS club_name, c.country_code, c.region,
             fc.name AS front_course, bc.name AS back_course, r.memo,
             (SELECT rp.total FROM golf_round_players rp JOIN golf_players p ON p.id = rp.player_id
               WHERE rp.round_id = r.id AND p.is_self = 1) AS my_total,
@@ -160,11 +179,45 @@ export async function listRounds(db: D1Database, ownerId: string, limit = 200): 
        JOIN golf_clubs c ON c.id = r.club_id
        JOIN golf_courses fc ON fc.id = r.front_course_id
        LEFT JOIN golf_courses bc ON bc.id = r.back_course_id
-      WHERE r.owner_user_id = ?
+      WHERE r.owner_user_id = ? AND (? IS NULL OR substr(r.played_on, 1, 4) = ?)
       ORDER BY r.played_on DESC, r.created_at DESC
       LIMIT ?`
-  ).bind(ownerId, limit).all<RoundListItem>()
+  ).bind(ownerId, year ?? null, year ?? null, limit).all<RoundListItem>()
   return results
+}
+
+export interface YearCount { year: string; rounds: number }
+
+/** 라운드가 있는 연도 목록 (최신순) */
+export async function listRoundYears(db: D1Database, ownerId: string): Promise<YearCount[]> {
+  const { results } = await db.prepare(
+    `SELECT substr(played_on, 1, 4) AS year, count(*) AS rounds
+       FROM golf_rounds WHERE owner_user_id = ?
+      GROUP BY year ORDER BY year DESC`
+  ).bind(ownerId).all<YearCount>()
+  return results
+}
+
+export interface PeriodSummary { rounds: number; full_rounds: number; avg: number | null; best: number | null; best_on: string | null }
+
+/** 기간 요약 — 평균·베스트는 18홀 라운드(본인) 기준. year 없으면 전체 */
+export async function periodSummary(db: D1Database, ownerId: string, year?: string): Promise<PeriodSummary> {
+  const row = await db.prepare(
+    `WITH mine AS (
+       SELECT r.played_on, r.back_course_id IS NOT NULL AS full18, rp.total
+         FROM golf_rounds r
+         LEFT JOIN golf_round_players rp ON rp.round_id = r.id
+          AND rp.player_id = (SELECT id FROM golf_players WHERE owner_user_id = r.owner_user_id AND is_self = 1)
+        WHERE r.owner_user_id = ? AND (? IS NULL OR substr(r.played_on, 1, 4) = ?)
+     )
+     SELECT count(*) AS rounds,
+            sum(full18) AS full_rounds,
+            round(avg(CASE WHEN full18 THEN total END), 1) AS avg,
+            min(CASE WHEN full18 THEN total END) AS best,
+            (SELECT played_on FROM mine WHERE full18 AND total IS NOT NULL ORDER BY total, played_on DESC LIMIT 1) AS best_on
+       FROM mine`
+  ).bind(ownerId, year ?? null, year ?? null).first<PeriodSummary>()
+  return row ?? { rounds: 0, full_rounds: 0, avg: null, best: null, best_on: null }
 }
 
 export interface RoundDetail {
@@ -242,7 +295,7 @@ export async function saveRound(db: D1Database, ownerId: string, body: any, roun
     throw new GolfError('라운드 일자가 올바르지 않습니다.')
   }
   const tee = cleanText(body?.tee, 20, '티', false)
-  const memo = cleanText(body?.memo, 100, '한줄평', false)
+  const memo = cleanText(body?.memo, 300, '한줄평', false)
 
   // ── 골프장 / 코스 (코스는 반드시 해당 골프장 소속)
   const clubId = String(body?.club_id ?? '')

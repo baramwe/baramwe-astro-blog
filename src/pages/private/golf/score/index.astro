@@ -1,23 +1,44 @@
 ---
 import GolfLayout from '../../../../layouts/GolfLayout.astro'
 import RoundList from '../../../../components/golf/RoundList.astro'
+import YearChips from '../../../../components/golf/YearChips.astro'
 import { getDB } from '../../../../lib/auth/db'
-import { homeSummary, listRounds } from '../../../../lib/golf/repo'
+import { homeSummary, listRoundYears, listRounds, periodSummary } from '../../../../lib/golf/repo'
 export const prerender = false
 
 const userId = Astro.locals.golf!.user.id
 const db = getDB(Astro.locals, Astro.request)!
 const year = String(new Date().getFullYear())
-const [summary, recent] = await Promise.all([homeSummary(db, userId, year), listRounds(db, userId, 5)])
 
-const stats = [
-  { label: `${year} 라운드`, value: summary.year_rounds ?? 0 },
-  { label: `${year} 평균`, value: summary.year_avg ?? '-' },
-  { label: '베스트', value: summary.best ?? '-', sub: summary.best_on ?? '' },
-]
+// ?y=all | YYYY  — 없으면 '최근 라운드' 5개
+const yParam = Astro.url.searchParams.get('y')
+const selected = yParam === 'all' || /^\d{4}$/.test(yParam ?? '') ? yParam! : null
+const filterYear = selected && selected !== 'all' ? selected : undefined
+
+const [summary, years, rounds, period] = await Promise.all([
+  homeSummary(db, userId, year),
+  listRoundYears(db, userId),
+  listRounds(db, userId, selected ? 2000 : 5, filterYear),
+  selected ? periodSummary(db, userId, filterYear) : Promise.resolve(null),
+])
+
+// 상단 카드: 연도/전체 선택 시 그 기간 기준, 미선택이면 올해 + 통산 베스트
+const prefix = selected === 'all' ? '전체' : (selected ?? year)
+const stats = period
+  ? [
+      { label: `${prefix} 라운드`, value: period.rounds ?? 0 },
+      { label: `${prefix} 평균`, value: period.avg ?? '-' },
+      { label: `${prefix} 베스트`, value: period.best ?? '-', sub: period.best_on ?? '' },
+    ]
+  : [
+      { label: `${year} 라운드`, value: summary.year_rounds ?? 0 },
+      { label: `${year} 평균`, value: summary.year_avg ?? '-' },
+      { label: '베스트', value: summary.best ?? '-', sub: summary.best_on ?? '' },
+    ]
+const periodLabel = selected === 'all' ? '전체 기록' : `${selected}년`
 ---
 <GolfLayout title="홈" active="home">
-  <section class="grid grid-cols-3 gap-2 mb-5">
+  <section id="stats" class="grid grid-cols-3 gap-2 mb-5">
     {stats.map((s) => (
       <div class="g-card text-center !p-3">
         <div class="text-xs text-gray-500">{s.label}</div>
@@ -26,19 +47,30 @@ const stats = [
       </div>
     ))}
   </section>
-  <p class="text-[11px] text-gray-400 -mt-3 mb-5">평균·베스트는 18홀 라운드 기준</p>
+  <p class="text-[11px] text-gray-400 -mt-3 mb-3">평균·베스트는 18홀 라운드 기준</p>
 
-  <div class="flex items-center justify-between mb-2">
-    <h2 class="font-semibold">최근 라운드</h2>
-    {summary.rounds > 5 && <a href="/private/golf/score/rounds" class="text-sm text-emerald-700">전체 {summary.rounds}개 →</a>}
-  </div>
+  {years.length > 0 && <YearChips years={years} selected={selected} total={summary.rounds} />}
 
-  {recent.length === 0 ? (
-    <div class="g-card text-center text-sm text-gray-600 space-y-3">
-      <p>아직 기록이 없어요.</p>
-      <a href="/private/golf/score/rounds/new" class="g-btn inline-block">첫 라운드 입력하기</a>
-    </div>
-  ) : (
-    <RoundList rounds={recent} />
-  )}
+  <section id="rounds" class="scroll-mt-28">
+    {period ? (
+      <div class="mb-2 flex items-baseline justify-between gap-3">
+        <h2 class="font-semibold">{periodLabel}</h2>
+        <p class="text-xs text-gray-500">{period.rounds}라운드{period.full_rounds !== period.rounds ? ` · 18홀 ${period.full_rounds}` : ''}</p>
+      </div>
+    ) : (
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="font-semibold">최근 라운드</h2>
+        {summary.rounds > 5 && <a href="/private/golf/score/rounds" class="text-sm text-emerald-700">전체 {summary.rounds}개 →</a>}
+      </div>
+    )}
+
+    {rounds.length === 0 ? (
+      <div class="g-card text-center text-sm text-gray-600 space-y-3">
+        <p>아직 기록이 없어요.</p>
+        <a href="/private/golf/score/rounds/new" class="g-btn inline-block">첫 라운드 입력하기</a>
+      </div>
+    ) : (
+      <RoundList rounds={rounds} />
+    )}
+  </section>
 </GolfLayout>

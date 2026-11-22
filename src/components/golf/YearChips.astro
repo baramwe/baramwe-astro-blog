@@ -1,0 +1,178 @@
+---
+import type { YearCount } from '../../lib/golf/repo'
+
+interface Props {
+  years: YearCount[]
+  /** 'all' | 'YYYY' | null(최근 라운드) */
+  selected: string | null
+  total: number
+}
+const { years, selected, total } = Astro.props
+const BASE = '/private/golf/score'
+
+// 선택된 칩을 다시 누르면 '최근 라운드'로 돌아간다
+const hrefFor = (key: string) => (selected === key ? BASE : `${BASE}?y=${key}`)
+const chips = [{ key: 'all', label: '전체', count: total }, ...years.map((y) => ({ key: y.year, label: y.year, count: y.rounds }))]
+---
+<nav class="year-strip -mx-4 mb-5" aria-label="연도별 라운드">
+  <ul class="year-track relative flex gap-2 overflow-x-auto px-4 py-1">
+    {chips.map((c) => {
+      const active = selected === c.key
+      return (
+        <li class="shrink-0">
+          <a
+            href={hrefFor(c.key)}
+            aria-current={active ? 'true' : undefined}
+            data-active={active ? '' : undefined}
+            class:list={[
+              'year-chip group inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm transition',
+              active
+                ? 'border-emerald-700 bg-emerald-700 text-white shadow-sm shadow-emerald-900/20'
+                : 'border-gray-200 bg-white text-gray-700 hover:border-emerald-300 hover:text-emerald-800',
+            ]}
+          >
+            <span class:list={['font-semibold tabular-nums', c.key === 'all' && 'tracking-tight']}>{c.label}</span>
+            <span
+              class:list={[
+                'rounded-full px-1.5 text-[11px] leading-[1.15rem] tabular-nums',
+                active ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500 group-hover:bg-emerald-50 group-hover:text-emerald-700',
+              ]}
+            >{c.count}</span>
+          </a>
+        </li>
+      )
+    })}
+  </ul>
+</nav>
+
+<style>
+  /* 좌우 스크롤 + 가장자리 페이드, 스크롤바 숨김 */
+  .year-track {
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    mask-image: linear-gradient(to right, transparent 0, #000 1rem, #000 calc(100% - 1.5rem), transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, transparent 0, #000 1rem, #000 calc(100% - 1.5rem), transparent 100%);
+  }
+  .year-track::-webkit-scrollbar { display: none; }
+  /* PC 마우스 드래그 스크롤 */
+  @media (pointer: fine) { .year-track { cursor: grab; } }
+  .year-track.is-dragging { cursor: grabbing; scroll-snap-type: none; user-select: none; }
+  .year-track.is-dragging .year-chip { pointer-events: none; }
+  .year-chip { -webkit-user-drag: none; }
+  .year-track > li { scroll-snap-align: start; }
+  .year-chip:focus-visible { outline: 2px solid #10b981; outline-offset: 2px; }
+</style>
+
+<script>
+  // 선택된 칩이 화면 밖(오래된 연도)이면 보이도록 가로로만 스크롤 (첫 진입 시)
+  const centerActive = () => {
+    const active = document.querySelector<HTMLElement>('.year-chip[data-active]')
+    const track = active?.closest<HTMLElement>('.year-track')
+    if (active && track) {
+      const left = active.offsetLeft - (track.clientWidth - active.offsetWidth) / 2
+      track.scrollLeft = Math.max(0, left)
+    }
+  }
+  centerActive()
+
+  // 칩 클릭 → 페이지 이동 없이 칩 상태와 하단 목록(#rounds)만 교체. 세로 스크롤 위치는 그대로.
+  let pending: AbortController | null = null
+
+  async function swapTo(url: string, push: boolean) {
+    pending?.abort()
+    pending = new AbortController()
+    const rounds = document.getElementById('rounds')
+    rounds?.setAttribute('aria-busy', 'true')
+    const statsEl = document.getElementById('stats')
+    for (const el of [rounds, statsEl]) el?.classList.add('opacity-50', 'transition-opacity')
+    try {
+      const res = await fetch(url, { signal: pending.signal, headers: { Accept: 'text/html' } })
+      if (!res.ok || res.redirected) throw new Error(String(res.status))
+      const doc = new DOMParser().parseFromString(await res.text(), 'text/html')
+      const nextRounds = doc.getElementById('rounds')
+      const nextTrack = doc.querySelector('.year-track')
+      const track = document.querySelector<HTMLElement>('.year-track')
+      if (!nextRounds || !rounds) throw new Error('missing #rounds')
+
+      rounds.innerHTML = nextRounds.innerHTML
+      // 상단 요약 카드(라운드수·평균·베스트)도 같은 기간 기준으로 교체
+      const stats = document.getElementById('stats')
+      const nextStats = doc.getElementById('stats')
+      if (stats && nextStats) stats.innerHTML = nextStats.innerHTML
+      if (track && nextTrack) {
+        const keep = track.scrollLeft // 가로 스크롤도 유지
+        track.innerHTML = nextTrack.innerHTML
+        track.scrollLeft = keep
+      }
+      if (push) history.pushState({ golfYear: true }, '', url)
+    } catch (e) {
+      if ((e as Error).name === 'AbortError') return
+      location.href = url // 실패 시 일반 이동으로 폴백
+    } finally {
+      rounds?.removeAttribute('aria-busy')
+      for (const el of [rounds, statsEl]) el?.classList.remove('opacity-50')
+    }
+  }
+
+  // PC: 마우스로 잡아서 좌우로 끌기 + 세로 휠을 가로 스크롤로. (터치는 브라우저 기본 스와이프 그대로)
+  const DRAG_THRESHOLD = 5
+  let drag: { x: number; left: number; moved: boolean; id: number } | null = null
+  let suppressClick = false
+
+  const trackEl = document.querySelector<HTMLElement>('.year-track')
+  if (trackEl) {
+    trackEl.addEventListener('pointerdown', (e) => {
+      if (e.pointerType !== 'mouse' || e.button !== 0) return
+      drag = { x: e.clientX, left: trackEl.scrollLeft, moved: false, id: e.pointerId }
+    })
+    trackEl.addEventListener('pointermove', (e) => {
+      if (!drag || e.pointerId !== drag.id) return
+      const dx = e.clientX - drag.x
+      if (!drag.moved && Math.abs(dx) < DRAG_THRESHOLD) return
+      if (!drag.moved) {
+        drag.moved = true
+        trackEl.setPointerCapture(e.pointerId)
+        trackEl.classList.add('is-dragging')
+      }
+      trackEl.scrollLeft = drag.left - dx
+    })
+    const end = (e: PointerEvent) => {
+      if (!drag || e.pointerId !== drag.id) return
+      if (drag.moved) {
+        suppressClick = true // 끌기 끝난 직후의 클릭은 연도 선택으로 치지 않음
+        setTimeout(() => (suppressClick = false), 0)
+        trackEl.releasePointerCapture?.(e.pointerId)
+      }
+      trackEl.classList.remove('is-dragging')
+      drag = null
+    }
+    trackEl.addEventListener('pointerup', end)
+    trackEl.addEventListener('pointercancel', end)
+
+    trackEl.addEventListener('wheel', (e) => {
+      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return // 트랙패드 가로 스와이프는 기본 동작
+      const max = trackEl.scrollWidth - trackEl.clientWidth
+      if (max <= 0) return
+      const atEdge = (e.deltaY < 0 && trackEl.scrollLeft <= 0) || (e.deltaY > 0 && trackEl.scrollLeft >= max)
+      if (atEdge) return // 끝에 닿으면 페이지 세로 스크롤로 넘김
+      e.preventDefault()
+      trackEl.scrollLeft += e.deltaY
+    }, { passive: false })
+  }
+
+  document.addEventListener('click', (e) => {
+    if (suppressClick && (e.target as Element).closest('.year-track')) {
+      e.preventDefault()
+      e.stopPropagation()
+      return
+    }
+    const a = (e.target as Element).closest<HTMLAnchorElement>('a.year-chip')
+    if (!a || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+    e.preventDefault()
+    swapTo(a.href, true)
+  })
+
+  // 뒤로/앞으로 가기도 같은 방식으로 교체
+  window.addEventListener('popstate', () => swapTo(location.href, false))
+</script>

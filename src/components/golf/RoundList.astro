@@ -9,7 +9,7 @@ const { rounds } = Astro.props
     <li>
       <a href={`/private/golf/score/rounds/${r.id}`} class="g-card !p-3 flex items-center gap-3 hover:border-emerald-400">
         <div class="flex-1 min-w-0">
-          <div class="text-xs text-gray-500">{r.played_on} · {countryName(r.country_code)}</div>
+          <div class="text-xs text-gray-500">{r.played_on} · {countryName(r.country_code)}{r.region ? ` ${r.region}` : ''}</div>
           <div class="font-semibold truncate">
             {r.club_name}
             <span class="text-xs font-normal text-gray-500 ml-1">{r.front_course}{r.back_course ? ` · ${r.back_course}` : ' (9홀)'}</span>
