@@ -8,7 +8,7 @@ export const prerender = false
 const db = getDB(Astro.locals, Astro.request)!
 const rounds = await listRounds(db, Astro.locals.golf!.user.id, 2000)
 ---
-<GolfLayout title="라운드" active="rounds">
+<GolfLayout title="라운드" active="home">
   <div class="flex items-center justify-between mb-3">
     <h1 class="text-lg font-bold">내 라운드 <span class="text-sm font-normal text-gray-500">{rounds.length}</span></h1>
     <a href="/private/golf/score/rounds/new" class="g-btn text-sm">+ 입력</a>

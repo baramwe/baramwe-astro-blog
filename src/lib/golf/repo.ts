@@ -474,3 +474,73 @@ export async function homeSummary(db: D1Database, ownerId: string, year: string)
   ).bind(ownerId, ownerId, year, year).first<HomeSummary>()
   return row ?? { rounds: 0, year_rounds: 0, year_avg: null, best: null, best_on: null }
 }
+
+// ───────────────────────── 골친(동반자 전적) ─────────────────────────
+
+export interface Buddy {
+  id: string; display_name: string
+  rounds: number; wins: number; losses: number; draws: number
+  last_on: string
+  /** 18홀 라운드 평균 (함께한 라운드 기준) */
+  my_avg: number | null; their_avg: number | null
+}
+
+/**
+ * 나와 함께 친 동반자 목록 (함께한 라운드 수 많은 순).
+ * 승패는 같은 라운드에서 본인 타수와 비교 — 적게 친 쪽이 승.
+ * minRounds: 이 횟수 이상 함께한 사람만 (조인 1회성 동반자 제외용)
+ */
+export async function listBuddies(db: D1Database, ownerId: string, minRounds = 1): Promise<Buddy[]> {
+  const { results } = await db.prepare(
+    `WITH me AS (SELECT id FROM golf_players WHERE owner_user_id = ?1 AND is_self = 1),
+     pairs AS (
+       SELECT r.played_on, r.back_course_id IS NOT NULL AS full18,
+              o.player_id AS opp, m.total AS my, o.total AS their
+         FROM golf_rounds r
+         JOIN golf_round_players m ON m.round_id = r.id AND m.player_id = (SELECT id FROM me)
+         JOIN golf_round_players o ON o.round_id = r.id AND o.player_id <> m.player_id
+        WHERE r.owner_user_id = ?1
+     )
+     SELECT p.id, p.display_name,
+            count(*) AS rounds,
+            sum(my < their) AS wins, sum(my > their) AS losses, sum(my = their) AS draws,
+            max(played_on) AS last_on,
+            round(avg(CASE WHEN full18 THEN my END), 1) AS my_avg,
+            round(avg(CASE WHEN full18 THEN their END), 1) AS their_avg
+       FROM pairs JOIN golf_players p ON p.id = pairs.opp
+      GROUP BY p.id
+     HAVING count(*) >= ?2
+      ORDER BY rounds DESC, last_on DESC, p.display_name`
+  ).bind(ownerId, minRounds).all<Buddy>()
+  return results
+}
+
+export interface BuddyRound {
+  id: string; played_on: string; club_name: string; country_code: string; region: string | null
+  front_course: string; back_course: string | null
+  my: number; their: number; others: number
+}
+
+/** 특정 동반자와 함께 친 라운드 (최근순) + 동반자 정보 */
+export async function getBuddy(db: D1Database, ownerId: string, buddyId: string): Promise<{ buddy: Buddy; self_name: string; rounds: BuddyRound[] } | null> {
+  const buddy = (await listBuddies(db, ownerId)).find((b) => b.id === buddyId)
+  if (!buddy) return null
+  const self = await db.prepare(`SELECT display_name FROM golf_players WHERE owner_user_id = ? AND is_self = 1`)
+    .bind(ownerId).first<{ display_name: string }>()
+  const { results } = await db.prepare(
+    `SELECT r.id, r.played_on, c.name AS club_name, c.country_code, c.region,
+            fc.name AS front_course, bc.name AS back_course,
+            m.total AS my, o.total AS their,
+            (SELECT count(*) FROM golf_round_players x WHERE x.round_id = r.id) - 2 AS others
+       FROM golf_rounds r
+       JOIN golf_clubs c ON c.id = r.club_id
+       JOIN golf_courses fc ON fc.id = r.front_course_id
+       LEFT JOIN golf_courses bc ON bc.id = r.back_course_id
+       JOIN golf_round_players m ON m.round_id = r.id
+        AND m.player_id = (SELECT id FROM golf_players WHERE owner_user_id = ?1 AND is_self = 1)
+       JOIN golf_round_players o ON o.round_id = r.id AND o.player_id = ?2
+      WHERE r.owner_user_id = ?1
+      ORDER BY r.played_on DESC, r.created_at DESC`
+  ).bind(ownerId, buddyId).all<BuddyRound>()
+  return { buddy, self_name: self?.display_name ?? '나', rounds: results }
+}

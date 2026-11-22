@@ -1,0 +1,53 @@
+---
+/** 나 vs 동반자 상대 전적 — 승·무·패 숫자 + 비율 막대 */
+interface Props {
+  selfName: string
+  buddyName: string
+  wins: number
+  draws: number
+  losses: number
+  /** lg: 상세 페이지 상단용 */
+  size?: 'md' | 'lg'
+}
+const { selfName, buddyName, wins, draws, losses, size = 'md' } = Astro.props
+const total = wins + draws + losses || 1
+const pct = (n: number) => `${(n / total) * 100}%`
+const lg = size === 'lg'
+const num = lg ? 'text-4xl' : 'text-2xl'
+---
+<div>
+  <div class="grid grid-cols-[1fr_auto_1fr] items-end gap-2">
+    <div class="min-w-0">
+      <div class:list={['truncate text-gray-500', lg ? 'text-sm' : 'text-[13px]']}>{selfName}</div>
+      <div class="flex items-baseline gap-1">
+        <span class:list={[num, 'font-extrabold leading-none tabular-nums text-emerald-700']}>{wins}</span>
+        <span class:list={['font-semibold text-emerald-700', lg ? 'text-base' : 'text-sm']}>승</span>
+      </div>
+    </div>
+
+    <div class="pb-0.5 text-center">
+      <span
+        class:list={[
+          'inline-flex items-center gap-1 rounded-full border border-gray-200 bg-gray-50 font-medium text-gray-500 tabular-nums',
+          lg ? 'px-3 py-1 text-sm' : 'px-2.5 py-0.5 text-xs',
+        ]}
+      >
+        <span class="h-1.5 w-1.5 rounded-full bg-gray-400"></span>{draws}무
+      </span>
+    </div>
+
+    <div class="min-w-0 text-right">
+      <div class:list={['truncate text-gray-500', lg ? 'text-sm' : 'text-[13px]']}>vs {buddyName}</div>
+      <div class="flex items-baseline justify-end gap-1">
+        <span class:list={[num, 'font-extrabold leading-none tabular-nums text-rose-600']}>{losses}</span>
+        <span class:list={['font-semibold text-rose-600', lg ? 'text-base' : 'text-sm']}>패</span>
+      </div>
+    </div>
+  </div>
+
+  <div class:list={['mt-2.5 flex overflow-hidden rounded-full bg-gray-100', lg ? 'h-2.5' : 'h-2']} aria-hidden="true">
+    {wins > 0 && <span class="bg-emerald-500" style={`width:${pct(wins)}`}></span>}
+    {draws > 0 && <span class="bg-gray-300" style={`width:${pct(draws)}`}></span>}
+    {losses > 0 && <span class="bg-rose-400" style={`width:${pct(losses)}`}></span>}
+  </div>
+</div>

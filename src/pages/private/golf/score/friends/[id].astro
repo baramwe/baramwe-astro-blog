@@ -1,0 +1,80 @@
+---
+import GolfLayout from '../../../../../layouts/GolfLayout.astro'
+import BuddyRecord from '../../../../../components/golf/BuddyRecord.astro'
+import { getDB } from '../../../../../lib/auth/db'
+import { countryName, getBuddy } from '../../../../../lib/golf/repo'
+export const prerender = false
+
+const db = getDB(Astro.locals, Astro.request)!
+const data = await getBuddy(db, Astro.locals.golf!.user.id, String(Astro.params.id))
+if (!data) return new Response('Not found', { status: 404 })
+const { buddy, self_name: selfName, rounds } = data
+
+const result = (my: number, their: number) => (my < their ? 'win' : my > their ? 'loss' : 'draw')
+const BADGE = {
+  win: { label: '승', cls: 'bg-emerald-600 text-white', bar: 'bg-emerald-500' },
+  loss: { label: '패', cls: 'bg-rose-500 text-white', bar: 'bg-rose-400' },
+  draw: { label: '무', cls: 'bg-gray-200 text-gray-600', bar: 'bg-gray-300' },
+} as const
+const winRate = Math.round((buddy.wins / (buddy.rounds || 1)) * 100)
+---
+<GolfLayout title={`${buddy.display_name} 전적`} active="friends">
+  <a href="/private/golf/score/friends" class="mb-3 inline-flex items-center gap-1 text-sm text-emerald-700">← 골친</a>
+
+  <section class="g-card mb-5 !p-5">
+    <div class="mb-4 flex items-start justify-between gap-3">
+      <div class="min-w-0">
+        <h1 class="truncate text-xl font-bold">{selfName} <span class="font-normal text-gray-400">vs</span> {buddy.display_name}</h1>
+        <p class="text-sm text-gray-500">{buddy.rounds}라운드 함께 · 최근 {buddy.last_on}</p>
+      </div>
+      <div class="shrink-0 rounded-xl bg-emerald-50 px-3 py-1.5 text-center">
+        <div class="text-[11px] text-emerald-700">승률</div>
+        <div class="text-xl font-bold tabular-nums text-emerald-800">{winRate}%</div>
+      </div>
+    </div>
+    <BuddyRecord size="lg" selfName={selfName} buddyName={buddy.display_name} wins={buddy.wins} draws={buddy.draws} losses={buddy.losses} />
+    {buddy.my_avg !== null && (
+      <div class="mt-3 grid grid-cols-2 gap-2 text-center text-sm tabular-nums">
+        <div class="rounded-lg bg-gray-50 py-2"><div class="text-[11px] text-gray-500">{selfName} 평균</div><b class="text-lg text-gray-800">{buddy.my_avg}</b></div>
+        <div class="rounded-lg bg-gray-50 py-2"><div class="text-[11px] text-gray-500">{buddy.display_name} 평균</div><b class="text-lg text-gray-800">{buddy.their_avg}</b></div>
+      </div>
+    )}
+  </section>
+
+  <h2 class="mb-2 text-lg font-semibold">함께한 라운드 <span class="text-sm font-normal text-gray-500">최근순</span></h2>
+  <ul class="space-y-2.5">
+    {rounds.map((r) => {
+      const res = result(r.my, r.their)
+      const b = BADGE[res]
+      return (
+        <li>
+          <a href={`/private/golf/score/rounds/${r.id}`} class="g-card relative flex items-center gap-3 overflow-hidden !py-4 !pl-5 !pr-3.5 hover:border-emerald-400">
+            <span class:list={['absolute inset-y-0 left-0 w-1.5', b.bar]} aria-hidden="true"></span>
+            <div class="min-w-0 flex-1">
+              <div class="text-[13px] text-gray-500">{r.played_on} · {countryName(r.country_code)}{r.region ? ` ${r.region}` : ''}</div>
+              <div class="mt-0.5 truncate text-[17px] font-semibold">
+                {r.club_name}
+                <span class="ml-1 text-[13px] font-normal text-gray-500">{r.front_course}{r.back_course ? ` · ${r.back_course}` : ' (9홀)'}</span>
+              </div>
+              {r.others > 0 && <div class="text-[13px] text-gray-400">외 {r.others}명 동반</div>}
+            </div>
+            <div class="shrink-0 text-right">
+              <div class="flex items-center justify-end gap-2 tabular-nums">
+                <div class="text-center">
+                  <div class="text-[11px] text-gray-400 max-w-[4.5rem] truncate">{selfName}</div>
+                  <div class:list={['text-2xl font-bold leading-none', res === 'win' ? 'text-emerald-700' : 'text-gray-800']}>{r.my}</div>
+                </div>
+                <span class="pt-3 text-xs font-medium text-gray-400">vs</span>
+                <div class="text-center">
+                  <div class="text-[11px] text-gray-400 max-w-[4.5rem] truncate">{buddy.display_name}</div>
+                  <div class:list={['text-2xl font-bold leading-none', res === 'loss' ? 'text-rose-600' : 'text-gray-800']}>{r.their}</div>
+                </div>
+                <span class:list={['ml-1 inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-bold', b.cls]}>{b.label}</span>
+              </div>
+            </div>
+          </a>
+        </li>
+      )
+    })}
+  </ul>
+</GolfLayout>
