@@ -21,6 +21,12 @@ export const COUNTRIES: Record<string, string> = {
 }
 export const countryName = (code: string) => COUNTRIES[code] ?? code
 
+/** ISO alpha-2 → 국기 이모지. 한국·미지정(XX)·형식 외 코드는 빈 문자열 */
+export function countryFlag(code: string): string {
+  if (!/^[A-Z]{2}$/.test(code) || code === 'KR' || code === 'XX') return ''
+  return String.fromCodePoint(...[...code].map((ch) => 0x1f1e6 + ch.charCodeAt(0) - 65))
+}
+
 export async function listClubsWithCourses(db: D1Database): Promise<ClubWithCourses[]> {
   const [clubs, courses] = await db.batch([
     db.prepare(`SELECT id, name, country_code, region FROM golf_clubs ORDER BY country_code, name`),
