@@ -1,0 +1,162 @@
+---
+import GolfLayout from '../../../../layouts/GolfLayout.astro'
+import { getDB } from '../../../../lib/auth/db'
+import { listBuddies, rankingStats } from '../../../../lib/golf/repo'
+export const prerender = false
+
+const ownerId = Astro.locals.golf!.user.id
+const db = getDB(Astro.locals, Astro.request)!
+const BASE = '/private/golf/score'
+const TOP = 5
+const MIN_ROUNDS = 5
+
+// ?more=players | clubs — 해당 랭킹 전체 보기
+const more = Astro.url.searchParams.get('more')
+const [buddies, stats] = await Promise.all([listBuddies(db, ownerId, MIN_ROUNDS), rankingStats(db, ownerId)])
+
+// 동반자: 나와 5회 이상 + 함께한 18홀 평균이 낮은 순
+const players = buddies.filter((b) => b.their_avg !== null).sort((a, b) => a.their_avg! - b.their_avg! || b.rounds - a.rounds)
+const clubs = stats.clubs
+const showPlayers = more === 'clubs' ? [] : more === 'players' ? players : players.slice(0, TOP)
+const showClubs = more === 'players' ? [] : more === 'clubs' ? clubs : clubs.slice(0, TOP)
+
+// 연도별 라운드 수 (막대)
+const maxYear = Math.max(1, ...stats.years.map((y) => y.rounds))
+// 월별 라운드 수 + 가장 많은 달·계절
+const monthRounds = Array.from({ length: 12 }, (_, i) => stats.months.find((m) => m.month === i + 1)?.rounds ?? 0)
+const maxMonth = Math.max(1, ...monthRounds)
+const topMonth = monthRounds.indexOf(Math.max(...monthRounds)) + 1
+const SEASONS = [
+  { name: '봄', months: [3, 4, 5] },
+  { name: '여름', months: [6, 7, 8] },
+  { name: '가을', months: [9, 10, 11] },
+  { name: '겨울', months: [12, 1, 2] },
+].map((s) => ({ ...s, rounds: s.months.reduce((n, m) => n + monthRounds[m - 1], 0) }))
+const totalRounds = monthRounds.reduce((a, b) => a + b, 0)
+const topSeason = SEASONS.reduce((a, b) => (b.rounds > a.rounds ? b : a))
+
+const medal = (i: number) =>
+  i === 0 ? 'bg-amber-400 text-white' : i === 1 ? 'bg-gray-300 text-white' : i === 2 ? 'bg-orange-300 text-white' : 'bg-emerald-50 text-emerald-700'
+---
+<GolfLayout title="랭킹" active="ranking">
+  {more && (
+    <a href={`${BASE}/ranking`} class="mb-3 inline-block text-sm text-emerald-700">‹ 랭킹</a>
+  )}
+
+  {more !== 'clubs' && (
+    <section class="mb-6">
+      <div class="mb-2 flex items-end justify-between">
+        <div>
+          <h2 class="text-lg font-bold">동반자 평균타수 랭킹</h2>
+          <p class="text-xs text-gray-500">나와 {MIN_ROUNDS}회 이상 함께 · 함께 친 18홀 평균</p>
+        </div>
+        {!more && players.length > TOP && <a href={`${BASE}/ranking?more=players`} class="g-btn-ghost shrink-0 text-sm">더보기 ›</a>}
+      </div>
+      {showPlayers.length === 0 ? (
+        <p class="g-card text-center text-sm text-gray-600">{MIN_ROUNDS}회 이상 함께한 동반자가 아직 없어요.</p>
+      ) : (
+        <ol class="g-card !p-0 divide-y divide-gray-100 overflow-hidden">
+          {showPlayers.map((b, i) => (
+            <li>
+              <a href={`${BASE}/friends/${b.id}`} class="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-emerald-50/60">
+                <span class:list={['flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-bold tabular-nums', medal(i)]}>{i + 1}</span>
+                <span class="min-w-0 flex-1">
+                  <span class="block truncate font-semibold">{b.display_name}</span>
+                  <span class="text-xs text-gray-500">{b.rounds}라운드 함께</span>
+                </span>
+                <span class="text-xl font-bold tabular-nums text-emerald-800">{b.their_avg}</span>
+              </a>
+            </li>
+          ))}
+        </ol>
+      )}
+    </section>
+  )}
+
+  {more !== 'players' && (
+    <section class="mb-6">
+      <div class="mb-2 flex items-end justify-between">
+        <div>
+          <h2 class="text-lg font-bold">자주 찾은 골프장</h2>
+          <p class="text-xs text-gray-500">라운드 수 많은 순 · 평균은 내 18홀 기준</p>
+        </div>
+        {!more && clubs.length > TOP && <a href={`${BASE}/ranking?more=clubs`} class="g-btn-ghost shrink-0 text-sm">더보기 ›</a>}
+      </div>
+      {showClubs.length === 0 ? (
+        <p class="g-card text-center text-sm text-gray-600">아직 라운드 기록이 없어요.</p>
+      ) : (
+        <ol class="g-card !p-0 divide-y divide-gray-100 overflow-hidden">
+          {showClubs.map((c, i) => (
+            <li>
+              <a href={`${BASE}/rounds?club=${encodeURIComponent(c.id)}`} class="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-emerald-50/60">
+                <span class:list={['flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-bold tabular-nums', medal(i)]}>{i + 1}</span>
+                <span class="min-w-0 flex-1">
+                  <span class="block truncate font-semibold">{c.name}</span>
+                  {c.avg !== null && <span class="text-xs text-gray-500 tabular-nums">평균 {c.avg}</span>}
+                </span>
+                <span class="text-xl font-bold tabular-nums text-emerald-800">{c.rounds}<span class="ml-0.5 text-sm font-normal text-gray-500">회</span></span>
+              </a>
+            </li>
+          ))}
+        </ol>
+      )}
+    </section>
+  )}
+
+  {!more && stats.years.length > 0 && (
+    <section class="mb-6">
+      <h2 class="text-lg font-bold">연도별 라운드</h2>
+      <p class="mb-2 text-xs text-gray-500">막대 아래는 그해 내 18홀 평균</p>
+      <div class="g-card">
+        <div class="flex h-40 items-end gap-1">
+          {stats.years.map((y) => (
+            <div class="flex h-full min-w-0 flex-1 flex-col items-center justify-end">
+              <span class="mb-1 text-xs font-semibold tabular-nums text-emerald-800">{y.rounds}</span>
+              <div class="w-full max-w-10 rounded-t bg-emerald-500" style={`height:${(y.rounds / maxYear) * 85}%`}></div>
+            </div>
+          ))}
+        </div>
+        <div class="mt-1.5 flex gap-1 border-t border-gray-100 pt-1.5">
+          {stats.years.map((y) => (
+            <div class="min-w-0 flex-1 text-center leading-tight">
+              <div class="text-xs tabular-nums text-gray-700">{y.year.slice(2)}년</div>
+              <div class="text-[11px] tabular-nums text-gray-400">{y.avg ?? '-'}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )}
+
+  {!more && totalRounds > 0 && (
+    <section class="mb-6">
+      <h2 class="text-lg font-bold">언제 많이 쳤을까</h2>
+      <p class="mb-2 text-xs text-gray-500">전체 기간 월별 라운드 수</p>
+      <div class="mb-2 grid grid-cols-2 gap-2">
+        <div class="g-card !p-3 text-center">
+          <div class="text-xs text-gray-500">가장 많은 달</div>
+          <div class="mt-0.5 text-2xl font-bold text-emerald-800">{topMonth}월</div>
+          <div class="text-[11px] tabular-nums text-gray-400">{monthRounds[topMonth - 1]}라운드</div>
+        </div>
+        <div class="g-card !p-3 text-center">
+          <div class="text-xs text-gray-500">가장 많은 계절</div>
+          <div class="mt-0.5 text-2xl font-bold text-emerald-800">{topSeason.name}</div>
+          <div class="text-[11px] tabular-nums text-gray-400">{topSeason.rounds}라운드 · {Math.round((topSeason.rounds / totalRounds) * 100)}%</div>
+        </div>
+      </div>
+      <div class="g-card">
+        <div class="flex h-28 items-end gap-1">
+          {monthRounds.map((n, i) => (
+            <div class="flex h-full min-w-0 flex-1 flex-col items-center justify-end">
+              {n > 0 && <span class="mb-0.5 text-[10px] tabular-nums text-gray-500">{n}</span>}
+              <div class:list={['w-full rounded-t', i + 1 === topMonth ? 'bg-emerald-600' : 'bg-emerald-200']} style={`height:${(n / maxMonth) * 80}%`}></div>
+            </div>
+          ))}
+        </div>
+        <div class="mt-1 flex gap-1 border-t border-gray-100 pt-1">
+          {monthRounds.map((_, i) => <div class="min-w-0 flex-1 text-center text-[10px] tabular-nums text-gray-500">{i + 1}</div>)}
+        </div>
+      </div>
+    </section>
+  )}
+</GolfLayout>

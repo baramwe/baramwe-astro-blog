@@ -56,7 +56,7 @@ const winRate = Math.round((buddy.wins / (buddy.rounds || 1)) * 100)
                 {r.club_name}
                 <span class="ml-1 text-[13px] font-normal text-gray-500">{r.front_course}{r.back_course ? ` · ${r.back_course}` : ' (9홀)'}</span>
               </div>
-              {r.others > 0 && <div class="text-[13px] text-gray-400">외 {r.others}명 동반</div>}
+              {r.others && <div class="truncate text-[13px] text-gray-400">{r.others} 동반</div>}
             </div>
             <div class="shrink-0 text-right">
               <div class="flex items-center justify-end gap-2 tabular-nums">

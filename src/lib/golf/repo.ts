@@ -534,7 +534,9 @@ export async function listBuddies(db: D1Database, ownerId: string, minRounds = 1
 export interface BuddyRound {
   id: string; played_on: string; club_name: string; country_code: string; region: string | null
   front_course: string; back_course: string | null
-  my: number; their: number; others: number
+  my: number; their: number
+  /** 나·이 동반자 외 함께 친 사람 이름 (쉼표 구분, 없으면 null) */
+  others: string | null
 }
 
 /** 특정 동반자와 함께 친 라운드 (최근순) + 동반자 정보 */
@@ -547,7 +549,9 @@ export async function getBuddy(db: D1Database, ownerId: string, buddyId: string)
     `SELECT r.id, r.played_on, c.name AS club_name, c.country_code, c.region,
             fc.name AS front_course, bc.name AS back_course,
             m.total AS my, o.total AS their,
-            (SELECT count(*) FROM golf_round_players x WHERE x.round_id = r.id) - 2 AS others
+            (SELECT group_concat(xp.display_name, ', ')
+               FROM golf_round_players x JOIN golf_players xp ON xp.id = x.player_id
+              WHERE x.round_id = r.id AND x.player_id NOT IN (m.player_id, o.player_id)) AS others
        FROM golf_rounds r
        JOIN golf_clubs c ON c.id = r.club_id
        JOIN golf_courses fc ON fc.id = r.front_course_id
@@ -587,4 +591,39 @@ export async function searchIndex(db: D1Database, ownerId: string): Promise<Sear
     ).bind(ownerId),
   ])
   return { clubs: clubs.results as SearchIndex['clubs'], players: players.results as SearchIndex['players'] }
+}
+
+// ───────────────────────── 랭킹·통계 ─────────────────────────
+
+export interface ClubStat { id: string; name: string; rounds: number; avg: number | null }
+export interface YearStat { year: string; rounds: number; avg: number | null }
+export interface MonthStat { month: number; rounds: number }
+
+/** 랭킹 페이지용 — 골프장별 방문 수, 연도별·월별 라운드 수. 평균은 18홀 본인 타수 기준 */
+export async function rankingStats(db: D1Database, ownerId: string): Promise<{ clubs: ClubStat[]; years: YearStat[]; months: MonthStat[] }> {
+  const mine = `WITH mine AS (
+       SELECT r.club_id, r.played_on, r.back_course_id IS NOT NULL AS full18, rp.total
+         FROM golf_rounds r
+         LEFT JOIN golf_round_players rp ON rp.round_id = r.id
+          AND rp.player_id = (SELECT id FROM golf_players WHERE owner_user_id = r.owner_user_id AND is_self = 1)
+        WHERE r.owner_user_id = ?
+     )`
+  const [clubs, years, months] = await db.batch([
+    db.prepare(
+      `${mine}
+       SELECT c.id, c.name, count(*) AS rounds, round(avg(CASE WHEN full18 THEN total END), 1) AS avg
+         FROM mine JOIN golf_clubs c ON c.id = mine.club_id
+        GROUP BY c.id ORDER BY rounds DESC, max(played_on) DESC, c.name`
+    ).bind(ownerId),
+    db.prepare(
+      `${mine}
+       SELECT substr(played_on, 1, 4) AS year, count(*) AS rounds, round(avg(CASE WHEN full18 THEN total END), 1) AS avg
+         FROM mine GROUP BY year ORDER BY year`
+    ).bind(ownerId),
+    db.prepare(
+      `SELECT CAST(substr(played_on, 6, 2) AS INTEGER) AS month, count(*) AS rounds
+         FROM golf_rounds WHERE owner_user_id = ? GROUP BY month ORDER BY month`
+    ).bind(ownerId),
+  ])
+  return { clubs: clubs.results as ClubStat[], years: years.results as YearStat[], months: months.results as MonthStat[] }
 }

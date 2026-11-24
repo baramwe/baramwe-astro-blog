@@ -37,7 +37,7 @@ const cellClass = (s: number | null, par: number) => {
       <div class="min-w-0 flex-1">
         <div class="text-xs text-gray-500">{round.played_on} · {countryName(round.country_code)}{round.tee ? ` · ${round.tee} 티` : ''}</div>
         <h1 class="text-xl font-bold">{round.club_name}</h1>
-        <div class="text-sm text-gray-600">{round.front_course}{round.back_course ? ` → ${round.back_course}` : ' (9홀)'} · PAR {totalPar}</div>
+        <div class="text-sm text-gray-600">{round.front_course}{round.back_course ? ` → ${round.back_course}` : ' (9홀)'}{totalPar !== 72 && ` · PAR ${totalPar}`}</div>
       </div>
       {me && (
         <div class="shrink-0 text-right leading-tight">
