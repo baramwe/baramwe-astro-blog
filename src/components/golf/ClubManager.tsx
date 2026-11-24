@@ -31,12 +31,12 @@ function ParEditor({ pars, onChange }: { pars: number[]; onChange: (p: number[])
             className="g-btn-ghost !px-0 text-center tabular-nums"
             onClick={() => onChange(pars.map((x, j) => (j === i ? cyclePar(x) : x)))}
           >
-            <span className="block text-[10px] text-gray-400">{i + 1}</span>
+            <span className="block text-[10px] text-kb-muted">{i + 1}</span>
             <span className="font-semibold">{p}</span>
           </button>
         ))}
       </div>
-      <p className="text-[11px] text-gray-400 mt-1">홀을 누르면 파가 3→4→5→6 순서로 바뀌어요 · 합계 {pars.reduce((a, b) => a + b, 0)}</p>
+      <p className="text-[11px] text-kb-muted mt-1">홀을 누르면 파가 3→4→5→6 순서로 바뀌어요 · 합계 {pars.reduce((a, b) => a + b, 0)}</p>
     </div>
   )
 }
@@ -54,10 +54,10 @@ function CourseAdder({ clubId, onDone }: { clubId: string; onDone: () => void })
     }
   }
   return (
-    <div className="mt-3 p-3 bg-gray-50 rounded-lg space-y-2">
+    <div className="mt-3 p-3 bg-kb-sunken rounded-lg space-y-2">
       <input className="g-input" placeholder="코스 이름 (예: 동코스, OUT)" maxLength={30} value={name} onChange={(e) => setName(e.target.value)} />
       <ParEditor pars={pars} onChange={setPars} />
-      {err && <p className="text-xs text-red-700">{err}</p>}
+      {err && <p className="text-xs text-kb-danger">{err}</p>}
       <button className="g-btn text-sm" onClick={save}>코스 저장</button>
     </div>
   )
@@ -77,7 +77,7 @@ function ClubEditor({ club, countries, onClose }: { club: ClubWithCourses; count
     }
   }
   return (
-    <div className="mt-3 p-3 bg-gray-50 rounded-lg space-y-2">
+    <div className="mt-3 p-3 bg-kb-sunken rounded-lg space-y-2">
       <input className="g-input" placeholder="골프장 이름" maxLength={60} value={name} onChange={(e) => setName(e.target.value)} />
       <div className="grid grid-cols-2 gap-2">
         <select className="g-input" value={country} onChange={(e) => setCountry(e.target.value)}>
@@ -87,7 +87,7 @@ function ClubEditor({ club, countries, onClose }: { club: ClubWithCourses; count
         </select>
         <input className="g-input" placeholder="지역 (예: 구마모토현)" maxLength={40} value={region} onChange={(e) => setRegion(e.target.value)} />
       </div>
-      {err && <p className="text-xs text-red-700">{err}</p>}
+      {err && <p className="text-xs text-kb-danger">{err}</p>}
       <div className="flex gap-2">
         <button className="g-btn text-sm" onClick={save}>저장</button>
         <button className="g-btn-ghost text-sm" onClick={onClose}>취소</button>
@@ -111,9 +111,9 @@ function CourseRow({ course }: { course: ClubWithCourses['courses'][number] }) {
     <li className="py-2">
       <div className="flex items-center gap-2">
         <span className="font-medium text-sm">{course.name}</span>
-        <span className="text-xs text-gray-500 tabular-nums flex-1 truncate">PAR {course.pars.reduce((a, b) => a + b, 0)} · {course.pars.join(' ')}</span>
-        <button className="text-xs text-emerald-700" onClick={() => setEditing(!editing)}>{editing ? '닫기' : '파 수정'}</button>
-        <button className="text-xs text-red-700" onClick={() => confirm(`${course.name} 코스를 삭제할까요?`) && run(() => call(`/api/golf/courses/${course.id}`, 'DELETE'))}>삭제</button>
+        <span className="text-xs text-kb-subdued tabular-nums flex-1 truncate">PAR {course.pars.reduce((a, b) => a + b, 0)} · {course.pars.join(' ')}</span>
+        <button className="text-xs text-kb-primary" onClick={() => setEditing(!editing)}>{editing ? '닫기' : '파 수정'}</button>
+        <button className="text-xs text-kb-danger" onClick={() => confirm(`${course.name} 코스를 삭제할까요?`) && run(() => call(`/api/golf/courses/${course.id}`, 'DELETE'))}>삭제</button>
       </div>
       {editing && (
         <div className="mt-2 space-y-2">
@@ -178,7 +178,7 @@ export default function ClubManager({ clubs, countries }: Props) {
             </select>
             <input className="g-input" placeholder="지역 (선택)" maxLength={40} value={region} onChange={(e) => setRegion(e.target.value)} />
           </div>
-          {err && <p className="text-xs text-red-700">{err}</p>}
+          {err && <p className="text-xs text-kb-danger">{err}</p>}
           <button className="g-btn text-sm" onClick={addClub}>저장</button>
         </div>
       )}
@@ -191,12 +191,12 @@ export default function ClubManager({ clubs, countries }: Props) {
               <div className="flex items-center gap-2">
                 <div className="flex-1 min-w-0">
                   <div className="font-semibold truncate">{c.name}</div>
-                  <div className="text-xs text-gray-500">{countries[c.country_code] ?? c.country_code}{c.region ? ` · ${c.region}` : ''}</div>
+                  <div className="text-xs text-kb-subdued">{countries[c.country_code] ?? c.country_code}{c.region ? ` · ${c.region}` : ''}</div>
                 </div>
-                <button className="text-xs text-emerald-700" onClick={() => setEditingClub(editingClub === c.id ? null : c.id)}>{editingClub === c.id ? '닫기' : '수정'}</button>
-                <button className="text-xs text-emerald-700" onClick={() => setAddingCourseFor(open ? '' : c.id)}>{open ? '닫기' : '+ 코스'}</button>
+                <button className="text-xs text-kb-primary" onClick={() => setEditingClub(editingClub === c.id ? null : c.id)}>{editingClub === c.id ? '닫기' : '수정'}</button>
+                <button className="text-xs text-kb-primary" onClick={() => setAddingCourseFor(open ? '' : c.id)}>{open ? '닫기' : '+ 코스'}</button>
                 {c.courses.length === 0 && (
-                  <button className="text-xs text-red-700" onClick={async () => {
+                  <button className="text-xs text-kb-danger" onClick={async () => {
                     if (!confirm(`${c.name} 골프장을 삭제할까요?`)) return
                     try { await call(`/api/golf/clubs/${c.id}`, 'DELETE'); location.reload() } catch (e: any) { alert(e.message) }
                   }}>삭제</button>
@@ -204,11 +204,11 @@ export default function ClubManager({ clubs, countries }: Props) {
               </div>
               {editingClub === c.id && <ClubEditor club={c} countries={countries} onClose={() => setEditingClub(null)} />}
               {c.courses.length > 0 && (
-                <ul className="mt-2 divide-y divide-gray-100 border-t border-gray-100">
+                <ul className="mt-2 divide-y divide-kb-border border-t border-kb-border">
                   {c.courses.map((co) => <CourseRow key={co.id} course={co} />)}
                 </ul>
               )}
-              {c.courses.length === 0 && !open && <p className="text-xs text-amber-700 mt-1">코스가 없어요. 코스를 추가해야 라운드에 쓸 수 있어요.</p>}
+              {c.courses.length === 0 && !open && <p className="text-xs text-kb-warning mt-1">코스가 없어요. 코스를 추가해야 라운드에 쓸 수 있어요.</p>}
               {open && <CourseAdder clubId={c.id} onDone={() => location.reload()} />}
             </li>
           )

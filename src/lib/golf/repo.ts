@@ -595,7 +595,7 @@ export async function searchIndex(db: D1Database, ownerId: string): Promise<Sear
 
 // ───────────────────────── 랭킹·통계 ─────────────────────────
 
-export interface ClubStat { id: string; name: string; rounds: number; avg: number | null }
+export interface ClubStat { id: string; name: string; rounds: number; avg: number | null; /** 평균에 들어간 18홀(본인 타수 있음) 라운드 수 */ full_rounds: number }
 export interface YearStat { year: string; rounds: number; avg: number | null }
 export interface MonthStat { month: number; rounds: number }
 
@@ -611,7 +611,8 @@ export async function rankingStats(db: D1Database, ownerId: string): Promise<{ c
   const [clubs, years, months] = await db.batch([
     db.prepare(
       `${mine}
-       SELECT c.id, c.name, count(*) AS rounds, round(avg(CASE WHEN full18 THEN total END), 1) AS avg
+       SELECT c.id, c.name, count(*) AS rounds, round(avg(CASE WHEN full18 THEN total END), 1) AS avg,
+              count(CASE WHEN full18 AND total IS NOT NULL THEN 1 END) AS full_rounds
          FROM mine JOIN golf_clubs c ON c.id = mine.club_id
         GROUP BY c.id ORDER BY rounds DESC, max(played_on) DESC, c.name`
     ).bind(ownerId),

@@ -10,20 +10,20 @@ const rounds = await listRounds(db, Astro.locals.golf!.user.id, 1000)
 ---
 <GolfLayout title="기록 관리" active="manage">
   <h1 class="text-lg font-bold mb-1">기록 관리</h1>
-  <p class="text-xs text-gray-500 mb-3">라운드 수정·삭제. 삭제는 되돌릴 수 없어요.</p>
+  <p class="text-xs text-kb-subdued mb-3">라운드 수정·삭제. 삭제는 되돌릴 수 없어요.</p>
 
   {rounds.length === 0 ? (
-    <p class="g-card text-sm text-gray-600 text-center">기록이 없어요.</p>
+    <p class="g-card text-sm text-kb-text text-center">기록이 없어요.</p>
   ) : (
-    <ul class="g-card !p-0 divide-y divide-gray-100">
+    <ul class="g-card !p-0 divide-y divide-kb-border">
       {rounds.map((r) => (
         <li class="flex items-center gap-2 px-3 py-2.5" data-row={r.id}>
           <a href={`/private/golf/score/rounds/${r.id}`} class="flex-1 min-w-0">
-            <div class="text-xs text-gray-500">{r.played_on}</div>
+            <div class="text-xs text-kb-subdued">{r.played_on}</div>
             <div class="text-sm truncate">{r.club_name} <span class="font-semibold tabular-nums">{r.my_total ?? '-'}</span></div>
           </a>
           <a href={`/private/golf/score/rounds/${r.id}/edit`} class="g-btn-ghost text-xs">수정</a>
-          <button class="g-btn-ghost text-xs text-red-700" data-del={r.id} data-label={`${r.played_on} ${r.club_name}`}>삭제</button>
+          <button class="g-btn-ghost text-xs text-kb-danger" data-del={r.id} data-label={`${r.played_on} ${r.club_name}`}>삭제</button>
         </li>
       ))}
     </ul>

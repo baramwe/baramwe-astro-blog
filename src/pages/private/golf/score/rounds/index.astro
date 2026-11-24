@@ -24,13 +24,13 @@ const diffText = diff == null ? '' : diff === 0 ? '±0' : diff > 0 ? `+${diff}` 
 ---
 <GolfLayout title={clubName ? `${clubName} 라운드` : '라운드'} active="home">
   <div class="flex items-center gap-3 mb-3">
-    <h1 class="min-w-0 flex-1 truncate text-lg font-bold">{clubName ?? '내 라운드'} <span class="text-sm font-normal text-gray-500">{rounds.length}</span></h1>
+    <h1 class="min-w-0 flex-1 truncate text-lg font-bold">{clubName ?? '내 라운드'} <span class="text-sm font-normal text-kb-subdued">{rounds.length}</span></h1>
     {clubAvg != null && (
       <div class="shrink-0 text-right leading-tight" title={`내 전체 평균 ${overall?.avg} 대비`}>
-        <span class="text-xs text-gray-500">평균</span>
-        <span class="ml-0.5 text-lg font-bold tabular-nums text-emerald-800">{clubAvg}</span>
+        <span class="text-xs text-kb-subdued">평균</span>
+        <span class="ml-0.5 text-lg font-bold tabular-nums text-kb-primary">{clubAvg}</span>
         {diff != null && (
-          <span class:list={['ml-1 text-sm font-semibold tabular-nums', diff > 0 ? 'text-rose-600' : diff < 0 ? 'text-blue-600' : 'text-gray-500']}>{diffText}</span>
+          <span class:list={['ml-1 text-sm font-semibold tabular-nums', diff > 0 ? 'text-kb-danger' : diff < 0 ? 'text-kb-primary' : 'text-kb-subdued']}>{diffText}</span>
         )}
       </div>
     )}
@@ -39,6 +39,6 @@ const diffText = diff == null ? '' : diff === 0 ? '±0' : diff > 0 ? `+${diff}` 
       : <a href="/private/golf/score/rounds/new" class="g-btn shrink-0 text-sm">+ 입력</a>}
   </div>
   {rounds.length === 0
-    ? <p class="g-card text-sm text-gray-600 text-center">아직 기록이 없어요.</p>
+    ? <p class="g-card text-sm text-kb-text text-center">아직 기록이 없어요.</p>
     : <RoundList rounds={rounds} />}
 </GolfLayout>

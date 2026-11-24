@@ -29,46 +29,93 @@ const menuActive = menu.some((m) => m.key === active)
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="robots" content="noindex, nofollow" />
-  <meta name="theme-color" content="#065f46" />
+  <meta name="theme-color" content="#0B1628" />
+  <meta name="color-scheme" content="dark" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
   <title>{title} · 골프 스코어</title>
   <style is:global>
+    /* Kibana 9 (Borealis) 다크 테마 톤 — 색 토큰은 tailwind.config 의 kb.* 와 같다 */
     *, *::before, *::after { box-sizing: border-box; }
-    html { -webkit-text-size-adjust: 100%; }
-    body { margin: 0; background: #f5f7f6; color: #111827; font-family: ui-sans-serif, system-ui, -apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif; }
+    html { -webkit-text-size-adjust: 100%; color-scheme: dark; background: #07101F; }
+    body {
+      margin: 0; background: #07101F; color: #CAD3E2;
+      font-family: Inter, 'Pretendard Variable', Pretendard, system-ui, -apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', Helvetica, Arial, sans-serif;
+      font-feature-settings: 'tnum' 0; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+      scrollbar-color: #40506A transparent;
+    }
+    ::selection { background: rgba(97, 162, 255, .35); }
     a { color: inherit; text-decoration: none; }
     button { font: inherit; cursor: pointer; border: 0; background: none; color: inherit; }
-    button:disabled { cursor: not-allowed; opacity: .5; }
+    button:disabled { cursor: not-allowed; opacity: .4; }
     input, select, textarea { font: inherit; color: inherit; }
     table { border-collapse: collapse; }
-    .g-input { width: 100%; padding: .55rem .7rem; border: 1px solid #d1d5db; border-radius: .5rem; background: #fff; font-size: 16px; }
-    .g-input:focus { outline: 2px solid #10b981; outline-offset: -1px; border-color: transparent; }
-    .g-btn { padding: .55rem 1rem; border-radius: .5rem; background: #047857; color: #fff; font-weight: 600; }
-    .g-btn-ghost { padding: .45rem .8rem; border-radius: .5rem; border: 1px solid #d1d5db; background: #fff; }
-    .g-card { background: #fff; border: 1px solid #e5e7eb; border-radius: .9rem; padding: 1rem; }
+    .tabular-nums { font-feature-settings: 'tnum' 1; }
+    /* 제목·강조 텍스트는 Kibana title 색. :where 로 명시도 0 → text-kb-* 유틸이 이긴다 */
+    :where(main) :where(h1, h2, h3, b, strong, .font-bold, .font-semibold, .font-extrabold) { color: #E3E8F2; }
+    :where(main) :where(h1, h2) { letter-spacing: -0.01em; }
+
+    .g-input {
+      width: 100%; padding: .5rem .7rem; border: 1px solid #2B394F; border-radius: 4px;
+      background: #07101F; color: #E3E8F2; font-size: 16px; transition: border-color .15s, box-shadow .15s;
+    }
+    .g-input::placeholder { color: #6A7FA0; }
+    .g-input:hover { border-color: #40506A; }
+    .g-input:focus { outline: none; border-color: #61A2FF; box-shadow: 0 0 0 1px #61A2FF; }
+    .g-input option, .g-input optgroup { background: #0B1628; color: #CAD3E2; }
+    .g-btn {
+      padding: .5rem 1rem; border-radius: 4px; background: #61A2FF; color: #07101F; font-weight: 500;
+      transition: background-color .15s;
+    }
+    .g-btn:hover:not(:disabled) { background: #8BBAFF; }
+    .g-btn-ghost {
+      padding: .45rem .8rem; border-radius: 4px; border: 1px solid transparent;
+      background: rgba(97, 162, 255, .12); font-weight: 500; transition: background-color .15s, border-color .15s;
+    }
+    :where(.g-btn-ghost) { color: #61A2FF; }
+    .g-btn-ghost:hover:not(:disabled) { background: rgba(97, 162, 255, .22); }
+    .g-card {
+      background: #0B1628; border: 1px solid #2B394F; border-radius: 6px; padding: 1rem;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, .35);
+      transition: border-color .15s, background-color .15s;
+    }
+    .g-btn:focus-visible, .g-btn-ghost:focus-visible, a.g-card:focus-visible, main a:focus-visible {
+      outline: 2px solid #61A2FF; outline-offset: 2px;
+    }
   </style>
 </head>
 <body>
-  <header class="sticky top-0 z-20 bg-emerald-800 text-white shadow">
-    <div class="mx-auto max-w-3xl px-4 pt-3 pb-2 flex items-center gap-3">
-      <a href={BASE} class="shrink-0 text-lg font-bold tracking-tight">⛳<span class="hidden min-[400px]:inline"> 골프 스코어</span></a>
-      <GolfSearch client:idle />
-      <details id="golf-menu" class="relative shrink-0">
-        <summary aria-label="메뉴" title="메뉴" class={`list-none cursor-pointer select-none text-lg leading-none px-1 [&::-webkit-details-marker]:hidden ${menuActive ? 'text-white' : 'text-emerald-300/70'}`}>⚙</summary>
-        <div class="absolute right-0 top-full z-30 mt-2 w-44 overflow-hidden rounded-xl border border-gray-200 bg-white py-1 text-gray-900 shadow-lg">
-          {menu.map((m) => (
-            <a href={m.href} class={`block px-4 py-2.5 text-[15px] hover:bg-emerald-50 ${active === m.key ? 'font-semibold text-emerald-800' : ''}`}>{m.label}</a>
-          ))}
-        </div>
-      </details>
+  <header class="sticky top-0 z-20 bg-kb-panel shadow-[0_1px_4px_rgba(0,0,0,.4),0_2px_8px_rgba(0,0,0,.24)]">
+    <div class="border-b border-kb-border">
+      <div class="mx-auto max-w-3xl px-4 h-12 flex items-center gap-3">
+        <a href={BASE} class="shrink-0 flex items-center gap-2 text-[17px] font-semibold tracking-tight text-kb-title">
+          <span class="inline-flex h-7 w-7 items-center justify-center rounded-full border-2 border-kb-primary text-[13px] leading-none">⛳</span>
+          <span class="hidden min-[400px]:inline">골프 스코어</span>
+        </a>
+        <GolfSearch client:idle />
+        <details id="golf-menu" class="relative shrink-0">
+          <summary aria-label="메뉴" title="메뉴" class={`list-none cursor-pointer select-none inline-flex h-8 w-8 items-center justify-center rounded text-lg leading-none transition-colors hover:bg-kb-hover [&::-webkit-details-marker]:hidden ${menuActive ? 'text-kb-primary' : 'text-kb-subdued'}`}>⚙</summary>
+          <div class="absolute right-0 top-full z-30 mt-2 w-48 overflow-hidden rounded border border-kb-border bg-kb-panel py-1 text-kb-text shadow-[0_3px_10px_rgba(0,0,0,.52),0_6px_14px_rgba(0,0,0,.28)]">
+            {menu.map((m) => (
+              <a href={m.href} class={`block px-4 py-2.5 text-[15px] transition-colors hover:bg-kb-hover ${active === m.key ? 'font-semibold text-kb-primary' : ''}`}>{m.label}</a>
+            ))}
+          </div>
+        </details>
+      </div>
     </div>
-    <nav class="mx-auto max-w-3xl px-2 flex gap-1 overflow-x-auto text-base">
-      {tabs.map((t) => (
-        <a
-          href={t.href}
-          class={`px-3.5 py-2.5 whitespace-nowrap border-b-2 ${active === t.key ? 'border-white font-semibold' : 'border-transparent text-emerald-100'}`}
-        >{t.label}</a>
-      ))}
+    <nav class="border-b border-kb-border bg-kb-page">
+      <div class="mx-auto max-w-3xl px-2 flex gap-1 overflow-x-auto text-[15px]">
+        {tabs.map((t) => (
+          <a
+            href={t.href}
+            aria-current={active === t.key ? 'page' : undefined}
+            class={`px-3.5 py-2.5 whitespace-nowrap border-b-2 -mb-px transition-colors ${active === t.key ? 'border-kb-primary font-semibold text-kb-primary' : 'border-transparent text-kb-subdued hover:text-kb-title'}`}
+          >{t.label}</a>
+        ))}
+      </div>
     </nav>
   </header>
   <main class="mx-auto max-w-3xl px-4 py-5 pb-24">

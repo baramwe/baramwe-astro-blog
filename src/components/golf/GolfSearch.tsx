@@ -126,22 +126,22 @@ export default function GolfSearch() {
           setOpen(true)
         }}
         onKeyDown={onKey}
-        className="w-full rounded-full border-0 bg-emerald-900/40 py-1.5 pl-8 pr-3 text-[16px] text-white placeholder:text-emerald-200/70 focus:bg-white focus:text-gray-900 focus:placeholder:text-gray-400 focus:outline-none"
+        className="w-full rounded border border-kb-border bg-kb-page py-1.5 pl-8 pr-3 text-[16px] text-kb-title placeholder:text-kb-muted transition-colors hover:border-kb-border-strong focus:border-kb-primary focus:outline-none focus:ring-1 focus:ring-kb-primary"
       />
-      <span aria-hidden="true" className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-emerald-200/80">⌕</span>
+      <span aria-hidden="true" className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-kb-muted">⌕</span>
 
       {open && q.trim() && (
         <ul
           id="golf-search-list"
           role="listbox"
-          className="absolute left-0 right-0 top-full z-30 mt-1.5 max-h-[60vh] overflow-y-auto rounded-xl border border-gray-200 bg-white py-1 text-gray-900 shadow-lg"
+          className="absolute left-0 right-0 top-full z-30 mt-1.5 max-h-[60vh] overflow-y-auto rounded border border-kb-border bg-kb-panel py-1 text-kb-text shadow-[0_3px_10px_rgba(0,0,0,.52),0_6px_14px_rgba(0,0,0,.28)]"
         >
-          {!index && <li className="px-3 py-2.5 text-sm text-gray-500">불러오는 중…</li>}
-          {index && hits.length === 0 && <li className="px-3 py-2.5 text-sm text-gray-500">맞는 골프장·동반자가 없어요</li>}
+          {!index && <li className="px-3 py-2.5 text-sm text-kb-subdued">불러오는 중…</li>}
+          {index && hits.length === 0 && <li className="px-3 py-2.5 text-sm text-kb-subdued">맞는 골프장·동반자가 없어요</li>}
           {hits.map((h, i) => (
             <li key={`${h.kind}:${h.id}`} role="option" aria-selected={i === active}>
               {(i === 0 || i === firstPlayer) && (
-                <div className="px-3 pb-0.5 pt-1.5 text-[11px] font-semibold text-gray-400">{h.kind === 'club' ? '골프장' : '동반자'}</div>
+                <div className="px-3 pb-0.5 pt-1.5 text-[11px] font-semibold uppercase tracking-wide text-kb-muted">{h.kind === 'club' ? '골프장' : '동반자'}</div>
               )}
               <a
                 href={hrefOf(h)}
@@ -150,10 +150,10 @@ export default function GolfSearch() {
                   e.preventDefault()
                   go(h)
                 }}
-                className={`flex items-center gap-2 px-3 py-2 ${i === active ? 'bg-emerald-50' : ''}`}
+                className={`flex items-center gap-2 px-3 py-2 ${i === active ? 'bg-kb-primary-subtle text-kb-title' : ''}`}
               >
                 <span className="min-w-0 flex-1 truncate">{h.name}</span>
-                <span className="shrink-0 text-xs tabular-nums text-gray-400">{h.rounds}회</span>
+                <span className="shrink-0 text-xs tabular-nums text-kb-muted">{h.rounds}회</span>
               </a>
             </li>
           ))}

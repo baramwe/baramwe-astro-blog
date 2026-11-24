@@ -6,6 +6,32 @@ export default {
 	theme: {
 		extend: {
 			colors: {
+				// 골프 스코어 다크 테마 (Kibana 9 Borealis dark 기준)
+				kb: {
+					page: '#07101F',
+					panel: '#0B1628',
+					sunken: '#0E1A2E',
+					hover: '#13223A',
+					border: '#2B394F',
+					'border-strong': '#40506A',
+					title: '#E3E8F2',
+					text: '#CAD3E2',
+					subdued: '#98A8C3',
+					muted: '#6A7FA0',
+					primary: '#61A2FF',
+					'primary-hover': '#8BBAFF',
+					'primary-subtle': '#0D2F5E',
+					ink: '#07101F',
+					success: '#24C292',
+					'success-subtle': '#0B3A2E',
+					danger: '#F6726A',
+					'danger-subtle': '#4A1A1C',
+					warning: '#FACB3D',
+					'warning-subtle': '#3D3014',
+					// 승·패 전용 — 남색 배경·파랑 주색과 어울리게 채도를 낮춘 청록 / 로즈
+					win: '#48C9C0',
+					loss: '#E8828E',
+				},
 				// 블루와인 브랜드 컬러
 				primary: {
 					50: '#eff6ff',

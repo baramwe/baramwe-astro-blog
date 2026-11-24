@@ -27,17 +27,17 @@ const chips = [{ key: 'all', label: '전체', count: total }, ...years.map((y) =
             aria-current={active ? 'true' : undefined}
             data-active={active ? '' : undefined}
             class:list={[
-              'year-chip group inline-flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-base transition',
+              'year-chip group inline-flex items-center gap-1.5 rounded border px-3.5 py-1.5 text-base transition',
               active
-                ? 'border-emerald-700 bg-emerald-700 text-white shadow-sm shadow-emerald-900/20'
-                : 'border-gray-200 bg-white text-gray-700 hover:border-emerald-300 hover:text-emerald-800',
+                ? 'border-kb-primary bg-kb-primary text-kb-ink font-medium'
+                : 'border-kb-border bg-kb-panel text-kb-text hover:border-kb-primary hover:text-kb-primary-hover',
             ]}
           >
-            <span class:list={['font-semibold tabular-nums', c.key === 'all' && 'tracking-tight']}>{c.label}</span>
+            <span class:list={['font-semibold tabular-nums text-inherit', c.key === 'all' && 'tracking-tight']}>{c.label}</span>
             <span
               class:list={[
-                'rounded-full px-1.5 text-sm leading-[1.4rem] tabular-nums',
-                active ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500 group-hover:bg-emerald-50 group-hover:text-emerald-700',
+                'rounded px-1.5 text-sm leading-[1.4rem] tabular-nums',
+                active ? 'bg-kb-ink/20 text-kb-ink' : 'bg-kb-sunken text-kb-subdued group-hover:bg-kb-primary-subtle group-hover:text-kb-primary-hover',
               ]}
             >{c.count}</span>
           </a>
@@ -63,7 +63,7 @@ const chips = [{ key: 'all', label: '전체', count: total }, ...years.map((y) =
   .year-track.is-dragging .year-chip { pointer-events: none; }
   .year-chip { -webkit-user-drag: none; }
   .year-track > li { scroll-snap-align: start; }
-  .year-chip:focus-visible { outline: 2px solid #10b981; outline-offset: 2px; }
+  .year-chip:focus-visible { outline: 2px solid #61A2FF; outline-offset: 2px; }
 </style>
 
 <script>

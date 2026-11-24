@@ -18,36 +18,36 @@ const num = lg ? 'text-4xl' : 'text-2xl'
 <div>
   <div class="grid grid-cols-[1fr_auto_1fr] items-end gap-2">
     <div class="min-w-0">
-      <div class:list={['truncate text-gray-500', lg ? 'text-sm' : 'text-[13px]']}>{selfName}</div>
+      <div class:list={['truncate text-kb-subdued', lg ? 'text-sm' : 'text-[13px]']}>{selfName}</div>
       <div class="flex items-baseline gap-1">
-        <span class:list={[num, 'font-extrabold leading-none tabular-nums text-emerald-700']}>{wins}</span>
-        <span class:list={['font-semibold text-emerald-700', lg ? 'text-base' : 'text-sm']}>승</span>
+        <span class:list={[num, 'font-extrabold leading-none tabular-nums text-kb-win']}>{wins}</span>
+        <span class:list={['font-semibold text-kb-win', lg ? 'text-base' : 'text-sm']}>승</span>
       </div>
     </div>
 
     <div class="pb-0.5 text-center">
       <span
         class:list={[
-          'inline-flex items-center gap-1 rounded-full border border-gray-200 bg-gray-50 font-medium text-gray-500 tabular-nums',
+          'inline-flex items-center gap-1 rounded-full border border-kb-border bg-kb-sunken font-medium text-kb-subdued tabular-nums',
           lg ? 'px-3 py-1 text-sm' : 'px-2.5 py-0.5 text-xs',
         ]}
       >
-        <span class="h-1.5 w-1.5 rounded-full bg-gray-400"></span>{draws}무
+        <span class="h-1.5 w-1.5 rounded-full bg-kb-muted"></span>{draws}무
       </span>
     </div>
 
     <div class="min-w-0 text-right">
-      <div class:list={['truncate text-gray-500', lg ? 'text-sm' : 'text-[13px]']}>vs {buddyName}</div>
+      <div class:list={['truncate text-kb-subdued', lg ? 'text-sm' : 'text-[13px]']}>{buddyName}</div>
       <div class="flex items-baseline justify-end gap-1">
-        <span class:list={[num, 'font-extrabold leading-none tabular-nums text-rose-600']}>{losses}</span>
-        <span class:list={['font-semibold text-rose-600', lg ? 'text-base' : 'text-sm']}>패</span>
+        <span class:list={[num, 'font-extrabold leading-none tabular-nums text-kb-loss']}>{losses}</span>
+        <span class:list={['font-semibold text-kb-loss', lg ? 'text-base' : 'text-sm']}>패</span>
       </div>
     </div>
   </div>
 
-  <div class:list={['mt-2.5 flex overflow-hidden rounded-full bg-gray-100', lg ? 'h-2.5' : 'h-2']} aria-hidden="true">
-    {wins > 0 && <span class="bg-emerald-500" style={`width:${pct(wins)}`}></span>}
-    {draws > 0 && <span class="bg-gray-300" style={`width:${pct(draws)}`}></span>}
-    {losses > 0 && <span class="bg-rose-400" style={`width:${pct(losses)}`}></span>}
+  <div class:list={['mt-2.5 flex overflow-hidden rounded-full bg-kb-sunken', lg ? 'h-1.5' : 'h-1']} aria-hidden="true">
+    {wins > 0 && <span class="bg-kb-win" style={`width:${pct(wins)}`}></span>}
+    {draws > 0 && <span class="bg-kb-border-strong" style={`width:${pct(draws)}`}></span>}
+    {losses > 0 && <span class="bg-kb-loss" style={`width:${pct(losses)}`}></span>}
   </div>
 </div>
