@@ -37,7 +37,8 @@ const avgMax = Math.ceil(Math.max(...avgYears.map((y) => y.avg))) + 1
 const bestAvg = Math.min(...avgYears.map((y) => y.avg))
 // 플롯 영역: 위·아래 여백을 두고 % 좌표로 그린다 (점·라벨은 HTML, 선은 SVG)
 const avgX = (i: number) => ((i + 0.5) / avgYears.length) * 100
-const avgY = (v: number) => 14 + (1 - (v - avgMin) / (avgMax - avgMin || 1)) * 72
+// 위·아래 라벨이 카드 밖으로 안 나가게 상하 여백을 18% 씩 둔다
+const avgY = (v: number) => 18 + (1 - (v - avgMin) / (avgMax - avgMin || 1)) * 64
 const avgLine = avgYears.map((y, i) => `${avgX(i)},${avgY(y.avg)}`).join(' ')
 const avgGrid = [avgMax, Math.round((avgMin + avgMax) / 2), avgMin]
 
@@ -176,9 +177,15 @@ const medal = (_i: number) => 'bg-kb-sunken text-kb-subdued border border-kb-bor
           </svg>
           {avgYears.map((y, i) => {
             const best = y.avg === bestAvg
+            // 점이 촘촘한 모바일에서 이웃 라벨이 겹치지 않게 위·아래를 번갈아 둔다
+            const below = i % 2 === 1
             return (
               <div class="absolute -translate-x-1/2 -translate-y-1/2" style={`left:${avgX(i)}%;top:${avgY(y.avg)}%`} title={`${y.year}년 평균 ${y.avg}`}>
-                <span class:list={['absolute bottom-full left-1/2 mb-1 -translate-x-1/2 whitespace-nowrap text-[11px] font-semibold tabular-nums', best ? 'text-kb-success' : 'text-kb-primary']}>{y.avg}</span>
+                <span class:list={[
+                  'absolute left-1/2 -translate-x-1/2 whitespace-nowrap rounded-sm bg-kb-panel px-0.5 text-[10px] font-semibold leading-tight tabular-nums sm:text-[11px]',
+                  below ? 'top-full mt-1' : 'bottom-full mb-1',
+                  best ? 'text-kb-success' : 'text-kb-primary',
+                ]}>{y.avg}</span>
                 <span class:list={['block h-2.5 w-2.5 rounded-full border-2 border-kb-panel', best ? 'bg-kb-success' : 'bg-kb-primary']}></span>
               </div>
             )
