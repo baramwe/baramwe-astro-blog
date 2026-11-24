@@ -126,15 +126,15 @@ export default function GolfSearch() {
           setOpen(true)
         }}
         onKeyDown={onKey}
-        className="w-full rounded-full border-0 bg-emerald-900/40 py-1.5 pl-8 pr-3 text-[16px] text-white placeholder:text-emerald-200/70 focus:bg-white focus:text-gray-900 focus:placeholder:text-gray-400 focus:outline-none"
+        className="w-full border-0 border-b border-[#aeb1a9] bg-transparent py-1.5 pl-7 pr-1 text-[16px] text-[#20231f] placeholder:text-[#8a8c85] focus:border-[#176d50] focus:outline-none"
       />
-      <span aria-hidden="true" className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-emerald-200/80">⌕</span>
+      <span aria-hidden="true" className="pointer-events-none absolute left-1 top-1/2 -translate-y-1/2 text-sm text-[#73766f]">⌕</span>
 
       {open && q.trim() && (
         <ul
           id="golf-search-list"
           role="listbox"
-          className="absolute left-0 right-0 top-full z-30 mt-1.5 max-h-[60vh] overflow-y-auto rounded-xl border border-gray-200 bg-white py-1 text-gray-900 shadow-lg"
+          className="absolute left-0 right-0 top-full z-30 mt-2 max-h-[60vh] overflow-y-auto border border-[#d9d8d1] bg-[#fdfcf8] py-1 text-[#20231f]"
         >
           {!index && <li className="px-3 py-2.5 text-sm text-gray-500">불러오는 중…</li>}
           {index && hits.length === 0 && <li className="px-3 py-2.5 text-sm text-gray-500">맞는 골프장·동반자가 없어요</li>}
@@ -150,7 +150,7 @@ export default function GolfSearch() {
                   e.preventDefault()
                   go(h)
                 }}
-                className={`flex items-center gap-2 px-3 py-2 ${i === active ? 'bg-emerald-50' : ''}`}
+                className={`flex items-center gap-2 px-3 py-2 ${i === active ? 'bg-[#e8eee8]' : ''}`}
               >
                 <span className="min-w-0 flex-1 truncate">{h.name}</span>
                 <span className="shrink-0 text-xs tabular-nums text-gray-400">{h.rounds}회</span>

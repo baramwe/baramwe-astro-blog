@@ -4,20 +4,20 @@ import { countryFlag, countryName, type RoundListItem } from '../../lib/golf/rep
 interface Props { rounds: RoundListItem[] }
 const { rounds } = Astro.props
 ---
-<ul class="space-y-2.5">
+<ul class="border-t border-[#d9d8d1]">
   {rounds.map((r) => (
     <li>
-      <a href={`/private/golf/score/rounds/${r.id}`} class="g-card !px-3.5 !py-4 flex items-center gap-3 hover:border-emerald-400">
+      <a href={`/private/golf/score/rounds/${r.id}`} class="group flex items-center gap-3 border-b border-[#d9d8d1] py-4 transition-colors hover:border-[#176d50] hover:bg-[#eeece5]">
         <div class="flex-1 min-w-0">
-          <div class="text-[13px] text-gray-500">{r.played_on} · {countryName(r.country_code)}{countryFlag(r.country_code) && <span class="ml-0.5 text-[12px]" aria-hidden="true">{countryFlag(r.country_code)}</span>}{r.region ? ` ${r.region}` : ''}</div>
-          <div class="text-[17px] font-semibold truncate mt-0.5">
+          <div class="g-data text-[11px] text-[#73766f]">{r.played_on} · {countryName(r.country_code)}{countryFlag(r.country_code) && <span class="ml-0.5 text-[12px]" aria-hidden="true">{countryFlag(r.country_code)}</span>}{r.region ? ` ${r.region}` : ''}</div>
+          <div class="mt-1 truncate text-[17px] font-bold tracking-[-.025em]">
             {r.club_name}
-            <span class="text-[13px] font-normal text-gray-500 ml-1">{r.front_course}{r.back_course ? ` · ${r.back_course}` : ' (9홀)'}</span>
+            <span class="ml-1 text-[13px] font-normal text-[#73766f]">{r.front_course}{r.back_course ? ` · ${r.back_course}` : ' (9홀)'}</span>
           </div>
-          {r.companions && <div class="text-[13px] text-gray-500 truncate">{r.companions}</div>}
-          {r.memo && <div class="text-[15px] text-gray-700 truncate mt-1">{r.memo}</div>}
+          {r.companions && <div class="truncate text-[13px] text-[#73766f]">{r.companions}</div>}
+          {r.memo && <div class="mt-1 truncate text-[15px] text-[#4d504a]">{r.memo}</div>}
         </div>
-        <div class="text-[1.75rem] font-bold text-emerald-800 tabular-nums">{r.my_total ?? '-'}</div>
+        <div class="g-data text-[1.8rem] font-bold text-[#176d50] transition-opacity group-hover:opacity-70">{r.my_total ?? '-'}</div>
       </a>
     </li>
   ))}

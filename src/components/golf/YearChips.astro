@@ -16,8 +16,8 @@ const BASE = '/private/golf/score'
 const hrefFor = (key: string) => (selected === key ? BASE : `${BASE}?y=${key}${sort !== 'new' ? `&s=${sort}` : ''}`)
 const chips = [{ key: 'all', label: '전체', count: total }, ...years.map((y) => ({ key: y.year, label: y.year, count: y.rounds }))]
 ---
-<nav class="year-strip -mx-4 mb-5" aria-label="연도별 라운드">
-  <ul class="year-track relative flex gap-2 overflow-x-auto px-4 py-1">
+<nav class="year-strip -mx-4 mb-7 border-y border-[#d9d8d1]" aria-label="연도별 라운드">
+  <ul class="year-track relative flex gap-0 overflow-x-auto px-4 py-1">
     {chips.map((c) => {
       const active = selected === c.key
       return (
@@ -27,17 +27,17 @@ const chips = [{ key: 'all', label: '전체', count: total }, ...years.map((y) =
             aria-current={active ? 'true' : undefined}
             data-active={active ? '' : undefined}
             class:list={[
-              'year-chip group inline-flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-base transition',
+              'year-chip group inline-flex items-center gap-1.5 border-b-2 px-4 py-2.5 text-sm transition-colors',
               active
-                ? 'border-emerald-700 bg-emerald-700 text-white shadow-sm shadow-emerald-900/20'
-                : 'border-gray-200 bg-white text-gray-700 hover:border-emerald-300 hover:text-emerald-800',
+                ? 'border-[#176d50] font-bold text-[#176d50]'
+                : 'border-transparent text-[#73766f] hover:border-[#aeb1a9] hover:text-[#20231f]',
             ]}
           >
             <span class:list={['font-semibold tabular-nums', c.key === 'all' && 'tracking-tight']}>{c.label}</span>
             <span
               class:list={[
-                'rounded-full px-1.5 text-sm leading-[1.4rem] tabular-nums',
-                active ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500 group-hover:bg-emerald-50 group-hover:text-emerald-700',
+                'g-data text-[11px] leading-[1.4rem]',
+                active ? 'text-[#176d50]' : 'text-[#8a8c85] group-hover:text-[#176d50]',
               ]}
             >{c.count}</span>
           </a>
@@ -63,7 +63,7 @@ const chips = [{ key: 'all', label: '전체', count: total }, ...years.map((y) =
   .year-track.is-dragging .year-chip { pointer-events: none; }
   .year-chip { -webkit-user-drag: none; }
   .year-track > li { scroll-snap-align: start; }
-  .year-chip:focus-visible { outline: 2px solid #10b981; outline-offset: 2px; }
+  .year-chip:focus-visible { outline: 2px solid #176d50; outline-offset: -2px; }
 </style>
 
 <script>

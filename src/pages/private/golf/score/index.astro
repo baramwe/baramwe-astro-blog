@@ -71,26 +71,26 @@ const listHref = (s: RoundSort, c: string | null) =>
 const sortHref = (k: RoundSort) => listHref(k, country)
 ---
 <GolfLayout title="홈" active="home">
-  <section id="stats" class="grid grid-cols-3 gap-2 mb-5">
+  <section id="stats" class="mb-6 grid grid-cols-3 border-y border-[#d9d8d1]">
     {stats.map((s) => (
-      <div class="g-card text-center !p-3">
-        <div class="text-xs text-gray-500">{s.label}</div>
-        <div class="text-2xl font-bold text-emerald-800 mt-1">{s.value}</div>
-        {s.sub && <div class="text-[11px] text-gray-400">{s.sub}</div>}
+      <div class="score-stat min-w-0 py-4 text-center">
+        <div class="text-[11px] font-bold tracking-[.06em] text-[#73766f]">{s.label}</div>
+        <div class="g-data mt-2 text-2xl font-bold text-[#176d50]">{s.value}</div>
+        {s.sub && <div class="g-data mt-0.5 text-[10px] text-[#8a8c85]">{s.sub}</div>}
       </div>
     ))}
   </section>
-  <p class="text-[11px] text-gray-400 -mt-3 mb-3">평균·베스트는 18홀 라운드 기준</p>
+  <p class="-mt-4 mb-5 text-[11px] tracking-[.02em] text-[#8a8c85]">평균·베스트는 18홀 라운드 기준</p>
 
   {years.length > 0 && <YearChips years={years} selected={selected} total={summary.rounds} sort={sort} />}
 
   <section id="rounds" class="scroll-mt-28">
     {period ? (
       <>
-      <div class="mb-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
+      <div class="mb-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-[#d9d8d1] pb-3">
         <div class="flex flex-wrap items-center gap-x-1.5 gap-y-1">
-          <h2 class="text-lg font-semibold">
-            <a href={listHref(sort, null)} class:list={['transition hover:text-emerald-700', country && 'text-gray-500']}>{periodLabel}</a>
+          <h2 class="font-serif text-2xl font-bold tracking-[-.045em]">
+            <a href={listHref(sort, null)} class:list={['transition-colors hover:text-[#176d50]', country && 'text-[#73766f]']}>{periodLabel}</a>
           </h2>
           {countries.map((c) => (
             <a
@@ -99,39 +99,39 @@ const sortHref = (k: RoundSort) => listHref(k, country)
               aria-label={`${c.name}에서 친 라운드만 보기`}
               aria-current={country === c.code ? 'true' : undefined}
               class:list={[
-                'inline-flex h-8 w-8 items-center justify-center rounded-full text-lg leading-none transition',
-                country === c.code ? 'bg-emerald-100 ring-2 ring-emerald-500' : 'hover:bg-gray-100',
+                'inline-flex items-baseline gap-1 border-b py-1 text-xs font-semibold transition-colors',
+                country === c.code ? 'border-[#176d50] text-[#176d50]' : 'border-transparent text-[#73766f] hover:border-[#aeb1a9] hover:text-[#20231f]',
                 country && country !== c.code && 'opacity-40 hover:opacity-100',
               ]}
-            >{c.flag}</a>
+            ><span>{c.name}</span><span class="g-data text-[10px]">{c.count}</span></a>
           ))}
         </div>
-        <nav aria-label="정렬" class="inline-flex shrink-0 rounded-full bg-gray-100 p-0.5 text-sm">
+        <nav aria-label="정렬" class="inline-flex shrink-0 divide-x divide-[#d9d8d1] border-y border-[#d9d8d1] text-xs">
           {SORTS.map((o) => (
             <a
               href={sortHref(o.key)}
               aria-current={sort === o.key ? 'true' : undefined}
               class:list={[
-                'round-sort rounded-full px-3 py-1 transition',
-                sort === o.key ? 'bg-white font-semibold text-emerald-800 shadow-sm' : 'text-gray-500 hover:text-emerald-700',
+                'round-sort px-2.5 py-1.5 transition-colors',
+                sort === o.key ? 'font-bold text-[#176d50]' : 'text-[#73766f] hover:text-[#176d50]',
               ]}
             >{o.label}</a>
           ))}
         </nav>
       </div>
       {(sort === 'best' || sort === 'worst') && period.full_rounds !== period.rounds && (
-        <p class="-mt-1 mb-2 text-[11px] text-gray-400">18홀 라운드 먼저, 9홀은 뒤에 표시</p>
+        <p class="-mt-2 mb-3 text-[11px] text-[#8a8c85]">18홀 라운드 먼저, 9홀은 뒤에 표시</p>
       )}
       </>
     ) : (
-      <div class="flex items-center justify-between mb-2">
-        <h2 class="font-semibold">최근 라운드</h2>
-        {summary.rounds > 10 && <a href="/private/golf/score/rounds" class="text-sm text-emerald-700">전체 {summary.rounds}개 →</a>}
+      <div class="mb-4 flex items-center justify-between border-b border-[#d9d8d1] pb-3">
+        <h2 class="font-serif text-2xl font-bold tracking-[-.045em]">최근 라운드</h2>
+        {summary.rounds > 10 && <a href="/private/golf/score/rounds" class="border-b border-[#aeb1a9] pb-0.5 text-sm font-semibold text-[#176d50] transition-colors hover:border-[#176d50]">전체 {summary.rounds}개 →</a>}
       </div>
     )}
 
     {rounds.length === 0 ? (
-      <div class="g-card text-center text-sm text-gray-600 space-y-3">
+      <div class="border-y border-[#d9d8d1] py-10 text-center text-sm text-[#73766f] space-y-3">
         <p>아직 기록이 없어요.</p>
         <a href="/private/golf/score/rounds/new" class="g-btn inline-block">첫 라운드 입력하기</a>
       </div>
@@ -140,3 +140,7 @@ const sortHref = (k: RoundSort) => listHref(k, country)
     )}
   </section>
 </GolfLayout>
+
+<style>
+  #stats > .score-stat:not(:last-child) { border-right: 1px solid #d9d8d1; }
+</style>

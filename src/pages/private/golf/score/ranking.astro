@@ -35,8 +35,7 @@ const SEASONS = [
 const totalRounds = monthRounds.reduce((a, b) => a + b, 0)
 const topSeason = SEASONS.reduce((a, b) => (b.rounds > a.rounds ? b : a))
 
-const medal = (i: number) =>
-  i === 0 ? 'bg-amber-400 text-white' : i === 1 ? 'bg-gray-300 text-white' : i === 2 ? 'bg-orange-300 text-white' : 'bg-emerald-50 text-emerald-700'
+const medal = () => 'border border-[#d9d8d1] bg-transparent text-[#53564f]'
 ---
 <GolfLayout title="랭킹" active="ranking">
   {more && (
@@ -59,7 +58,7 @@ const medal = (i: number) =>
           {showPlayers.map((b, i) => (
             <li>
               <a href={`${BASE}/friends/${b.id}`} class="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-emerald-50/60">
-                <span class:list={['flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-bold tabular-nums', medal(i)]}>{i + 1}</span>
+                <span class:list={['g-data flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-bold', medal()]}>{i + 1}</span>
                 <span class="min-w-0 flex-1">
                   <span class="block truncate font-semibold">{b.display_name}</span>
                   <span class="text-xs text-gray-500">{b.rounds}라운드 함께</span>
@@ -89,7 +88,7 @@ const medal = (i: number) =>
           {showClubs.map((c, i) => (
             <li>
               <a href={`${BASE}/rounds?club=${encodeURIComponent(c.id)}`} class="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-emerald-50/60">
-                <span class:list={['flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-bold tabular-nums', medal(i)]}>{i + 1}</span>
+                <span class:list={['g-data flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-bold', medal()]}>{i + 1}</span>
                 <span class="min-w-0 flex-1">
                   <span class="block truncate font-semibold">{c.name}</span>
                   {c.avg !== null && <span class="text-xs text-gray-500 tabular-nums">평균 {c.avg}</span>}

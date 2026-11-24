@@ -32,7 +32,7 @@ const cellClass = (s: number | null, par: number) => {
 }
 ---
 <GolfLayout title={`${round.club_name} ${round.played_on}`} active="home">
-  <div class="g-card mb-4">
+  <div class="g-card mb-4 !pb-0">
     <div class="flex items-start gap-3">
       <div class="min-w-0 flex-1">
         <div class="text-xs text-gray-500">{round.played_on} · {countryName(round.country_code)}{round.tee ? ` · ${round.tee} 티` : ''}</div>
@@ -56,7 +56,7 @@ const cellClass = (s: number | null, par: number) => {
         <a
           href={`/private/golf/score/friends/${p.player_id}`}
           aria-label={`${p.display_name} 상대전적 보기`}
-          class="g-card !px-2 !py-3 min-w-0 text-center transition-colors hover:border-emerald-300 hover:bg-emerald-50/60 active:bg-emerald-50"
+          class="g-card !px-2 !pt-3 !pb-0 min-w-0 text-center transition-colors hover:border-emerald-300 hover:bg-emerald-50/60 active:bg-emerald-50"
         >
           <div class="truncate text-sm text-gray-700">{p.display_name}</div>
           <div class="mt-0.5 text-xl font-bold tabular-nums text-emerald-800">{p.total}</div>
@@ -69,12 +69,12 @@ const cellClass = (s: number | null, par: number) => {
     <div class="g-card mb-4 !p-2 overflow-x-auto">
       <table class="w-full text-center text-sm tabular-nums">
         <thead>
-          <tr class="text-xs text-gray-500 bg-emerald-100">
+          <tr class="bg-[#e8eee8] text-xs text-[#53564f]">
             <th class="text-left px-2 py-1 font-normal">홀</th>
             {round.pars.slice(a, b).map((_, i) => <th class="px-1 py-1 font-normal min-w-[1.75rem]">{a + i + 1}</th>)}
             <th class="px-2 py-1 font-semibold">{label}</th>
           </tr>
-          <tr class="text-xs text-gray-500 border-b border-gray-200 bg-amber-100">
+          <tr class="border-b border-[#d9d8d1] bg-[#eeece5] text-xs text-[#53564f]">
             <td class="text-left px-2 py-1">PAR</td>
             {round.pars.slice(a, b).map((par) => <td class="py-1">{par}</td>)}
             <td class="py-1 font-semibold">{parSum(a, b)}</td>
