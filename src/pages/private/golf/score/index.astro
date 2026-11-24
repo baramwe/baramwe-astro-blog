@@ -2,6 +2,7 @@
 import GolfLayout from '../../../../layouts/GolfLayout.astro'
 import RoundList from '../../../../components/golf/RoundList.astro'
 import YearChips from '../../../../components/golf/YearChips.astro'
+import Dropdown from '../../../../components/golf/Dropdown.astro'
 import { getDB } from '../../../../lib/auth/db'
 import { countryFlag, countryName, homeSummary, listRoundYears, listRounds, parseRoundSort, periodSummary, type RoundSort } from '../../../../lib/golf/repo'
 export const prerender = false
@@ -92,48 +93,26 @@ const sortHref = (k: RoundSort) => listHref(k, country)
           <a href={listHref(sort, null)} class="transition hover:text-kb-primary-hover">{periodLabel}</a>
         </h2>
         {countries.length > 0 && (
-          <details class="country-menu relative shrink-0">
-            <summary
-              aria-label="국가별로 보기"
-              class:list={[
-                'flex cursor-pointer list-none items-center gap-1.5 rounded border bg-kb-page py-1 pl-2.5 pr-2 text-sm transition select-none [&::-webkit-details-marker]:hidden',
-                country ? 'border-kb-primary font-semibold text-kb-primary' : 'border-kb-border text-kb-text hover:border-kb-border-strong',
-              ]}
-            >
-              {country ? countries.find((c) => c.code === country)?.name : '모든 국가'}
-              <svg class="h-3 w-3 opacity-70" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M3 4.5 6 7.5 9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" /></svg>
-            </summary>
-            <ul class="absolute left-0 top-full z-30 mt-1 max-h-72 min-w-full w-max overflow-y-auto rounded-[2px] border border-kb-border bg-kb-panel py-1 text-xs shadow-[0_3px_10px_rgba(0,0,0,.52),0_6px_14px_rgba(0,0,0,.28)]">
-              {[{ code: null as string | null, name: '모든 국가', count: null as number | null }, ...countries].map((c) => (
-                <li>
-                  <a
-                    href={listHref(sort, c.code)}
-                    aria-current={country === c.code ? 'true' : undefined}
-                    class:list={[
-                      'flex items-center justify-between gap-4 px-3 py-1.5 transition-colors hover:bg-kb-hover',
-                      country === c.code ? 'bg-kb-primary-subtle font-medium text-kb-primary' : 'text-kb-text',
-                    ]}
-                  >
-                    <span>{c.name}</span>
-                    {c.count !== null && <span class="tabular-nums text-kb-muted">{c.count}</span>}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </details>
+          <Dropdown
+            ariaLabel="국가별로 보기"
+            label={country ? (countries.find((c) => c.code === country)?.name ?? '모든 국가') : '모든 국가'}
+            highlight={!!country}
+            items={[
+              { href: listHref(sort, null), label: '모든 국가', current: !country },
+              ...countries.map((c) => ({ href: listHref(sort, c.code), label: c.name, count: c.count, current: country === c.code })),
+            ]}
+          />
         )}
-        <nav aria-label="정렬" class="ml-auto inline-flex shrink-0 rounded border border-kb-border bg-kb-sunken p-0.5 text-sm">
-          {SORTS.map((o) => (
-            <a
-              href={sortHref(o.key)}
-              aria-current={sort === o.key ? 'true' : undefined}
-              class:list={[
-                'round-sort rounded-[3px] px-3 py-1 transition',
-                sort === o.key ? 'bg-kb-primary-subtle font-semibold text-kb-primary' : 'text-kb-subdued hover:text-kb-title',
-              ]}
-            >{o.label}</a>
-          ))}
-        </nav>
+        <div class="ml-auto">
+          <Dropdown
+            ariaLabel="정렬"
+            align="right"
+            itemClass="round-sort"
+            label={SORTS.find((o) => o.key === sort)?.label ?? '최신순'}
+            highlight={sort !== 'new'}
+            items={SORTS.map((o) => ({ href: sortHref(o.key), label: o.label, current: sort === o.key }))}
+          />
+        </div>
       </div>
       {(sort === 'best' || sort === 'worst') && period.full_rounds !== period.rounds && (
         <p class="-mt-1 mb-2 text-[11px] text-kb-muted">18홀 라운드 먼저, 9홀은 뒤에 표시</p>
@@ -157,10 +136,10 @@ const sortHref = (k: RoundSort) => listHref(k, country)
   </section>
 
   <script>
-    // 국가 드롭다운(details): 바깥을 누르거나 Esc 면 닫기. #rounds 가 교체돼도 동작하도록 document 에 위임
-    const closeCountryMenus = (except?: Element | null) =>
-      document.querySelectorAll<HTMLDetailsElement>('details.country-menu[open]').forEach((d) => { if (d !== except) d.open = false })
-    document.addEventListener('click', (e) => closeCountryMenus((e.target as Element | null)?.closest('details.country-menu')))
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeCountryMenus() })
+    // 국가·정렬 드롭다운(details): 바깥을 누르거나 Esc 면 닫기. #rounds 가 교체돼도 동작하도록 document 에 위임
+    const closeDropdowns = (except?: Element | null) =>
+      document.querySelectorAll<HTMLDetailsElement>('details.g-dropdown[open]').forEach((d) => { if (d !== except) d.open = false })
+    document.addEventListener('click', (e) => closeDropdowns((e.target as Element | null)?.closest('details.g-dropdown')))
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDropdowns() })
   </script>
 </GolfLayout>

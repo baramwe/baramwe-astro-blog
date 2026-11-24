@@ -1,0 +1,58 @@
+---
+/**
+ * 골프 홈 필터용 드롭다운 (국가·정렬 공용). <details> 라 JS 없이 열고 닫히고,
+ * 바깥 클릭·Esc 닫기는 페이지의 document 위임 스크립트(details.g-dropdown)가 맡는다.
+ * 항목은 링크 — itemClass 로 'round-sort' 같은 클래스를 주면 YearChips 의 부분 교체가 그대로 동작한다.
+ */
+interface Item {
+  href: string
+  label: string
+  count?: number | null
+  current: boolean
+}
+interface Props {
+  label: string
+  ariaLabel: string
+  items: Item[]
+  /** 기본값이 아닌 걸 골랐으면 버튼을 파랗게 */
+  highlight?: boolean
+  align?: 'left' | 'right'
+  itemClass?: string
+}
+const { label, ariaLabel, items, highlight = false, align = 'left', itemClass = '' } = Astro.props
+---
+<details class="g-dropdown relative shrink-0">
+  <summary
+    aria-label={ariaLabel}
+    class:list={[
+      'flex cursor-pointer list-none items-center gap-1.5 rounded border bg-kb-page py-1 pl-2.5 pr-2 text-sm transition select-none [&::-webkit-details-marker]:hidden',
+      highlight ? 'border-kb-primary font-semibold text-kb-primary' : 'border-kb-border text-kb-text hover:border-kb-border-strong',
+    ]}
+  >
+    {label}
+    <svg class="h-3 w-3 opacity-70" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M3 4.5 6 7.5 9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" /></svg>
+  </summary>
+  <ul
+    class:list={[
+      'absolute top-full z-30 mt-1 max-h-[22rem] min-w-full w-max overflow-y-auto rounded-[2px] border border-kb-border bg-kb-panel py-1 text-[13px] shadow-[0_3px_10px_rgba(0,0,0,.52),0_6px_14px_rgba(0,0,0,.28)]',
+      align === 'right' ? 'right-0' : 'left-0',
+    ]}
+  >
+    {items.map((it) => (
+      <li>
+        <a
+          href={it.href}
+          aria-current={it.current ? 'true' : undefined}
+          class:list={[
+            itemClass,
+            'flex items-center justify-between gap-4 px-3 py-1.5 transition-colors hover:bg-kb-hover',
+            it.current ? 'bg-kb-primary-subtle font-medium text-kb-primary' : 'text-kb-text',
+          ]}
+        >
+          <span>{it.label}</span>
+          {it.count != null && <span class="tabular-nums text-kb-muted">{it.count}</span>}
+        </a>
+      </li>
+    ))}
+  </ul>
+</details>

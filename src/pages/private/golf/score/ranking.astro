@@ -8,19 +8,18 @@ const ownerId = Astro.locals.golf!.user.id
 const db = getDB(Astro.locals, Astro.request)!
 const BASE = '/private/golf/score'
 const TOP = 5
-const MIN_ROUNDS = 5
+const MIN_ROUNDS = 3
 
 // ?more=players | clubs | best-clubs — 해당 랭킹 전체 보기
 const more = Astro.url.searchParams.get('more')
 const [buddies, stats] = await Promise.all([listBuddies(db, ownerId, MIN_ROUNDS), rankingStats(db, ownerId)])
 
-// 동반자: 나와 5회 이상 + 함께한 18홀 평균이 낮은 순
+// 동반자: 나와 3회 이상 + 함께한 18홀 평균이 낮은 순
 const players = buddies.filter((b) => b.their_avg !== null).sort((a, b) => a.their_avg! - b.their_avg! || b.rounds - a.rounds)
 const clubs = stats.clubs
-// 평균타수 낮은 골프장: 18홀(본인 타수 있음) 2회 이상 친 곳, 내 18홀 평균 낮은 순 (같으면 많이 친 순)
-const MIN_CLUB_ROUNDS = 2
+// 평균타수 낮은 골프장: 내 18홀 평균이 있는 모든 골프장, 평균 낮은 순 (같으면 많이 친 순)
 const bestClubs = clubs
-  .filter((c) => c.full_rounds >= MIN_CLUB_ROUNDS && c.avg !== null)
+  .filter((c) => c.avg !== null)
   .sort((a, b) => a.avg! - b.avg! || b.full_rounds - a.full_rounds)
 // more 가 있으면 그 랭킹만 전체, 없으면 각 랭킹 상위 TOP
 const pick = <T,>(key: string, list: T[]) => (!more ? list.slice(0, TOP) : more === key ? list : null)
@@ -114,12 +113,12 @@ const medal = (_i: number) => 'bg-kb-sunken text-kb-subdued border border-kb-bor
       <div class="mb-2 flex items-end justify-between">
         <div>
           <h2 class="text-lg font-bold">평균타수 낮은 골프장</h2>
-          <p class="text-xs text-kb-subdued">18홀 {MIN_CLUB_ROUNDS}회 이상 · 내 평균 낮은 순</p>
+          <p class="text-xs text-kb-subdued">내 18홀 평균 낮은 순</p>
         </div>
         {!more && bestClubs.length > TOP && <a href={`${BASE}/ranking?more=best-clubs`} class="g-btn-ghost shrink-0 text-sm">더보기 ›</a>}
       </div>
       {showBestClubs.length === 0 ? (
-        <p class="g-card text-center text-sm text-kb-text">18홀을 {MIN_CLUB_ROUNDS}회 이상 친 골프장이 아직 없어요.</p>
+        <p class="g-card text-center text-sm text-kb-text">18홀 기록이 있는 골프장이 아직 없어요.</p>
       ) : (
         <ol class="g-card !p-0 divide-y divide-kb-border overflow-hidden">
           {showBestClubs.map((c, i) => (

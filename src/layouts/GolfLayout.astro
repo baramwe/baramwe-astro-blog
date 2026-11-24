@@ -92,7 +92,12 @@ const menuActive = menu.some((m) => m.key === active)
     <div class="border-b border-kb-border">
       <div class="mx-auto max-w-3xl px-4 h-12 flex items-center gap-3">
         <a href={BASE} class="shrink-0 flex items-center gap-2 text-[17px] font-semibold tracking-tight text-kb-title">
-          <span class="inline-flex h-7 w-7 items-center justify-center rounded-full border-2 border-kb-primary text-[13px] leading-none">⛳</span>
+          <span class="inline-flex h-7 w-7 items-center justify-center rounded-full border-2 border-kb-primary">
+            {/* 슬랩 세리프 'T' (가로대 양끝이 아래로 꺾이고 넓은 받침) — 이미지 없이 도형으로 */}
+            <svg class="h-3.5 w-3.5 text-kb-success" viewBox="0 0 380 415" fill="currentColor" aria-hidden="true">
+              <path d="M0 0H380V145H300V80H245V335H290V415H90V335H135V80H80V145H0Z" />
+            </svg>
+          </span>
           <span class="hidden min-[400px]:inline">골프 스코어</span>
         </a>
         <GolfSearch client:idle />
