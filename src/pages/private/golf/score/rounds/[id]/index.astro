@@ -10,6 +10,10 @@ if (!round) return new Response('Not found', { status: 404 })
 // 이 골프장에서 2번 이상 쳤으면 하단에 '더 보기' (그 골프장 라운드 목록으로)
 const clubRounds = await countClubRounds(db, Astro.locals.golf!.user.id, round.club_id)
 
+// 내 스코어는 상단 정보 카드 우측에, 동반자는 아래 가로 카드로
+const me = round.players.find((p) => p.is_self)
+const mates = round.players.filter((p) => !p.is_self)
+
 const holeCount = round.pars.length
 const hasHoles = round.players.some((p) => p.strokes.some((s) => s !== null))
 const halves = holeCount === 18 ? [[0, 9, 'OUT'], [9, 18, 'IN']] as const : [[0, 9, 'OUT']] as const
@@ -26,56 +30,51 @@ const cellClass = (s: number | null, par: number) => {
   if (d >= 2) return 'bg-gray-700 text-white'
   return ''
 }
-const toPar = (t: number) => (t - totalPar === 0 ? 'E' : t - totalPar > 0 ? `+${t - totalPar}` : `${t - totalPar}`)
 ---
 <GolfLayout title={`${round.club_name} ${round.played_on}`} active="home">
   <div class="g-card mb-4">
-    <div class="text-xs text-gray-500">{round.played_on} · {countryName(round.country_code)}{round.tee ? ` · ${round.tee} 티` : ''}</div>
-    <h1 class="text-xl font-bold">{round.club_name}</h1>
-    <div class="text-sm text-gray-600">{round.front_course}{round.back_course ? ` → ${round.back_course}` : ' (9홀)'} · PAR {totalPar}</div>
+    <div class="flex items-start gap-3">
+      <div class="min-w-0 flex-1">
+        <div class="text-xs text-gray-500">{round.played_on} · {countryName(round.country_code)}{round.tee ? ` · ${round.tee} 티` : ''}</div>
+        <h1 class="text-xl font-bold">{round.club_name}</h1>
+        <div class="text-sm text-gray-600">{round.front_course}{round.back_course ? ` → ${round.back_course}` : ' (9홀)'} · PAR {totalPar}</div>
+      </div>
+      {me && (
+        <div class="shrink-0 text-right leading-tight">
+          <div class="text-3xl font-bold tabular-nums text-emerald-800">{me.total}</div>
+          <div class="text-sm text-gray-500">{me.display_name}</div>
+        </div>
+      )}
+    </div>
     {round.memo && <p class="mt-3 text-gray-800">{round.memo}</p>}
   </div>
 
-  <div class="g-card mb-4 !p-0 overflow-hidden">
-    <ul class="divide-y divide-gray-100">
-      {round.players.map((p) => {
-        // 동반자 행은 통째로 상대전적 페이지 링크 (모바일 탭 영역 확보) + 이름 옆 '전적 ›' 칩으로 눌리는 곳임을 표시
-        const Row = p.is_self ? 'div' : 'a'
-        return (
-          <li>
-            <Row
-              {...(p.is_self ? {} : { href: `/private/golf/score/friends/${p.player_id}`, 'aria-label': `${p.display_name} 상대전적 보기` })}
-              class:list={['group flex items-center px-4 py-3', !p.is_self && 'transition-colors hover:bg-emerald-50/60 active:bg-emerald-50']}
-            >
-              <span class="flex min-w-0 flex-1 items-center gap-1.5">
-                <span class:list={['truncate', p.is_self && 'font-semibold']}>{p.display_name}</span>
-                {!p.is_self && (
-                  <span class="inline-flex shrink-0 items-center rounded-full bg-emerald-50 px-1.5 py-0.5 text-[11px] font-medium leading-none text-emerald-700 ring-1 ring-emerald-100 transition group-hover:bg-emerald-600 group-hover:text-white group-hover:ring-emerald-600">
-                    전적<span class="ml-0.5 transition-transform group-hover:translate-x-0.5" aria-hidden="true">›</span>
-                  </span>
-                )}
-              </span>
-              {p.front_total !== null && <span class="text-xs text-gray-500 mr-3 tabular-nums">{p.front_total}{p.back_total !== null ? ` / ${p.back_total}` : ''}</span>}
-              {p.putts_total !== null && <span class="text-xs text-gray-500 mr-3">퍼팅 {p.putts_total}</span>}
-              <span class="text-2xl font-bold tabular-nums text-emerald-800">{p.total}</span>
-              <span class="w-10 text-right text-sm text-gray-500 tabular-nums">{toPar(p.total)}</span>
-            </Row>
-          </li>
-        )
-      })}
-    </ul>
-  </div>
+  {/* 동반자: 가로 카드 (이름 + 타수). 카드 탭 → 상대전적 */}
+  {mates.length > 0 && (
+    <div class="mb-4 grid grid-flow-col auto-cols-fr gap-2">
+      {mates.map((p) => (
+        <a
+          href={`/private/golf/score/friends/${p.player_id}`}
+          aria-label={`${p.display_name} 상대전적 보기`}
+          class="g-card !px-2 !py-3 min-w-0 text-center transition-colors hover:border-emerald-300 hover:bg-emerald-50/60 active:bg-emerald-50"
+        >
+          <div class="truncate text-sm text-gray-700">{p.display_name}</div>
+          <div class="mt-0.5 text-xl font-bold tabular-nums text-emerald-800">{p.total}</div>
+        </a>
+      ))}
+    </div>
+  )}
 
   {hasHoles && halves.map(([a, b, label]) => (
     <div class="g-card mb-4 !p-2 overflow-x-auto">
       <table class="w-full text-center text-sm tabular-nums">
         <thead>
-          <tr class="text-xs text-gray-500">
+          <tr class="text-xs text-gray-500 bg-emerald-100">
             <th class="text-left px-2 py-1 font-normal">홀</th>
             {round.pars.slice(a, b).map((_, i) => <th class="px-1 py-1 font-normal min-w-[1.75rem]">{a + i + 1}</th>)}
             <th class="px-2 py-1 font-semibold">{label}</th>
           </tr>
-          <tr class="text-xs text-gray-500 border-b border-gray-200">
+          <tr class="text-xs text-gray-500 border-b border-gray-200 bg-amber-100">
             <td class="text-left px-2 py-1">PAR</td>
             {round.pars.slice(a, b).map((par) => <td class="py-1">{par}</td>)}
             <td class="py-1 font-semibold">{parSum(a, b)}</td>
