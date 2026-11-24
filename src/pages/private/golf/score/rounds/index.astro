@@ -2,16 +2,41 @@
 import GolfLayout from '../../../../../layouts/GolfLayout.astro'
 import RoundList from '../../../../../components/golf/RoundList.astro'
 import { getDB } from '../../../../../lib/auth/db'
-import { listRounds } from '../../../../../lib/golf/repo'
+import { listRounds, periodSummary } from '../../../../../lib/golf/repo'
 export const prerender = false
 
 const db = getDB(Astro.locals, Astro.request)!
-const rounds = await listRounds(db, Astro.locals.golf!.user.id, 2000)
+const userId = Astro.locals.golf!.user.id
+// ?club=<id> 면 그 골프장 라운드만 (스코어 상세의 '더 보기')
+const clubId = Astro.url.searchParams.get('club') || undefined
+const [rounds, overall] = await Promise.all([
+  listRounds(db, userId, 2000, undefined, 'new', clubId),
+  clubId ? periodSummary(db, userId) : Promise.resolve(null),
+])
+const clubName = clubId ? rounds[0]?.club_name : undefined
+
+// 골프장 평균 — 18홀 + 본인 스코어가 있는 라운드만 (periodSummary 의 전체 평균과 같은 기준)
+const round1 = (n: number) => Math.round(n * 10) / 10
+const clubFull = rounds.filter((r) => r.back_course != null && r.my_total != null)
+const clubAvg = clubId && clubFull.length ? round1(clubFull.reduce((s, r) => s + r.my_total!, 0) / clubFull.length) : null
+const diff = clubAvg != null && overall?.avg != null ? round1(clubAvg - overall.avg) : null
+const diffText = diff == null ? '' : diff === 0 ? '±0' : diff > 0 ? `+${diff}` : `${diff}`
 ---
-<GolfLayout title="라운드" active="home">
-  <div class="flex items-center justify-between mb-3">
-    <h1 class="text-lg font-bold">내 라운드 <span class="text-sm font-normal text-gray-500">{rounds.length}</span></h1>
-    <a href="/private/golf/score/rounds/new" class="g-btn text-sm">+ 입력</a>
+<GolfLayout title={clubName ? `${clubName} 라운드` : '라운드'} active="home">
+  <div class="flex items-center gap-3 mb-3">
+    <h1 class="min-w-0 flex-1 truncate text-lg font-bold">{clubName ?? '내 라운드'} <span class="text-sm font-normal text-gray-500">{rounds.length}</span></h1>
+    {clubAvg != null && (
+      <div class="shrink-0 text-right leading-tight" title={`내 전체 평균 ${overall?.avg} 대비`}>
+        <span class="text-xs text-gray-500">평균</span>
+        <span class="ml-0.5 text-lg font-bold tabular-nums text-emerald-800">{clubAvg}</span>
+        {diff != null && (
+          <span class:list={['ml-1 text-sm font-semibold tabular-nums', diff > 0 ? 'text-rose-600' : diff < 0 ? 'text-blue-600' : 'text-gray-500']}>{diffText}</span>
+        )}
+      </div>
+    )}
+    {clubId
+      ? <a href="/private/golf/score/rounds" class="g-btn-ghost shrink-0 text-sm">전체 라운드</a>
+      : <a href="/private/golf/score/rounds/new" class="g-btn shrink-0 text-sm">+ 입력</a>}
   </div>
   {rounds.length === 0
     ? <p class="g-card text-sm text-gray-600 text-center">아직 기록이 없어요.</p>

@@ -188,7 +188,8 @@ export function parseRoundSort(v: string | null | undefined): RoundSort {
   return (ROUND_SORTS as readonly string[]).includes(v ?? '') ? (v as RoundSort) : 'new'
 }
 
-export async function listRounds(db: D1Database, ownerId: string, limit = 200, year?: string, sort: RoundSort = 'new'): Promise<RoundListItem[]> {
+/** clubId: 주면 그 골프장 라운드만 */
+export async function listRounds(db: D1Database, ownerId: string, limit = 200, year?: string, sort: RoundSort = 'new', clubId?: string): Promise<RoundListItem[]> {
   const { results } = await db.prepare(
     `SELECT r.id, r.played_on, c.name AS club_name, c.country_code, c.region,
             fc.name AS front_course, bc.name AS back_course, r.memo,
@@ -201,10 +202,19 @@ export async function listRounds(db: D1Database, ownerId: string, limit = 200, y
        JOIN golf_courses fc ON fc.id = r.front_course_id
        LEFT JOIN golf_courses bc ON bc.id = r.back_course_id
       WHERE r.owner_user_id = ? AND (? IS NULL OR substr(r.played_on, 1, 4) = ?)
+        AND (? IS NULL OR r.club_id = ?)
       ORDER BY ${ROUND_ORDER[sort]}
       LIMIT ?`
-  ).bind(ownerId, year ?? null, year ?? null, limit).all<RoundListItem>()
+  ).bind(ownerId, year ?? null, year ?? null, clubId ?? null, clubId ?? null, limit).all<RoundListItem>()
   return results
+}
+
+/** 내가 그 골프장에서 친 라운드 수 */
+export async function countClubRounds(db: D1Database, ownerId: string, clubId: string): Promise<number> {
+  const row = await db.prepare(
+    `SELECT count(*) AS n FROM golf_rounds WHERE owner_user_id = ? AND club_id = ?`
+  ).bind(ownerId, clubId).first<{ n: number }>()
+  return row?.n ?? 0
 }
 
 export interface YearCount { year: string; rounds: number }

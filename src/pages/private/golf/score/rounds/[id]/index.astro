@@ -1,12 +1,14 @@
 ---
 import GolfLayout from '../../../../../../layouts/GolfLayout.astro'
 import { getDB } from '../../../../../../lib/auth/db'
-import { countryName, getRound } from '../../../../../../lib/golf/repo'
+import { countClubRounds, countryName, getRound } from '../../../../../../lib/golf/repo'
 export const prerender = false
 
 const db = getDB(Astro.locals, Astro.request)!
 const round = await getRound(db, Astro.locals.golf!.user.id, String(Astro.params.id))
 if (!round) return new Response('Not found', { status: 404 })
+// 이 골프장에서 2번 이상 쳤으면 하단에 '더 보기' (그 골프장 라운드 목록으로)
+const clubRounds = await countClubRounds(db, Astro.locals.golf!.user.id, round.club_id)
 
 const holeCount = round.pars.length
 const hasHoles = round.players.some((p) => p.strokes.some((s) => s !== null))
@@ -94,4 +96,13 @@ const toPar = (t: number) => (t - totalPar === 0 ? 'E' : t - totalPar > 0 ? `+${
     </div>
   ))}
 
+  {clubRounds >= 2 && (
+    <div class="mt-2 mb-4 text-center">
+      <a href={`/private/golf/score/rounds?club=${encodeURIComponent(round.club_id)}`} aria-label={`${round.club_name} 라운드 ${clubRounds}개 더 보기`} class="g-btn-ghost inline-flex items-center gap-1.5 text-sm text-emerald-800 hover:border-emerald-400 hover:bg-emerald-50">
+        {round.club_name}
+        <span class="text-gray-500 tabular-nums">{clubRounds}</span>
+        <span aria-hidden="true">›</span>
+      </a>
+    </div>
+  )}
 </GolfLayout>
