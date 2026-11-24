@@ -1,5 +1,6 @@
 ---
 import '../styles/tw.css'
+import GolfSearch from '../components/golf/GolfSearch.tsx'
 
 interface Props {
   title: string
@@ -43,9 +44,10 @@ const tabs = [
 </head>
 <body>
   <header class="sticky top-0 z-20 bg-emerald-800 text-white shadow">
-    <div class="mx-auto max-w-3xl px-4 pt-3 pb-2 flex items-center justify-between">
-      <a href={BASE} class="text-lg font-bold tracking-tight">⛳ 골프 스코어</a>
-      <a href={`${BASE}/manage`} aria-label="기록 관리" title="기록 관리" class={`text-lg leading-none px-1 ${active === 'manage' ? 'text-white' : 'text-emerald-300/70'}`}>⚙</a>
+    <div class="mx-auto max-w-3xl px-4 pt-3 pb-2 flex items-center gap-3">
+      <a href={BASE} class="shrink-0 text-lg font-bold tracking-tight">⛳<span class="hidden min-[400px]:inline"> 골프 스코어</span></a>
+      <GolfSearch client:idle />
+      <a href={`${BASE}/manage`} aria-label="기록 관리" title="기록 관리" class={`shrink-0 text-lg leading-none px-1 ${active === 'manage' ? 'text-white' : 'text-emerald-300/70'}`}>⚙</a>
     </div>
     <nav class="mx-auto max-w-3xl px-2 flex gap-1 overflow-x-auto text-base">
       {tabs.map((t) => (

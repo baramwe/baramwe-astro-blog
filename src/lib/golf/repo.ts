@@ -560,3 +560,31 @@ export async function getBuddy(db: D1Database, ownerId: string, buddyId: string)
   ).bind(ownerId, buddyId).all<BuddyRound>()
   return { buddy, self_name: self?.display_name ?? '나', rounds: results }
 }
+
+// ───────────────────────── 검색 ─────────────────────────
+
+export interface SearchIndex {
+  clubs: { id: string; name: string; rounds: number }[]
+  players: { id: string; name: string; rounds: number }[]
+}
+
+/** 헤더 검색 자동완성용 — 내가 라운드한 골프장, 함께 친 동반자만 (라운드 수 많은 순) */
+export async function searchIndex(db: D1Database, ownerId: string): Promise<SearchIndex> {
+  const [clubs, players] = await db.batch([
+    db.prepare(
+      `SELECT c.id, c.name, count(*) AS rounds
+         FROM golf_rounds r JOIN golf_clubs c ON c.id = r.club_id
+        WHERE r.owner_user_id = ?
+        GROUP BY c.id ORDER BY rounds DESC, c.name`
+    ).bind(ownerId),
+    db.prepare(
+      `SELECT p.id, p.display_name AS name, count(*) AS rounds
+         FROM golf_round_players rp
+         JOIN golf_players p ON p.id = rp.player_id
+         JOIN golf_rounds r ON r.id = rp.round_id
+        WHERE p.owner_user_id = ? AND p.is_self = 0 AND r.owner_user_id = p.owner_user_id
+        GROUP BY p.id ORDER BY rounds DESC, p.display_name`
+    ).bind(ownerId),
+  ])
+  return { clubs: clubs.results as SearchIndex['clubs'], players: players.results as SearchIndex['players'] }
+}
