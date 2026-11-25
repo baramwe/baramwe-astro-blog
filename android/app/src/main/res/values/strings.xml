@@ -8,6 +8,8 @@
     <string name="action_new_round">+ 라운드 입력</string>
     <string name="action_clubs">골프장 · 코스</string>
     <string name="action_manage">기록 관리</string>
+    <string name="action_settings">메뉴</string>
+    <string name="logo_text">스코어</string>
     <string name="back">뒤로</string>
     <string name="error_title">연결할 수 없어요</string>
     <string name="error_body">인터넷 연결을 확인하고 다시 시도해 주세요.</string>

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 툴바 좌측 로고: 원 안의 T + '스코어' (웹 GolfLayout 헤더와 같은 모양) -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/logo"
+    android:layout_width="wrap_content"
+    android:layout_height="match_parent"
+    android:gravity="center_vertical"
+    android:orientation="horizontal">
+
+    <FrameLayout
+        android:layout_width="28dp"
+        android:layout_height="28dp"
+        android:background="@drawable/logo_ring">
+
+        <ImageView
+            android:layout_width="14dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:adjustViewBounds="true"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_logo_t" />
+    </FrameLayout>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:fontFamily="sans-serif-medium"
+        android:text="@string/logo_text"
+        android:textColor="@color/title"
+        android:textSize="17sp" />
+</LinearLayout>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 웹 헤더 로고와 같은 슬랩 세리프 T -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="14dp" android:height="15.3dp" android:viewportWidth="380" android:viewportHeight="415">
+    <path android:fillColor="@color/success" android:pathData="M0,0H380V145H300V80H245V335H290V415H90V335H135V80H80V145H0Z" />
+</vector>

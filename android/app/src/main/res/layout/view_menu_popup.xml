@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 톱니 메뉴 팝업: 폭은 가장 긴 항목 텍스트에 맞춘다 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:background="@drawable/popup_bg"
+    android:orientation="vertical"
+    android:paddingVertical="4dp">
+
+    <TextView android:id="@+id/action_new_round" style="@style/GolfPopupItem" android:text="@string/action_new_round" />
+    <TextView android:id="@+id/action_clubs" style="@style/GolfPopupItem" android:text="@string/action_clubs" />
+    <TextView android:id="@+id/action_manage" style="@style/GolfPopupItem" android:text="@string/action_manage" />
+</LinearLayout>

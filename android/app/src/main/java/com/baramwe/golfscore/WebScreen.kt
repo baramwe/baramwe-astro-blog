@@ -43,6 +43,8 @@ class WebScreen(
     interface Callbacks {
         /** 웹이 Android.openDetail(url) 호출 — 상세 화면으로 이동 */
         fun onOpenDetail(url: String)
+        /** 웹이 홈 주소로 이동하려 함 — 상세로 열지 않고 메인 홈 탭으로 */
+        fun onGoHome() = onOpenDetail(Routes.HOME)
         fun onTitle(title: String) {}
     }
 
@@ -220,6 +222,11 @@ class WebScreen(
 
     private fun isOurs(url: String?): Boolean = url != null && Uri.parse(url).host == baseHost
 
+    private fun isHome(url: String): Boolean {
+        val u = Uri.parse(url)
+        return u.path?.trimEnd('/') == Uri.parse(Routes.HOME).path && u.query.isNullOrEmpty()
+    }
+
     private fun openExternal(url: String) {
         try {
             context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
@@ -238,7 +245,11 @@ class WebScreen(
         fun openDetail(url: String) {
             main.post {
                 if (!isOurs(webView.url)) return@post // 우리 사이트가 띄운 페이지만 브릿지 사용
-                if (isOurs(url)) callbacks.onOpenDetail(url) else openExternal(url)
+                when {
+                    !isOurs(url) -> openExternal(url)
+                    isHome(url) -> callbacks.onGoHome()
+                    else -> callbacks.onOpenDetail(url)
+                }
             }
         }
     }

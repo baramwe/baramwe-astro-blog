@@ -1,6 +1,7 @@
 package com.baramwe.golfscore
 
 import android.app.Activity
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.widget.FrameLayout
@@ -52,6 +53,19 @@ class DetailActivity : AppCompatActivity(), WebScreen.Callbacks {
     override fun onOpenDetail(url: String) {
         returningFromDetail = true
         Routes.openDetail(this, url)
+    }
+
+    /** 홈 링크: 상세 화면들을 모두 닫고 메인 홈 탭으로 (새 상세로 홈을 띄우지 않는다) */
+    override fun onGoHome() {
+        startActivity(
+            Intent(this, MainActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                .putExtra(MainActivity.EXTRA_GO_HOME, true),
+        )
+        if (Build.VERSION.SDK_INT < 34) {
+            @Suppress("DEPRECATION")
+            overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_right)
+        }
     }
 
     override fun onRestart() {

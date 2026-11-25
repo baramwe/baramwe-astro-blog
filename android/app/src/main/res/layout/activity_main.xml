@@ -10,9 +10,13 @@
         android:id="@+id/toolbar"
         style="@style/GolfToolbar"
         android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
-        app:menu="@menu/main_toolbar"
-        app:title="@string/app_name" />
+        android:layout_height="@dimen/toolbar_height"
+        android:minHeight="@dimen/toolbar_height"
+        app:contentInsetStart="16dp"
+        app:menu="@menu/main_toolbar">
+
+        <include layout="@layout/view_logo" />
+    </com.google.android.material.appbar.MaterialToolbar>
 
     <View
         android:layout_width="match_parent"
@@ -33,10 +37,10 @@
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottom_nav"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="@dimen/bottom_nav_height"
+        android:minHeight="@dimen/bottom_nav_height"
         android:background="@color/panel"
         app:itemIconTint="@color/nav_item"
-        app:itemTextColor="@color/nav_item"
-        app:labelVisibilityMode="labeled"
+        app:labelVisibilityMode="unlabeled"
         app:menu="@menu/bottom_nav" />
 </LinearLayout>

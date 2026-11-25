@@ -26,6 +26,21 @@
         <item name="titleTextAppearance">@style/TextAppearance.Material3.TitleMedium</item>
     </style>
 
+    <!-- 툴바 높이: M3 기본 64dp 에서 20% 줄임 -->
+    <dimen name="toolbar_height">51dp</dimen>
+    <!-- 하단 탭 높이: M3 기본 80dp 에서 35% 줄임 (라벨 없음) -->
+    <dimen name="bottom_nav_height">52dp</dimen>
+
+    <style name="GolfPopupItem">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:paddingHorizontal">16dp</item>
+        <item name="android:paddingVertical">11dp</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:textColor">@color/text</item>
+        <item name="android:background">?attr/selectableItemBackground</item>
+    </style>
+
     <style name="SkeletonBlock">
         <item name="android:background">@drawable/skeleton_block</item>
     </style>

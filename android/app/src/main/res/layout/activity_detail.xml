@@ -10,7 +10,8 @@
         android:id="@+id/toolbar"
         style="@style/GolfToolbar"
         android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
+        android:layout_height="@dimen/toolbar_height"
+        android:minHeight="@dimen/toolbar_height"
         app:navigationContentDescription="@string/back"
         app:navigationIcon="@drawable/ic_back"
         app:navigationIconTint="@color/title" />
