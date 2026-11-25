@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 웹 GolfLayout(Kibana 다크) 토큰과 같은 색 -->
+<resources>
+    <color name="page">#07101F</color>
+    <color name="panel">#0B1628</color>
+    <color name="sunken">#111D31</color>
+    <color name="border">#2B394F</color>
+    <color name="primary">#61A2FF</color>
+    <color name="success">#3DD68C</color>
+    <color name="text">#CAD3E2</color>
+    <color name="title">#E3E8F2</color>
+    <color name="subdued">#8E9FBC</color>
+    <color name="skeleton">#16243A</color>
+    <!-- 런처 아이콘 (노란 바탕 + 남색 슬랩세리프 T) -->
+    <color name="icon_bg">#FBD103</color>
+    <color name="icon_fg">#15243F</color>
+</resources>

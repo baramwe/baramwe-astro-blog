@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { openDetail } from '../../lib/golf/app'
 
 // 헤더 검색: 골프장(기본) → 그 골프장 라운드 목록, 동반자 → 상대전적(함께 친 라운드) 페이지.
 // 이름 목록은 localStorage 에 캐시해 두고 바로 쓰며, 뒤에서 한 번 새로 받아 갱신한다.
@@ -32,7 +33,7 @@ function writeCache(idx: Index) {
 
 const hrefOf = (h: Hit) => (h.kind === 'club' ? `${BASE}/rounds?club=${encodeURIComponent(h.id)}` : `${BASE}/friends/${encodeURIComponent(h.id)}`)
 
-export default function GolfSearch() {
+export default function GolfSearch({ autoFocus = false }: { autoFocus?: boolean }) {
   const [index, setIndex] = useState<Index | null>(null)
   const [q, setQ] = useState('')
   const [open, setOpen] = useState(false)
@@ -82,7 +83,7 @@ export default function GolfSearch() {
   const go = (h: Hit | undefined) => {
     if (!h) return
     setOpen(false)
-    window.location.href = hrefOf(h)
+    openDetail(hrefOf(h)) // 앱이면 네이티브 상세 화면, 웹이면 일반 이동
   }
 
   const onKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -111,6 +112,7 @@ export default function GolfSearch() {
         inputMode="search"
         enterKeyHint="go"
         autoComplete="off"
+        autoFocus={autoFocus}
         value={q}
         placeholder="골프장 · 동반자 검색"
         aria-label="골프장 또는 동반자 검색"

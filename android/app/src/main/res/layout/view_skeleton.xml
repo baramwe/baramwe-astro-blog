@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 웹 렌더 완료 전까지 보여 주는 네이티브 스켈레톤 (요약 카드 + 리스트) -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/page"
+    android:clickable="true"
+    android:focusable="false"
+    android:orientation="vertical"
+    android:paddingHorizontal="12dp"
+    android:paddingTop="12dp">
+
+    <View style="@style/SkeletonBlock" android:layout_width="120dp" android:layout_height="18dp" />
+    <View style="@style/SkeletonBlock" android:layout_width="200dp" android:layout_height="10dp" android:layout_marginTop="8dp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/skeleton_card"
+        android:orientation="horizontal"
+        android:padding="16dp">
+        <View style="@style/SkeletonBlock" android:layout_width="0dp" android:layout_height="44dp" android:layout_weight="1" />
+        <View style="@style/SkeletonBlock" android:layout_width="0dp" android:layout_height="44dp" android:layout_weight="1" android:layout_marginStart="12dp" />
+        <View style="@style/SkeletonBlock" android:layout_width="0dp" android:layout_height="44dp" android:layout_weight="1" android:layout_marginStart="12dp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:background="@drawable/skeleton_card"
+        android:divider="@drawable/divider"
+        android:orientation="vertical"
+        android:showDividers="middle">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:paddingHorizontal="16dp" android:paddingVertical="14dp">
+                <View style="@style/SkeletonBlock" android:layout_width="28dp" android:layout_height="28dp" />
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="12dp" android:orientation="vertical">
+                    <View style="@style/SkeletonBlock" android:layout_width="140dp" android:layout_height="14dp" />
+                    <View style="@style/SkeletonBlock" android:layout_width="80dp" android:layout_height="10dp" android:layout_marginTop="8dp" />
+                </LinearLayout>
+                <View style="@style/SkeletonBlock" android:layout_width="36dp" android:layout_height="22dp" />
+            </LinearLayout>
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:paddingHorizontal="16dp" android:paddingVertical="14dp">
+                <View style="@style/SkeletonBlock" android:layout_width="28dp" android:layout_height="28dp" />
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="12dp" android:orientation="vertical">
+                    <View style="@style/SkeletonBlock" android:layout_width="140dp" android:layout_height="14dp" />
+                    <View style="@style/SkeletonBlock" android:layout_width="80dp" android:layout_height="10dp" android:layout_marginTop="8dp" />
+                </LinearLayout>
+                <View style="@style/SkeletonBlock" android:layout_width="36dp" android:layout_height="22dp" />
+            </LinearLayout>
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:paddingHorizontal="16dp" android:paddingVertical="14dp">
+                <View style="@style/SkeletonBlock" android:layout_width="28dp" android:layout_height="28dp" />
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="12dp" android:orientation="vertical">
+                    <View style="@style/SkeletonBlock" android:layout_width="140dp" android:layout_height="14dp" />
+                    <View style="@style/SkeletonBlock" android:layout_width="80dp" android:layout_height="10dp" android:layout_marginTop="8dp" />
+                </LinearLayout>
+                <View style="@style/SkeletonBlock" android:layout_width="36dp" android:layout_height="22dp" />
+            </LinearLayout>
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:paddingHorizontal="16dp" android:paddingVertical="14dp">
+                <View style="@style/SkeletonBlock" android:layout_width="28dp" android:layout_height="28dp" />
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="12dp" android:orientation="vertical">
+                    <View style="@style/SkeletonBlock" android:layout_width="140dp" android:layout_height="14dp" />
+                    <View style="@style/SkeletonBlock" android:layout_width="80dp" android:layout_height="10dp" android:layout_marginTop="8dp" />
+                </LinearLayout>
+                <View style="@style/SkeletonBlock" android:layout_width="36dp" android:layout_height="22dp" />
+            </LinearLayout>
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:paddingHorizontal="16dp" android:paddingVertical="14dp">
+                <View style="@style/SkeletonBlock" android:layout_width="28dp" android:layout_height="28dp" />
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="12dp" android:orientation="vertical">
+                    <View style="@style/SkeletonBlock" android:layout_width="140dp" android:layout_height="14dp" />
+                    <View style="@style/SkeletonBlock" android:layout_width="80dp" android:layout_height="10dp" android:layout_marginTop="8dp" />
+                </LinearLayout>
+                <View style="@style/SkeletonBlock" android:layout_width="36dp" android:layout_height="22dp" />
+            </LinearLayout>
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:paddingHorizontal="16dp" android:paddingVertical="14dp">
+                <View style="@style/SkeletonBlock" android:layout_width="28dp" android:layout_height="28dp" />
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="12dp" android:orientation="vertical">
+                    <View style="@style/SkeletonBlock" android:layout_width="140dp" android:layout_height="14dp" />
+                    <View style="@style/SkeletonBlock" android:layout_width="80dp" android:layout_height="10dp" android:layout_marginTop="8dp" />
+                </LinearLayout>
+                <View style="@style/SkeletonBlock" android:layout_width="36dp" android:layout_height="22dp" />
+            </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

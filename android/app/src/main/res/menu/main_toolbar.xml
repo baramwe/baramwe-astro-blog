@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/action_search"
+        android:icon="@drawable/ic_search"
+        android:title="@string/action_search"
+        app:iconTint="@color/title"
+        app:showAsAction="always" />
+    <!-- 웹 헤더의 ⚙ 메뉴와 같은 항목 (오버플로 아이콘을 톱니로 바꾼다) -->
+    <item android:id="@+id/action_new_round" android:title="@string/action_new_round" app:showAsAction="never" />
+    <item android:id="@+id/action_clubs" android:title="@string/action_clubs" app:showAsAction="never" />
+    <item android:id="@+id/action_manage" android:title="@string/action_manage" app:showAsAction="never" />
+</menu>

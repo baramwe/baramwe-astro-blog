@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.GolfScore" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorOnPrimary">@color/page</item>
+        <item name="colorSurface">@color/panel</item>
+        <item name="colorOnSurface">@color/title</item>
+        <item name="colorSurfaceContainer">@color/panel</item>
+        <item name="colorSecondaryContainer">#1F61A2FF</item>
+        <item name="colorOnSecondaryContainer">@color/primary</item>
+        <item name="android:colorBackground">@color/page</item>
+        <item name="android:windowBackground">@color/page</item>
+        <item name="android:statusBarColor">@color/panel</item>
+        <item name="android:navigationBarColor">@color/panel</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="popupMenuStyle">@style/GolfPopup</item>
+    </style>
+
+    <style name="GolfPopup" parent="Widget.Material3.PopupMenu">
+        <item name="android:popupBackground">@color/panel</item>
+    </style>
+
+    <style name="GolfToolbar" parent="Widget.Material3.Toolbar">
+        <item name="android:background">@color/panel</item>
+        <item name="titleTextColor">@color/title</item>
+        <item name="titleTextAppearance">@style/TextAppearance.Material3.TitleMedium</item>
+    </style>
+
+    <style name="SkeletonBlock">
+        <item name="android:background">@drawable/skeleton_block</item>
+    </style>
+</resources>

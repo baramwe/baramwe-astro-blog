@@ -1,0 +1,9 @@
+---
+import GolfLayout from '../../../../layouts/GolfLayout.astro'
+import GolfSearch from '../../../../components/golf/GolfSearch.tsx'
+export const prerender = false
+// 검색 전용 화면 — 앱은 헤더 검색창이 없어서 네이티브 상단 검색 버튼이 이 페이지를 연다
+---
+<GolfLayout title="검색">
+  <GolfSearch client:load autoFocus />
+</GolfLayout>
