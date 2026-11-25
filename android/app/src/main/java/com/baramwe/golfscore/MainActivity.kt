@@ -2,6 +2,8 @@ package com.baramwe.golfscore
 
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
@@ -25,6 +27,8 @@ class MainActivity : AppCompatActivity(), WebScreen.Callbacks {
     /** 상세 화면에 다녀오면 데이터가 바뀌었을 수 있어 다시 받아야 하는 탭 */
     private val stale = mutableSetOf<Int>()
     private var returningFromDetail = false
+    private val main = Handler(Looper.getMainLooper())
+    private val preloadOthers = Runnable { tabs.forEach { it.screen.load() } }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -61,8 +65,9 @@ class MainActivity : AppCompatActivity(), WebScreen.Callbacks {
         // 같은 탭을 다시 누르면 맨 위로
         bottomNav.setOnItemReselectedListener { tabs[current].screen.webView.pageUp(true) }
 
-        tabs.forEach { it.screen.load() } // 3장 모두 미리 로드
+        // 홈을 먼저 받고, 홈이 뜬 뒤에 나머지 탭을 미리 받는다 (시작 때 네트워크·CPU 를 홈이 독차지)
         select(0)
+        main.postDelayed(preloadOthers, PRELOAD_FALLBACK_MS) // 홈이 실패·지연돼도 결국 받도록
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
@@ -104,6 +109,7 @@ class MainActivity : AppCompatActivity(), WebScreen.Callbacks {
         current = index
         tabs.forEachIndexed { i, t -> t.screen.root.visibility = if (i == index) View.VISIBLE else View.INVISIBLE }
         val tab = tabs[index]
+        tab.screen.load() // 아직 안 받은 탭이면 지금 받기 (이미 받았으면 무시)
         val url = tab.screen.currentUrl()
         when {
             // 다른 탭에서 로그인했으면 로그인 화면에 머물던 탭은 원래 주소로
@@ -115,6 +121,13 @@ class MainActivity : AppCompatActivity(), WebScreen.Callbacks {
     override fun onOpenDetail(url: String) {
         returningFromDetail = true
         Routes.openDetail(this, url)
+    }
+
+    override fun onRevealed(screen: WebScreen) {
+        if (screen === tabs[0].screen) {
+            main.removeCallbacks(preloadOthers)
+            preloadOthers.run()
+        }
     }
 
     override fun onGoHome() {
@@ -147,11 +160,13 @@ class MainActivity : AppCompatActivity(), WebScreen.Callbacks {
     }
 
     override fun onDestroy() {
+        main.removeCallbacks(preloadOthers)
         tabs.forEach { it.screen.destroy() }
         super.onDestroy()
     }
 
     companion object {
         const val EXTRA_GO_HOME = "go_home"
+        private const val PRELOAD_FALLBACK_MS = 5000L
     }
 }

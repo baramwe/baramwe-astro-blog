@@ -46,6 +46,8 @@ class WebScreen(
         /** 웹이 홈 주소로 이동하려 함 — 상세로 열지 않고 메인 홈 탭으로 */
         fun onGoHome() = onOpenDetail(Routes.HOME)
         fun onTitle(title: String) {}
+        /** 스켈레톤을 걷고 웹뷰를 보여준 순간 (처음·새로고침 모두) */
+        fun onRevealed(screen: WebScreen) {}
     }
 
     private val swipe: SwipeRefreshLayout = root.findViewById(R.id.swipe)
@@ -201,6 +203,7 @@ class WebScreen(
         pulse?.cancel()
         skeleton.animate().alpha(0f).setDuration(150).withEndAction { skeleton.visibility = View.GONE }.start()
         webView.animate().alpha(1f).setDuration(180).start()
+        callbacks.onRevealed(this)
     }
 
     private fun showError() {
