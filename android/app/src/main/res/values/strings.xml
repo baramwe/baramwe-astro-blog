@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">골프 스코어</string>
+    <!-- 런처 라벨은 굵기를 줄 수 없어 유니코드 굵은 T(U+1D5E7)로 -->
+    <string name="app_name">𝗧 스코어</string>
     <string name="tab_home">홈</string>
     <string name="tab_friends">골친</string>
     <string name="tab_ranking">랭킹</string>
