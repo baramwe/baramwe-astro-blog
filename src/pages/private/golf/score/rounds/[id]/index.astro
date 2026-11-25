@@ -20,14 +20,16 @@ const halves = holeCount === 18 ? [[0, 9, 'OUT'], [9, 18, 'IN']] as const : [[0,
 const parSum = (a: number, b: number) => round.pars.slice(a, b).reduce((x, y) => x + y, 0)
 const totalPar = parSum(0, holeCount)
 
-// 스코어 표기: 버디 이하 파란 원, 보기 사각, 더블+ 진한 사각
+// 스코어 표기: 버디 이하 파란 원, 보기 사각, 더블 얇은 2줄 사각, 트리플+ 진한 사각
 const cellClass = (s: number | null, par: number) => {
   if (s === null) return 'text-kb-muted'
   const d = s - par
   if (d <= -2) return 'bg-kb-primary text-kb-ink font-semibold rounded-full'
   if (d === -1) return 'ring-1 ring-kb-primary text-kb-primary rounded-full'
   if (d === 1) return 'ring-1 ring-kb-muted'
-  if (d >= 2) return 'bg-kb-border-strong text-kb-title'
+  // 바깥 줄은 보기와 같은 ring(크기 동일), 안쪽 줄은 음수 offset outline 으로 네모 안에 그린다
+  if (d === 2) return 'ring-1 ring-kb-muted outline outline-1 outline-offset-[-3px] outline-kb-muted'
+  if (d >= 3) return 'bg-kb-border-strong text-kb-title'
   return ''
 }
 ---
