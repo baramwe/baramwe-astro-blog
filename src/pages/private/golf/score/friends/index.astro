@@ -1,6 +1,7 @@
 ---
 import GolfLayout from '../../../../../layouts/GolfLayout.astro'
 import BuddyRecord from '../../../../../components/golf/BuddyRecord.astro'
+import Dropdown from '../../../../../components/golf/Dropdown.astro'
 import { getDB } from '../../../../../lib/auth/db'
 import { listBuddies } from '../../../../../lib/golf/repo'
 export const prerender = false
@@ -14,10 +15,37 @@ const [buddies, self] = await Promise.all([
 const selfName = self?.display_name ?? '나'
 const winRate = (b: { wins: number; losses: number; draws: number }) =>
   Math.round((b.wins / (b.wins + b.losses + b.draws || 1)) * 100)
+
+// 정렬: 기본(골친) = 함께 친 라운드 많은 순(listBuddies 순서), 승률↑ 높은 순, 승률↓ 낮은 순
+const SORTS = [
+  { key: 'rounds', label: '골친' },
+  { key: 'win_desc', label: '승률', arrow: 'up' },
+  { key: 'win_asc', label: '승률', arrow: 'down' },
+] as const
+type SortKey = (typeof SORTS)[number]['key']
+const sortParam = Astro.url.searchParams.get('sort')
+const sort: SortKey = SORTS.some((s) => s.key === sortParam) ? (sortParam as SortKey) : 'rounds'
+if (sort !== 'rounds') {
+  const sign = sort === 'win_desc' ? -1 : 1
+  // 승률이 같으면 함께 친 라운드 많은 순
+  buddies.sort((a, b) => sign * (winRate(a) - winRate(b)) || b.rounds - a.rounds)
+}
+const cur = SORTS.find((s) => s.key === sort)!
+const sortHref = (k: SortKey) => (k === 'rounds' ? Astro.url.pathname : `${Astro.url.pathname}?sort=${k}`)
 ---
 <GolfLayout title="골친" active="friends">
-  <div class="mb-4">
+  <div class="mb-4 flex items-center justify-between gap-3">
     <h1 class="text-xl font-bold">골친</h1>
+    {buddies.length > 1 && (
+      <Dropdown
+        ariaLabel="골친 정렬"
+        align="right"
+        label={cur.label}
+        labelArrow={'arrow' in cur ? cur.arrow : undefined}
+        highlight={sort !== 'rounds'}
+        items={SORTS.map((s) => ({ href: sortHref(s.key), label: s.label, arrow: 'arrow' in s ? s.arrow : undefined, current: s.key === sort }))}
+      />
+    )}
   </div>
 
   {buddies.length === 0 ? (
@@ -58,4 +86,12 @@ const winRate = (b: { wins: number; losses: number; draws: number }) =>
       ))}
     </ol>
   )}
+
+  <script>
+    // 드롭다운(details.g-dropdown) 바깥 클릭·Esc 로 닫기
+    const closeDropdowns = (except?: Element | null) =>
+      document.querySelectorAll<HTMLDetailsElement>('details.g-dropdown[open]').forEach((d) => { if (d !== except) d.open = false })
+    document.addEventListener('click', (e) => closeDropdowns((e.target as Element | null)?.closest('details.g-dropdown')))
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDropdowns() })
+  </script>
 </GolfLayout>

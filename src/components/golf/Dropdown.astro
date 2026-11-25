@@ -9,7 +9,10 @@ interface Item {
   label: string
   count?: number | null
   current: boolean
+  /** 라벨 뒤에 붙는 작은 화살표 (예: 승률 높은 순 = up) */
+  arrow?: Arrow
 }
+type Arrow = 'up' | 'down'
 interface Props {
   label: string
   ariaLabel: string
@@ -18,8 +21,12 @@ interface Props {
   highlight?: boolean
   align?: 'left' | 'right'
   itemClass?: string
+  /** 버튼 라벨 뒤 화살표 */
+  labelArrow?: Arrow
 }
-const { label, ariaLabel, items, highlight = false, align = 'left', itemClass = '' } = Astro.props
+const { label, ariaLabel, items, highlight = false, align = 'left', itemClass = '', labelArrow } = Astro.props
+// 이모지 대신 직접 그린 가는 화살표 (글자색을 따라감)
+const ARROW_PATH: Record<Arrow, string> = { up: 'M6 10V2.5M2.75 5.5 6 2.25 9.25 5.5', down: 'M6 2v7.5M2.75 6.5 6 9.75 9.25 6.5' }
 ---
 <details class="g-dropdown relative shrink-0">
   <summary
@@ -29,7 +36,10 @@ const { label, ariaLabel, items, highlight = false, align = 'left', itemClass = 
       highlight ? 'border-kb-primary font-semibold text-kb-primary' : 'border-kb-border text-kb-text hover:border-kb-border-strong',
     ]}
   >
-    {label}
+    <span class="inline-flex items-center gap-0.5">
+      {label}
+      {labelArrow && <svg class="h-3 w-3" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d={ARROW_PATH[labelArrow]} stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /></svg>}
+    </span>
     <svg class="h-3 w-3 opacity-70" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M3 4.5 6 7.5 9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" /></svg>
   </summary>
   <ul
@@ -49,7 +59,10 @@ const { label, ariaLabel, items, highlight = false, align = 'left', itemClass = 
             it.current ? 'bg-kb-primary-subtle font-medium text-kb-primary' : 'text-kb-text',
           ]}
         >
-          <span>{it.label}</span>
+          <span class="inline-flex items-center gap-0.5">
+            {it.label}
+            {it.arrow && <svg class="h-3 w-3" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d={ARROW_PATH[it.arrow]} stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /></svg>}
+          </span>
           {it.count != null && <span class="tabular-nums text-kb-muted">{it.count}</span>}
         </a>
       </li>
