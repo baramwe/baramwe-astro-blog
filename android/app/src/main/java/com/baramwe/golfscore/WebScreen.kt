@@ -72,6 +72,8 @@ class WebScreen(
     @SuppressLint("SetJavaScriptEnabled")
     private fun setupWebView() {
         CookieManager.getInstance().setAcceptCookie(true)
+        // 디버그 빌드는 chrome://inspect 로 웹뷰를 들여다볼 수 있게
+        WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG)
         webView.setBackgroundColor(ContextCompat.getColor(context, R.color.page))
         webView.alpha = 0f
         webView.isVerticalScrollBarEnabled = false
