@@ -1,5 +1,6 @@
 ---
 import GolfLayout from '../../../../layouts/GolfLayout.astro'
+import Dropdown from '../../../../components/golf/Dropdown.astro'
 import { getDB } from '../../../../lib/auth/db'
 import { listBuddies, rankingStats } from '../../../../lib/golf/repo'
 export const prerender = false
@@ -14,13 +15,45 @@ const MIN_ROUNDS = 3
 const more = Astro.url.searchParams.get('more')
 const [buddies, stats] = await Promise.all([listBuddies(db, ownerId, MIN_ROUNDS), rankingStats(db, ownerId)])
 
-// 동반자: 나와 3회 이상 + 함께한 18홀 평균이 낮은 순
-const players = buddies.filter((b) => b.their_avg !== null).sort((a, b) => a.their_avg! - b.their_avg! || b.rounds - a.rounds)
-const clubs = stats.clubs
-// 평균타수 낮은 골프장: 내 18홀 평균이 있는 모든 골프장, 평균 낮은 순 (같으면 많이 친 순)
-const bestClubs = clubs
+// 랭킹별 정렬 (드롭다운): 기본값이면 URL 에서 뺀다
+//   clubSort   자주 찾은 골프장  high(기본, 라운드 많은 순) | low
+//   playerSort 동반자 평균타수   low(기본, 평균 낮은 순)   | high
+//   bestSort   골프장 평균타수   low(기본)                 | high
+type Dir = 'low' | 'high'
+const SORT_DEFAULTS = { clubSort: 'high', playerSort: 'low', bestSort: 'low' } as const
+type SortKey = keyof typeof SORT_DEFAULTS
+const readSort = (k: SortKey): Dir => {
+  const v = Astro.url.searchParams.get(k)
+  return v === 'low' || v === 'high' ? v : SORT_DEFAULTS[k]
+}
+const sorts: Record<SortKey, Dir> = { clubSort: readSort('clubSort'), playerSort: readSort('playerSort'), bestSort: readSort('bestSort') }
+// 현재 more·정렬을 유지한 채 일부만 바꾼 랭킹 URL
+const rankHref = (over: { more?: string | null } & Partial<Record<SortKey, Dir>>) => {
+  const q = new URLSearchParams()
+  const m = 'more' in over ? over.more : more
+  if (m) q.set('more', m)
+  for (const k of Object.keys(SORT_DEFAULTS) as SortKey[]) {
+    const v = over[k] ?? sorts[k]
+    if (v !== SORT_DEFAULTS[k]) q.set(k, v)
+  }
+  const qs = q.toString()
+  return `${BASE}/ranking${qs ? `?${qs}` : ''}`
+}
+const DIR_LABEL: Record<Dir, string> = { low: '낮음', high: '높음' }
+const sortItems = (k: SortKey, order: Dir[]) => order.map((d) => ({ href: rankHref({ [k]: d }), label: DIR_LABEL[d], current: sorts[k] === d }))
+
+// 동반자: 나와 3회 이상 + 함께한 18홀 평균 순 (같으면 많이 함께한 순)
+const playerSign = sorts.playerSort === 'low' ? 1 : -1
+const players = buddies
+  .filter((b) => b.their_avg !== null)
+  .sort((a, b) => playerSign * (a.their_avg! - b.their_avg!) || b.rounds - a.rounds)
+// 자주 찾은 골프장: 라운드 수 순. 같은 횟수는 SQL 순서(최근 방문 순) 유지
+const clubs = sorts.clubSort === 'low' ? [...stats.clubs].sort((a, b) => a.rounds - b.rounds) : stats.clubs
+// 골프장 평균타수: 내 18홀 평균이 있는 모든 골프장, 평균 순 (같으면 많이 친 순)
+const bestSign = sorts.bestSort === 'low' ? 1 : -1
+const bestClubs = stats.clubs
   .filter((c) => c.avg !== null)
-  .sort((a, b) => a.avg! - b.avg! || b.full_rounds - a.full_rounds)
+  .sort((a, b) => bestSign * (a.avg! - b.avg!) || b.full_rounds - a.full_rounds)
 // more 가 있으면 그 랭킹만 전체, 없으면 각 랭킹 상위 TOP
 const pick = <T,>(key: string, list: T[]) => (!more ? list.slice(0, TOP) : more === key ? list : null)
 const showPlayers = pick('players', players)
@@ -45,37 +78,7 @@ const medal = (_i: number) => 'bg-kb-sunken text-kb-subdued border border-kb-bor
 ---
 <GolfLayout title="랭킹" active="ranking">
   {more && (
-    <a href={`${BASE}/ranking`} class="mb-3 inline-block text-sm text-kb-primary">‹ 랭킹</a>
-  )}
-
-  {showPlayers && (
-    <section class="mb-6">
-      <div class="mb-2 flex items-end justify-between">
-        <div>
-          <h2 class="text-lg font-bold">동반자 평균타수 랭킹</h2>
-          <p class="text-xs text-kb-subdued">나와 {MIN_ROUNDS}회 이상 함께 · 함께 친 18홀 평균</p>
-        </div>
-        {!more && players.length > TOP && <a href={`${BASE}/ranking?more=players`} class="g-btn-ghost shrink-0 text-sm">더보기 ›</a>}
-      </div>
-      {showPlayers.length === 0 ? (
-        <p class="g-card text-center text-sm text-kb-text">{MIN_ROUNDS}회 이상 함께한 동반자가 아직 없어요.</p>
-      ) : (
-        <ol class="g-card !p-0 divide-y divide-kb-border overflow-hidden">
-          {showPlayers.map((b, i) => (
-            <li>
-              <a href={`${BASE}/friends/${b.id}`} class="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-kb-hover">
-                <span class:list={['flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-bold tabular-nums', medal(i)]}>{i + 1}</span>
-                <span class="min-w-0 flex-1">
-                  <span class="block truncate font-semibold">{b.display_name}</span>
-                  <span class="text-xs text-kb-subdued">{b.rounds}라운드 함께</span>
-                </span>
-                <span class="text-xl font-bold tabular-nums text-kb-primary">{b.their_avg}</span>
-              </a>
-            </li>
-          ))}
-        </ol>
-      )}
-    </section>
+    <a href={rankHref({ more: null })} class="mb-3 inline-block text-sm text-kb-primary">‹ 랭킹</a>
   )}
 
   {showClubs && (
@@ -83,9 +86,20 @@ const medal = (_i: number) => 'bg-kb-sunken text-kb-subdued border border-kb-bor
       <div class="mb-2 flex items-end justify-between">
         <div>
           <h2 class="text-lg font-bold">자주 찾은 골프장</h2>
-          <p class="text-xs text-kb-subdued">라운드 수 많은 순 · 평균은 내 18홀 기준</p>
+          <p class="text-xs text-kb-subdued">라운드 수 {sorts.clubSort === 'low' ? '적은' : '많은'} 순 · 평균은 내 18홀 기준</p>
         </div>
-        {!more && clubs.length > TOP && <a href={`${BASE}/ranking?more=clubs`} class="g-btn-ghost shrink-0 text-sm">더보기 ›</a>}
+        <div class="flex shrink-0 items-center gap-2">
+          {clubs.length > 1 && (
+            <Dropdown
+              ariaLabel="자주 찾은 골프장 정렬"
+              align="right"
+              label={DIR_LABEL[sorts.clubSort]}
+              highlight={sorts.clubSort !== SORT_DEFAULTS.clubSort}
+              items={sortItems('clubSort', ['high', 'low'])}
+            />
+          )}
+          {!more && clubs.length > TOP && <a href={rankHref({ more: 'clubs' })} class="g-btn-ghost shrink-0 text-sm">더보기 ›</a>}
+        </div>
       </div>
       {showClubs.length === 0 ? (
         <p class="g-card text-center text-sm text-kb-text">아직 라운드 기록이 없어요.</p>
@@ -108,14 +122,66 @@ const medal = (_i: number) => 'bg-kb-sunken text-kb-subdued border border-kb-bor
     </section>
   )}
 
+  {showPlayers && (
+    <section class="mb-6">
+      <div class="mb-2 flex items-end justify-between">
+        <div>
+          <h2 class="text-lg font-bold">동반자 평균타수 랭킹</h2>
+          <p class="text-xs text-kb-subdued">나와 {MIN_ROUNDS}회 이상 함께 · 함께 친 18홀 평균 {sorts.playerSort === 'low' ? '낮은' : '높은'} 순</p>
+        </div>
+        <div class="flex shrink-0 items-center gap-2">
+          {players.length > 1 && (
+            <Dropdown
+              ariaLabel="동반자 평균타수 정렬"
+              align="right"
+              label={DIR_LABEL[sorts.playerSort]}
+              highlight={sorts.playerSort !== SORT_DEFAULTS.playerSort}
+              items={sortItems('playerSort', ['low', 'high'])}
+            />
+          )}
+          {!more && players.length > TOP && <a href={rankHref({ more: 'players' })} class="g-btn-ghost shrink-0 text-sm">더보기 ›</a>}
+        </div>
+      </div>
+      {showPlayers.length === 0 ? (
+        <p class="g-card text-center text-sm text-kb-text">{MIN_ROUNDS}회 이상 함께한 동반자가 아직 없어요.</p>
+      ) : (
+        <ol class="g-card !p-0 divide-y divide-kb-border overflow-hidden">
+          {showPlayers.map((b, i) => (
+            <li>
+              <a href={`${BASE}/friends/${b.id}`} class="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-kb-hover">
+                <span class:list={['flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-bold tabular-nums', medal(i)]}>{i + 1}</span>
+                <span class="min-w-0 flex-1">
+                  <span class="block truncate font-semibold">{b.display_name}</span>
+                  <span class="text-xs text-kb-subdued">{b.rounds}라운드 함께</span>
+                </span>
+                <span class="text-xl font-bold tabular-nums text-kb-primary">{b.their_avg}</span>
+              </a>
+            </li>
+          ))}
+        </ol>
+      )}
+    </section>
+  )}
+
   {showBestClubs && (
     <section class="mb-6">
       <div class="mb-2 flex items-end justify-between">
         <div>
-          <h2 class="text-lg font-bold">평균타수 낮은 골프장</h2>
-          <p class="text-xs text-kb-subdued">내 18홀 평균 낮은 순</p>
+          <h2 class="text-lg font-bold">평균타수 {sorts.bestSort === 'low' ? '낮은' : '높은'} 골프장</h2>
+          <p class="text-xs text-kb-subdued">내 18홀 평균 {sorts.bestSort === 'low' ? '낮은' : '높은'} 순</p>
         </div>
-        {!more && bestClubs.length > TOP && <a href={`${BASE}/ranking?more=best-clubs`} class="g-btn-ghost shrink-0 text-sm">더보기 ›</a>}
+        <div class="flex shrink-0 items-center gap-2">
+          {bestClubs.length > 1 && (
+            <Dropdown
+              ariaLabel="골프장 평균타수 정렬"
+              align="right"
+              label={DIR_LABEL[sorts.bestSort]}
+              highlight={sorts.bestSort !== SORT_DEFAULTS.bestSort}
+              items={sortItems('bestSort', ['low', 'high'])}
+            />
+          )}
+          {!more && bestClubs.length > TOP && <a href={rankHref({ more: 'best-clubs' })} class="g-btn-ghost shrink-0 text-sm">더보기 ›</a>}
+        </div>
       </div>
       {showBestClubs.length === 0 ? (
         <p class="g-card text-center text-sm text-kb-text">18홀 기록이 있는 골프장이 아직 없어요.</p>
@@ -152,7 +218,7 @@ const medal = (_i: number) => 'bg-kb-sunken text-kb-subdued border border-kb-bor
         </div>
         <div class="mt-1.5 flex gap-1 border-t border-kb-border pt-1.5">
           {stats.years.map((y) => (
-            <div class="min-w-0 flex-1 text-center text-xs tabular-nums text-kb-text">{y.year.slice(2)}</div>
+            <div class:list={['min-w-0 flex-1 text-center text-xs tabular-nums', y.rounds === maxYear ? 'font-semibold text-kb-success' : 'text-kb-text']}>{y.year.slice(2)}</div>
           ))}
         </div>
       </div>
@@ -192,9 +258,17 @@ const medal = (_i: number) => 'bg-kb-sunken text-kb-subdued border border-kb-bor
           </div>
         </div>
         <div class="mt-1.5 ml-7 flex border-t border-kb-border pt-1.5">
-          {avgYears.map((y) => <div class="min-w-0 flex-1 text-center text-xs tabular-nums text-kb-text">{y.year.slice(2)}</div>)}
+          {avgYears.map((y) => <div class:list={['min-w-0 flex-1 text-center text-xs tabular-nums', y.avg === bestAvg ? 'font-semibold text-kb-success' : 'text-kb-text']}>{y.year.slice(2)}</div>)}
         </div>
       </div>
     </section>
   )}
+
+  <script>
+    // 드롭다운(details.g-dropdown) 바깥 클릭·Esc 로 닫기
+    const closeDropdowns = (except?: Element | null) =>
+      document.querySelectorAll<HTMLDetailsElement>('details.g-dropdown[open]').forEach((d) => { if (d !== except) d.open = false })
+    document.addEventListener('click', (e) => closeDropdowns((e.target as Element | null)?.closest('details.g-dropdown')))
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDropdowns() })
+  </script>
 </GolfLayout>
