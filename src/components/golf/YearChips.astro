@@ -57,6 +57,9 @@ const chips = [{ key: 'all', label: '전체', count: total }, ...years.map((y) =
     -webkit-mask-image: linear-gradient(to right, transparent 0, #000 1rem, #000 calc(100% - 1.5rem), transparent 100%);
   }
   .year-track::-webkit-scrollbar { display: none; }
+  /* 앱 모드는 main 여백이 px-3(12px) — -mx-4(16px) 그대로면 양쪽 4px 넘쳐 페이지가 좌우로 흔들린다 */
+  :global(html[data-app]) .year-strip { margin-left: -0.75rem; margin-right: -0.75rem; }
+  :global(html[data-app]) .year-track { padding-left: 0.75rem; padding-right: 0.75rem; }
   /* PC 마우스 드래그 스크롤 */
   @media (pointer: fine) { .year-track { cursor: grab; } }
   .year-track.is-dragging { cursor: grabbing; scroll-snap-type: none; user-select: none; }
