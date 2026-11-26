@@ -54,8 +54,10 @@ export const POST: APIRoute = async ({ locals, request }) => {
   const db = getDB(locals, request)
   if (!db) return json({ error: 'DB unavailable' }, 503)
 
-  const { title, url, star = 0, memo, sort = 1 } = await request.json() as { title: string; url: string; star?: number; memo?: string; sort?: number }
+  // 새 북마크는 기본(sort=null)으로 들어간다. 고정(0)·즐겨찾기(1)는 카드 편집 팝업에서 직접 고른다.
+  const { title, url, star = 0, memo, sort = null } = await request.json() as { title: string; url: string; star?: number; memo?: string; sort?: number | null }
   if (!title?.trim() || !url?.trim()) return json({ error: 'title, url 필요' }, 400)
+  if (sort !== null && sort !== 0 && sort !== 1) return json({ error: 'sort 는 0·1·null' }, 400)
 
   // 사이트는 URL 도메인으로 태그에 저장하고, 제목의 사이트명은 지운다.
   const urlVal   = url.trim()
@@ -95,7 +97,10 @@ export const PATCH: APIRoute = async ({ locals, request }) => {
   if (star  !== undefined) { fields.push('star = ?');  bindings.push(Math.min(3, Math.max(0, star))) }
   const memoVal = memo !== undefined ? normalizeMemo(memo) : undefined
   if (memoVal !== undefined) { fields.push('memo = ?'); bindings.push(memoVal) }
-  if (sort  !== undefined) { fields.push('sort = ?');  bindings.push(sort) }
+  if (sort  !== undefined) {
+    if (sort !== null && sort !== 0 && sort !== 1) return json({ error: 'sort 는 0·1·null' }, 400)
+    fields.push('sort = ?');  bindings.push(sort)
+  }
 
   if (!fields.length) return json({ error: '변경 항목 없음' }, 400)
 

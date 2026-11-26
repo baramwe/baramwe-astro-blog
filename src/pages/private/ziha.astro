@@ -132,6 +132,11 @@ if (authed) {
     .toast.show { opacity: 1; }
     main.wrap { padding-top: .4rem; }
     section h2 { display: flex; align-items: center; gap: .5rem; margin: 1.3rem 0 .6rem; font-size: .85rem; font-weight: 600; color: #98A8C3; }
+    .sec-toggle { margin-left: auto; display: inline-flex; align-items: center; gap: .3rem; padding: .22rem .6rem; border: 1px solid #2B394F; border-radius: 999px; background: transparent; color: #98A8C3; font-size: .72rem; font-weight: 500; font-family: inherit; cursor: pointer; }
+    .sec-toggle:hover { border-color: #61A2FF; color: #E3E8F2; }
+    .sec-toggle svg { transition: transform .15s; }
+    section.folded .sec-toggle svg { transform: rotate(-90deg); }
+    section.folded .grid { display: none; }
     section h2 .cnt { font-size: .7rem; font-weight: 500; color: #6A7FA0; background: #13223A; border-radius: 999px; padding: .05rem .5rem; }
     .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: .55rem; }
     .card { position: relative; min-width: 0; background: #0B1628; border: 1px solid #1C2A40; border-radius: 10px; transition: border-color .12s, background .12s; }
@@ -151,6 +156,11 @@ if (authed) {
     .qe-star { padding: .05rem .12rem; border: none; background: none; color: #2B394F; font-size: 1.2rem; line-height: 1; cursor: pointer; }
     .qe-star.on { color: #FACB3D; }
     .qe-star:hover { color: #FFD966; }
+    .qe-seg { flex: 1; display: flex; border: 1px solid #2B394F; border-radius: 6px; overflow: hidden; }
+    .qe-sort { flex: 1; padding: .3rem 0; border: none; border-left: 1px solid #2B394F; background: #07101F; color: #98A8C3; font-size: .74rem; font-family: inherit; cursor: pointer; }
+    .qe-sort:first-child { border-left: none; }
+    .qe-sort:hover { color: #E3E8F2; background: #0F1D33; }
+    .qe-sort.on { background: #61A2FF; color: #07101F; font-weight: 500; }
     .qe-hint { margin-left: auto; color: #4A5D7A; font-size: .68rem; white-space: nowrap; }
     .qe-row input { flex: 1; min-width: 0; padding: .38rem .5rem; background: #07101F; color: #E3E8F2; border: 1px solid #2B394F; border-radius: 6px; font-size: .8rem; font-family: inherit; }
     .qe-btn { flex: 0 0 auto; padding: .38rem .65rem; border: none; border-radius: 6px; background: #61A2FF; color: #07101F; font-weight: 500; font-size: .78rem; font-family: inherit; cursor: pointer; }
@@ -310,6 +320,14 @@ if (authed) {
       <button class="qe-star" type="button" data-star="2" aria-label="별 2개">★</button>
       <button class="qe-star" type="button" data-star="3" aria-label="별 3개">★</button>
       <span class="qe-hint">다시 누르면 해제</span>
+    </div>
+    <div class="qe-row">
+      <span class="qe-label">분류</span>
+      <div class="qe-seg" role="group" aria-label="분류">
+        <button class="qe-sort" type="button" data-sort="0">고정</button>
+        <button class="qe-sort" type="button" data-sort="1">즐겨찾기</button>
+        <button class="qe-sort" type="button" data-sort="">기본</button>
+      </div>
     </div>
     <div class="qe-row">
       <span class="qe-label">메모</span>
@@ -521,6 +539,16 @@ if (authed) {
     var ALL = JSON.parse(document.getElementById('bm-data').textContent || '[]');
     var SITE_KEYS = Object.keys(SITE_LABELS);
     var SORT_LABELS = { '0': '고정', '1': '즐겨찾기', '2': '기본' };
+    // '고정' 섹션 접힘 상태는 이 브라우저에만 기억한다
+    var fixedFolded = false;
+    try { fixedFolded = localStorage.getItem('ziha-fixed-folded') === '1'; } catch (e) {}
+    var qeOrderDirty = false;
+    function sortKey(v) { return v === 0 ? '0' : v === 1 ? '1' : ''; } // 기본은 null
+    // 서버와 같은 순서: 고정 → 즐겨찾기 → 기본, 그 안에서는 최근 등록순
+    function sortAll() {
+      var rank = function (v) { return v === 0 ? 0 : v === 1 ? 1 : 2; };
+      ALL.sort(function (a, b) { return rank(a.sort) - rank(b.sort) || b.id - a.id; });
+    }
     var state = { q: '', star: '', site: '', memo: '', actor: [], group: 'sort' }; // actor 는 여러 명 선택(OR)
     var current = [];
     var listEl = document.getElementById('bm-list');
@@ -564,7 +592,7 @@ if (authed) {
     function groupsOf(rows) {
       var order = [], map = {};
       function add(k, label, r) {
-        if (!map[k]) { map[k] = { label: label, rows: [] }; order.push(k); }
+        if (!map[k]) { map[k] = { key: k, label: label, rows: [] }; order.push(k); }
         map[k].rows.push(r);
       }
       if (state.group === 'site') {
@@ -613,10 +641,17 @@ if (authed) {
     }
 
     function render() {
+      qeOrderDirty = false; // 지금 전체를 다시 그리니 대기 중인 재정렬은 필요 없다
       qeClose();
       current = ALL.filter(matches);
       listEl.innerHTML = groupsOf(current).map(function (g) {
-        return '<section><h2>' + esc(g.label) + '<span class="cnt">' + g.rows.length + '</span></h2>' +
+        // 정렬순 보기의 '고정' 섹션은 접었다 펼 수 있다
+        var foldable = state.group === 'sort' && g.key === '0';
+        var folded = foldable && fixedFolded;
+        return '<section' + (folded ? ' class="folded"' : '') + '><h2>' + esc(g.label) + '<span class="cnt">' + g.rows.length + '</span>' +
+          (foldable ? '<button class="sec-toggle" type="button" aria-expanded="' + !folded + '">' + (folded ? '펼치기' : '접기') +
+            '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button>' : '') +
+          '</h2>' +
           '<div class="grid">' + g.rows.map(cardHtml).join('') + '</div></section>';
       }).join('');
       document.getElementById('empty').style.display = current.length ? 'none' : 'block';
@@ -642,6 +677,7 @@ if (authed) {
       qe.querySelectorAll('.qe-star').forEach(function (b) {
         b.classList.toggle('on', Number(b.dataset.star) <= (r.star || 0));
       });
+      qe.querySelectorAll('.qe-sort').forEach(function (b) { b.classList.toggle('on', b.dataset.sort === sortKey(r.sort)); });
     }
     function qePlace() {
       if (!qeRow || !qeBtn) return;
@@ -676,6 +712,8 @@ if (authed) {
       }
       qeRow = null; qeBtn = null;
       if (qe) qe.hidden = true;
+      // 분류를 바꾼 카드는 팝업을 닫을 때 제자리(그룹)로 옮긴다 — 열려 있는 동안 카드가 튀지 않게
+      if (qeOrderDirty) { qeOrderDirty = false; render(); }
     }
     // 저장 후에는 목록 전체를 다시 그리지 않고 해당 카드와 칩만 바꾼다(팝업이 그대로 열려 있도록).
     function qeRefreshCard() {
@@ -698,6 +736,7 @@ if (authed) {
         });
         if (!res.ok) throw new Error('HTTP ' + res.status);
         if ('star' in patch) r.star = patch.star;
+        if ('sort' in patch) { r.sort = patch.sort; sortAll(); qeOrderDirty = true; }
         var saved = ('memo' in patch || 'title' in patch || 'url' in patch) ? await res.json().catch(function () { return {}; }) : {};
         if ('memo' in patch) r.memo = 'memo' in saved ? saved.memo : (splitMemo(patch.memo).join('|') || null); // 서버가 정리한 최종 메모
         if ('title' in patch) {
@@ -717,21 +756,43 @@ if (authed) {
         if ('url' in patch) qeUrl.value = r.url;
         qeFill();
         qePlace();
-        qeStatus('저장됨', 'ok');
+        qeStatus('sort' in patch ? '저장됨 · 닫으면 그룹 이동' : '저장됨', 'ok');
       } catch (e) {
         qeStatus('저장 실패', 'err');
       }
     }
     listEl.addEventListener('click', function (e) {
+      var tg = e.target.closest('.sec-toggle');
+      if (tg) {
+        fixedFolded = !fixedFolded;
+        try { localStorage.setItem('ziha-fixed-folded', fixedFolded ? '1' : '0'); } catch (err) {}
+        var sec = tg.closest('section');
+        if (fixedFolded && qeBtn && sec.contains(qeBtn)) qeClose(); // 접히는 카드의 팝업은 닫는다
+        // 팝업을 닫으며 목록이 다시 그려졌을 수 있으니 현재 DOM 에서 다시 찾는다 (다시 그려졌다면 이미 접힘 상태로 그려짐)
+        var cur = listEl.querySelector('.sec-toggle');
+        if (!cur) return;
+        sec = cur.closest('section');
+        sec.classList.toggle('folded', fixedFolded);
+        var t = sec.querySelector('.sec-toggle');
+        t.setAttribute('aria-expanded', String(!fixedFolded));
+        t.firstChild.textContent = fixedFolded ? '펼치기' : '접기';
+        return;
+      }
       var btn = e.target.closest('.card-edit');
       if (!btn) return;
       e.preventDefault();
       e.stopPropagation();
-      var same = qeBtn === btn;
-      qeClose();
-      if (!same) qeOpen(btn);
+      var same = qeBtn === btn, id = btn.dataset.id;
+      qeClose(); // 분류가 바뀌었으면 여기서 목록을 다시 그리므로 버튼을 다시 찾는다
+      if (!same) { var nb = listEl.querySelector('.card-edit[data-id="' + id + '"]'); if (nb) qeOpen(nb); }
     });
     qe.addEventListener('click', function (e) {
+      var so = e.target.closest('.qe-sort');
+      if (so && qeRow) {
+        if (so.dataset.sort === sortKey(qeRow.sort)) return;
+        qeSave({ sort: so.dataset.sort === '' ? null : Number(so.dataset.sort) });
+        return;
+      }
       var star = e.target.closest('.qe-star');
       if (star && qeRow) {
         var n = Number(star.dataset.star);
