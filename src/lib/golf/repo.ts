@@ -472,23 +472,46 @@ export async function deleteRound(db: D1Database, ownerId: string, roundId: stri
 
 export interface HomeSummary { rounds: number; year_rounds: number; year_avg: number | null; best: number | null; best_on: string | null }
 
+// D1 무료 플랜은 하루 읽기 500만 행 한도라, 집계용 CTE 를 여러 번 다시 훑지 않는다.
+// 내 라운드(라운드당 1행)를 한 번만 읽고 집계는 JS 에서 한다 — 라운드 700여 개 기준 약 1.5천 행.
+interface MyRoundRow { club_id: string; played_on: string; full18: number; total: number | null }
+
+async function myRoundRows(db: D1Database, ownerId: string): Promise<MyRoundRow[]> {
+  const { results } = await db.prepare(
+    `SELECT r.club_id, r.played_on, r.back_course_id IS NOT NULL AS full18, rp.total
+       FROM golf_rounds r
+       LEFT JOIN golf_round_players rp ON rp.round_id = r.id
+        AND rp.player_id = (SELECT id FROM golf_players WHERE owner_user_id = ?1 AND is_self = 1)
+      WHERE r.owner_user_id = ?1`
+  ).bind(ownerId).all<MyRoundRow>()
+  return results
+}
+
+/** SQLite round(avg(x), 1) 과 같은 결과 */
+const avg1 = (xs: number[]): number | null =>
+  xs.length ? Math.round((xs.reduce((s, x) => s + x, 0) / xs.length) * 10) / 10 : null
+
+/** 18홀 + 본인 타수가 있는 라운드 (평균·베스트 기준) */
+const isFull = <T extends { full18: number; total: number | null }>(r: T): r is T & { total: number } =>
+  !!r.full18 && r.total != null
+
 /** 18홀 라운드 기준 요약 */
 export async function homeSummary(db: D1Database, ownerId: string, year: string): Promise<HomeSummary> {
-  const row = await db.prepare(
-    `WITH mine AS (
-       SELECT r.played_on, rp.total
-         FROM golf_rounds r
-         JOIN golf_round_players rp ON rp.round_id = r.id
-         JOIN golf_players p ON p.id = rp.player_id AND p.is_self = 1
-        WHERE r.owner_user_id = ? AND r.back_course_id IS NOT NULL
-     )
-     SELECT (SELECT count(*) FROM golf_rounds WHERE owner_user_id = ?) AS rounds,
-            (SELECT count(*) FROM mine WHERE substr(played_on, 1, 4) = ?) AS year_rounds,
-            (SELECT round(avg(total), 1) FROM mine WHERE substr(played_on, 1, 4) = ?) AS year_avg,
-            (SELECT min(total) FROM mine) AS best,
-            (SELECT played_on FROM mine ORDER BY total, played_on DESC LIMIT 1) AS best_on`
-  ).bind(ownerId, ownerId, year, year).first<HomeSummary>()
-  return row ?? { rounds: 0, year_rounds: 0, year_avg: null, best: null, best_on: null }
+  const rows = await myRoundRows(db, ownerId)
+  const full = rows.filter(isFull)
+  const yearTotals = full.filter((r) => r.played_on.startsWith(year)).map((r) => r.total)
+  // 베스트 동타면 최근 라운드
+  const best = full.reduce<(typeof full)[number] | null>(
+    (b, r) => (!b || r.total < b.total || (r.total === b.total && r.played_on > b.played_on) ? r : b),
+    null,
+  )
+  return {
+    rounds: rows.length,
+    year_rounds: yearTotals.length,
+    year_avg: avg1(yearTotals),
+    best: best?.total ?? null,
+    best_on: best?.played_on ?? null,
+  }
 }
 
 // ───────────────────────── 골친(동반자 전적) ─────────────────────────
@@ -510,31 +533,56 @@ export interface Buddy {
  * recent: 동반자별 최근 N라운드만 집계 (null 이면 전체). 정렬은 전체 라운드 수 기준 그대로
  */
 export async function listBuddies(db: D1Database, ownerId: string, minRounds = 1, recent: number | null = null): Promise<Buddy[]> {
-  const { results } = await db.prepare(
-    `WITH me AS (SELECT id FROM golf_players WHERE owner_user_id = ?1 AND is_self = 1),
-     pairs AS (
-       SELECT r.played_on, r.back_course_id IS NOT NULL AS full18,
-              o.player_id AS opp, m.total AS my, o.total AS their,
-              row_number() OVER (PARTITION BY o.player_id ORDER BY r.played_on DESC, r.created_at DESC) AS rn,
-              count(*) OVER (PARTITION BY o.player_id) AS total_rounds
-         FROM golf_rounds r
-         JOIN golf_round_players m ON m.round_id = r.id AND m.player_id = (SELECT id FROM me)
-         JOIN golf_round_players o ON o.round_id = r.id AND o.player_id <> m.player_id
-        WHERE r.owner_user_id = ?1
-     )
-     SELECT p.id, p.display_name,
-            count(*) AS rounds, max(total_rounds) AS total_rounds,
-            sum(my < their) AS wins, sum(my > their) AS losses, sum(my = their) AS draws,
-            max(played_on) AS last_on,
-            round(avg(CASE WHEN full18 THEN my END), 1) AS my_avg,
-            round(avg(CASE WHEN full18 THEN their END), 1) AS their_avg
-       FROM pairs JOIN golf_players p ON p.id = pairs.opp
-      WHERE ?3 IS NULL OR rn <= ?3
-      GROUP BY p.id
-     HAVING max(total_rounds) >= ?2
-      ORDER BY total_rounds DESC, last_on DESC, p.display_name`
-  ).bind(ownerId, minRounds, recent).all<Buddy>()
-  return results
+  // 윈도 함수·GROUP BY 를 SQL 에서 돌리면 임시 B-tree 까지 읽기로 잡혀 호출당 1.8만 행이 나온다.
+  // (나, 동반자) 쌍만 읽고(약 4.5천 행) 집계는 JS 에서 한다.
+  const [pairsRes, namesRes] = await db.batch([
+    db.prepare(
+      `SELECT o.player_id AS opp, r.played_on, r.created_at, r.back_course_id IS NOT NULL AS full18,
+              m.total AS my, o.total AS their
+         FROM golf_round_players m
+         JOIN golf_rounds r ON r.id = m.round_id
+         JOIN golf_round_players o ON o.round_id = m.round_id AND o.player_id <> m.player_id
+        WHERE m.player_id = (SELECT id FROM golf_players WHERE owner_user_id = ?1 AND is_self = 1)
+          AND r.owner_user_id = ?1`
+    ).bind(ownerId),
+    db.prepare(`SELECT id, display_name FROM golf_players WHERE owner_user_id = ? AND is_self = 0`).bind(ownerId),
+  ])
+  type Pair = { opp: string; played_on: string; created_at: string; full18: number; my: number; their: number }
+  const names = new Map((namesRes.results as { id: string; display_name: string }[]).map((p) => [p.id, p.display_name]))
+
+  const byOpp = new Map<string, Pair[]>()
+  for (const p of pairsRes.results as Pair[]) {
+    if (!names.has(p.opp)) continue
+    const list = byOpp.get(p.opp)
+    if (list) list.push(p)
+    else byOpp.set(p.opp, [p])
+  }
+
+  const buddies: Buddy[] = []
+  for (const [opp, all] of byOpp) {
+    if (all.length < minRounds) continue
+    all.sort((a, b) =>
+      a.played_on !== b.played_on ? (a.played_on < b.played_on ? 1 : -1)
+        : a.created_at < b.created_at ? 1 : a.created_at > b.created_at ? -1 : 0)
+    const list = recent == null ? all : all.slice(0, recent)
+    if (!list.length) continue
+    const full = list.filter((p) => p.full18)
+    buddies.push({
+      id: opp,
+      display_name: names.get(opp)!,
+      rounds: list.length,
+      total_rounds: all.length,
+      wins: list.filter((p) => p.my < p.their).length,
+      losses: list.filter((p) => p.my > p.their).length,
+      draws: list.filter((p) => p.my === p.their).length,
+      last_on: list[0].played_on,
+      my_avg: avg1(full.map((p) => p.my)),
+      their_avg: avg1(full.map((p) => p.their)),
+    })
+  }
+  const cmp = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0)
+  return buddies.sort((a, b) =>
+    b.total_rounds - a.total_rounds || cmp(b.last_on, a.last_on) || cmp(a.display_name, b.display_name))
 }
 
 export interface BuddyRound {
@@ -608,30 +656,42 @@ export interface MonthStat { month: number; rounds: number }
 
 /** 랭킹 페이지용 — 골프장별 방문 수, 연도별·월별 라운드 수. 평균은 18홀 본인 타수 기준 */
 export async function rankingStats(db: D1Database, ownerId: string): Promise<{ clubs: ClubStat[]; years: YearStat[]; months: MonthStat[] }> {
-  const mine = `WITH mine AS (
-       SELECT r.club_id, r.played_on, r.back_course_id IS NOT NULL AS full18, rp.total
-         FROM golf_rounds r
-         LEFT JOIN golf_round_players rp ON rp.round_id = r.id
-          AND rp.player_id = (SELECT id FROM golf_players WHERE owner_user_id = r.owner_user_id AND is_self = 1)
-        WHERE r.owner_user_id = ?
-     )`
-  const [clubs, years, months] = await db.batch([
-    db.prepare(
-      `${mine}
-       SELECT c.id, c.name, count(*) AS rounds, round(avg(CASE WHEN full18 THEN total END), 1) AS avg,
-              count(CASE WHEN full18 AND total IS NOT NULL THEN 1 END) AS full_rounds
-         FROM mine JOIN golf_clubs c ON c.id = mine.club_id
-        GROUP BY c.id ORDER BY rounds DESC, max(played_on) DESC, c.name`
-    ).bind(ownerId),
-    db.prepare(
-      `${mine}
-       SELECT substr(played_on, 1, 4) AS year, count(*) AS rounds, round(avg(CASE WHEN full18 THEN total END), 1) AS avg
-         FROM mine GROUP BY year ORDER BY year`
-    ).bind(ownerId),
-    db.prepare(
-      `SELECT CAST(substr(played_on, 6, 2) AS INTEGER) AS month, count(*) AS rounds
-         FROM golf_rounds WHERE owner_user_id = ? GROUP BY month ORDER BY month`
-    ).bind(ownerId),
+  // 같은 CTE 를 쿼리 3개가 각각 훑던 것을 1번 읽기 + JS 집계로 바꿈 (약 8천 → 1.7천 행)
+  const [rows, clubRes] = await Promise.all([
+    myRoundRows(db, ownerId),
+    db.prepare(`SELECT id, name FROM golf_clubs`).all<{ id: string; name: string }>(),
   ])
-  return { clubs: clubs.results as ClubStat[], years: years.results as YearStat[], months: months.results as MonthStat[] }
+  const clubNames = new Map(clubRes.results.map((c) => [c.id, c.name]))
+  const cmp = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0)
+
+  const clubMap = new Map<string, { last: string; totals: number[]; rounds: number }>()
+  const yearMap = new Map<string, { totals: number[]; rounds: number }>()
+  const monthMap = new Map<number, number>()
+  for (const r of rows) {
+    const total = isFull(r) ? r.total : null
+    if (clubNames.has(r.club_id)) {
+      const c = clubMap.get(r.club_id) ?? { last: '', totals: [], rounds: 0 }
+      c.rounds++
+      if (r.played_on > c.last) c.last = r.played_on
+      if (total != null) c.totals.push(total)
+      clubMap.set(r.club_id, c)
+    }
+    const yk = r.played_on.slice(0, 4)
+    const y = yearMap.get(yk) ?? { totals: [], rounds: 0 }
+    y.rounds++
+    if (total != null) y.totals.push(total)
+    yearMap.set(yk, y)
+    const m = parseInt(r.played_on.slice(5, 7), 10)
+    monthMap.set(m, (monthMap.get(m) ?? 0) + 1)
+  }
+
+  const clubs: (ClubStat & { last: string })[] = [...clubMap].map(([id, c]) => ({
+    id, name: clubNames.get(id)!, rounds: c.rounds, avg: avg1(c.totals), full_rounds: c.totals.length, last: c.last,
+  }))
+  clubs.sort((a, b) => b.rounds - a.rounds || cmp(b.last, a.last) || cmp(a.name, b.name))
+  return {
+    clubs: clubs.map(({ last, ...c }) => c),
+    years: [...yearMap].sort((a, b) => cmp(a[0], b[0])).map(([year, y]) => ({ year, rounds: y.rounds, avg: avg1(y.totals) })),
+    months: [...monthMap].sort((a, b) => a[0] - b[0]).map(([month, rounds]) => ({ month, rounds })),
+  }
 }
