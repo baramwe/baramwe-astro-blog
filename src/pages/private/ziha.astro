@@ -274,6 +274,7 @@ if (authed) {
             <option value="1_eq">★ 정확히</option>
             <option value="2_eq">★★ 정확히</option>
             <option value="3_eq">★★★ 정확히</option>
+            <option value="fav">즐겨찾기</option>
           </select>
           <select id="sgroup" aria-label="분류">
             <option value="sort">정렬순</option>
@@ -575,7 +576,8 @@ if (authed) {
           if (t && hay.indexOf(t) === -1) return false;
         }
       }
-      if (state.star) {
+      if (state.star === 'fav') { if (r.sort !== 1) return false; } // 즐겨찾기(sort=1)만
+      else if (state.star) {
         var p = state.star.split('_'), n = Number(p[0]);
         if (p[1] === 'eq' ? r.star !== n : r.star < n) return false;
       }
