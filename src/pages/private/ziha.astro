@@ -3,6 +3,7 @@ export const prerender = false;
 
 import { generateDailyToken, verifyDailyToken } from '../../lib/daily-token';
 import { getDB } from '../../lib/auth/db';
+import { SITES, SITE_LABELS } from '../../lib/ziha-site';
 
 // POST: 토큰 검증
 if (Astro.request.method === 'POST') {
@@ -29,14 +30,14 @@ const reqHost = new URL(Astro.request.url).hostname;
 const isLocal = import.meta.env.DEV || reqHost === 'localhost' || reqHost === '127.0.0.1';
 const authed = Astro.request.method === 'GET' && (isLocal || cookieMatch?.[1] === todayToken);
 
-type Bookmark = { id: number; title: string; url: string; star: number; memo: string | null };
+type Bookmark = { id: number; title: string; url: string; star: number; memo: string | null; site: string | null };
 let bookmarks: Bookmark[] = [];
 
 if (authed) {
   const db = getDB(Astro.locals, Astro.request);
   if (db) {
     const { results } = await db
-      .prepare('SELECT id, title, url, star, memo, sort FROM bookmarks ORDER BY CASE WHEN sort = 0 THEN 0 WHEN sort = 1 THEN 1 ELSE 2 END ASC, id DESC')
+      .prepare('SELECT id, title, url, star, memo, sort, site FROM bookmarks ORDER BY CASE WHEN sort = 0 THEN 0 WHEN sort = 1 THEN 1 ELSE 2 END ASC, id DESC')
       .all<Bookmark>();
     bookmarks = results;
   }
@@ -48,9 +49,11 @@ if (authed) {
   const esc = (s: string) =>
     String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
+  const siteLabel = (s: string | null) => (s && (SITE_LABELS as Record<string, string>)[s]) || '';
   const items = bookmarks.map(b =>
-    `<li>${b.star > 0 ? `<span class="star">${stars(b.star)}</span>` : ''}<a href="${esc(b.url)}" target="_blank" rel="noopener">${esc(b.title)}</a>${b.memo ? `<span class="memo">${esc(b.memo)}</span>` : ''}</li>`
+    `<li>${b.star > 0 ? `<span class="star">${stars(b.star)}</span>` : ''}<a href="${esc(b.url)}" target="_blank" rel="noopener">${esc(b.title)}</a>${b.site ? `<span class="site site-${esc(b.site)}">${esc(siteLabel(b.site))}</span>` : ''}${b.memo ? `<span class="memo">${esc(b.memo)}</span>` : ''}</li>`
   ).join('\n');
+  const siteOptions = SITES.map(k => `<option value="${k}">${SITE_LABELS[k]}</option>`).join('') + '<option value="none">기타</option>';
 
   const html = `<!DOCTYPE html>
 <html lang="ko">
@@ -82,6 +85,12 @@ if (authed) {
     #search-bar { position: sticky; top: 0; background: #07101F; padding: .5rem 0; display: flex; gap: .5rem; align-items: center; z-index: 10; border-bottom: 1px solid #2B394F; margin-bottom: .75rem; }
     #search-bar input { flex: 1; padding: .4rem .6rem; background: #07101F; color: #E3E8F2; border: 1px solid #2B394F; border-radius: 4px; font-size: 1.04rem; }
     #search-bar select { padding: .4rem .5rem; background: #07101F; color: #E3E8F2; border: 1px solid #2B394F; border-radius: 4px; font-size: 1.04rem; }
+    .site { flex: 0 0 auto; font-size: .7rem; line-height: 1; padding: .18rem .35rem; border-radius: 3px; background: #13223A; color: #98A8C3; white-space: nowrap; align-self: center; }
+    .site-topgirl { background: rgba(246, 114, 168, .14); color: #F672A8; }
+    .site-sogirl  { background: rgba(97, 162, 255, .14);  color: #61A2FF; }
+    .site-123av   { background: rgba(74, 210, 140, .14);  color: #4AD28C; }
+    .site-missav  { background: rgba(250, 175, 80, .14);  color: #FAAF50; }
+    .site-njav    { background: rgba(176, 140, 255, .14); color: #B08CFF; }
     #search-bar button { padding: .4rem .8rem; border: none; border-radius: 4px; cursor: pointer; font-size: 1.04rem; }
     .btn-dark  { background: rgba(97, 162, 255, .12); color: #61A2FF; font-weight: 500; }
     .btn-grey  { background: #13223A; color: #CAD3E2; border: 1px solid #2B394F !important; }
@@ -123,6 +132,7 @@ if (authed) {
       li { align-items: flex-start; flex-wrap: wrap; gap: .18rem .35rem; }
       li a { flex: 1 1 0; }
       .star { flex: 0 0 auto; line-height: 1.5; }
+      .site { align-self: flex-start; margin-top: .2rem; }
       .memo { flex: 1 0 100%; margin-left: 0; padding-left: 0; overflow-wrap: anywhere; }
       #search-bar { flex-wrap: wrap; gap: .4rem; padding: .5rem 0; }
       #search-bar input { flex: 1 1 100%; width: 100%; min-width: 0; }
@@ -135,7 +145,7 @@ if (authed) {
       #panel-tabs button { flex: 1; }
       #tab-edit > div[style*="display:flex"] { flex-wrap: wrap; }
       #ps-q { flex: 1 1 100%; width: 100%; }
-      #ps-star { flex: 1 1 auto; min-width: 0; }
+      #ps-star, #ps-site { flex: 1 1 auto; min-width: 0; }
       #ps-btn { flex: 0 0 auto; }
       #p-result li { align-items: flex-start; flex-wrap: nowrap; }
       #p-result .item-title { white-space: normal; overflow-wrap: anywhere; }
@@ -157,6 +167,10 @@ if (authed) {
       <option value="2_eq">★★ 정확히</option>
       <option value="3_eq">★★★ 정확히</option>
     </select>
+    <select id="ssite">
+      <option value="">사이트 전체</option>
+      ${siteOptions}
+    </select>
     <button class="btn-dark" id="sbtn">검색</button>
     <button class="btn-open" id="sbtn-open">열기</button>
     <button class="btn-grey" id="sbtn-reset">초기화</button>
@@ -177,7 +191,7 @@ if (authed) {
       </div>
       <div class="panel-section active" id="tab-add">
         <input type="text" id="p-title" placeholder="제목" />
-        <input type="text" id="p-url"   placeholder="URL" />
+        <input type="text" id="p-url"   placeholder="URL (사이트 태그는 도메인으로 자동 저장, 제목의 사이트명은 자동 제거)" />
         <input type="text" id="p-memo"  placeholder="메모 (선택, 최대 100자)" maxlength="100" />
         <select id="p-star">
           <option value="0">별 없음</option>
@@ -197,6 +211,10 @@ if (authed) {
             <option value="3_gte">★★★</option>
             <option value="1_eq">★ 정확히</option>
             <option value="2_eq">★★ 정확히</option>
+          </select>
+          <select id="ps-site" style="margin:0;width:auto;flex-shrink:0;">
+            <option value="">사이트 전체</option>
+            ${siteOptions}
           </select>
           <button class="btn btn-primary btn-sm" id="ps-btn" style="flex-shrink:0;">검색</button>
         </div>
@@ -233,6 +251,11 @@ if (authed) {
         <input type="text" id="pr-to"   placeholder="예: kr99.topgirl.co" />
         <button class="btn btn-primary" id="pr-check" style="width:100%;margin-top:.2rem;">변경하기</button>
         <p id="pr-msg" style="font-size:.75rem;margin:.4rem 0 0;min-height:1em;"></p>
+        <div style="border-top:1px solid #2B394F;margin-top:.6rem;padding-top:.6rem;">
+          <p style="color:#98A8C3;font-size:.75rem;margin:0 0 .4rem;">제목에 붙은 사이트명(탑걸·쏘걸·123av 등)을 지우고, 사이트 태그를 URL 도메인 기준으로 다시 맞춥니다.</p>
+          <button class="btn btn-primary" id="pn-run" style="width:100%;">제목·태그 일괄 정리</button>
+          <p id="pn-msg" style="font-size:.75rem;margin:.4rem 0 0;min-height:1em;"></p>
+        </div>
       </div>
       <div class="panel-section" id="tab-rank">
         <p style="color:#98A8C3;font-size:.72rem;margin:0 0 .5rem;">제목에서 추출한 배우 언급 순위 TOP 50. 이름을 누르면 검색 페이지가 새 창으로 열립니다.</p>
@@ -277,6 +300,11 @@ if (authed) {
 
     function esc(s) {
       return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    var SITE_LABELS = ${JSON.stringify(SITE_LABELS)};
+    function siteBadge(site) {
+      return site ? '<span class="site site-' + esc(site) + '">' + esc(SITE_LABELS[site] || site) + '</span>' : '';
     }
 
     // 제목에서 배우이름(한글 성+이름) 추출
@@ -352,13 +380,15 @@ if (authed) {
     async function mainSearch() {
       const q    = document.getElementById('sq').value.trim();
       const { star, star_op } = parseStarParam(document.getElementById('sstar').value);
+      const site = document.getElementById('ssite').value;
       const p = new URLSearchParams();
       if (q)       p.set('q', q);
       if (star)    p.set('star', star);
       if (star_op) p.set('star_op', star_op);
+      if (site)    p.set('site', site);
       const { rows } = await fetch('/api/ziha-bookmarks?' + p).then(r => r.json());
       document.getElementById('bm-list').innerHTML = rows.length
-        ? rows.map(r => '<li>' + (r.star > 0 ? '<span class="star">' + '★'.repeat(r.star) + '</span>' : '') + '<a href="' + esc(r.url) + '" target="_blank" rel="noopener">' + esc(r.title) + '</a>' + (r.memo ? '<span class="memo">' + esc(r.memo) + '</span>' : '') + '</li>').join('')
+        ? rows.map(r => '<li>' + (r.star > 0 ? '<span class="star">' + '★'.repeat(r.star) + '</span>' : '') + '<a href="' + esc(r.url) + '" target="_blank" rel="noopener">' + esc(r.title) + '</a>' + siteBadge(r.site) + (r.memo ? '<span class="memo">' + esc(r.memo) + '</span>' : '') + '</li>').join('')
         : '<li style="color:#6A7FA0;">결과 없음</li>';
     }
 
@@ -444,15 +474,18 @@ if (authed) {
     document.addEventListener('click', function (e) {
       if (e.target !== sqEl && !acBox.contains(e.target)) acClose();
     });
+    document.getElementById('ssite').addEventListener('change', mainSearch);
     document.getElementById('sbtn-reset').addEventListener('click', () => location.reload());
 
     document.getElementById('sbtn-open').addEventListener('click', async () => {
       const q = document.getElementById('sq').value.trim();
       const { star, star_op } = parseStarParam(document.getElementById('sstar').value);
+      const site = document.getElementById('ssite').value;
       const p = new URLSearchParams();
       if (q)       p.set('q', q);
       if (star)    p.set('star', star);
       if (star_op) p.set('star_op', star_op);
+      if (site)    p.set('site', site);
       const { rows } = await fetch('/api/ziha-bookmarks?' + p).then(r => r.json());
       rows.forEach((r, i) => setTimeout(() => {
         const w = window.open(r.url, '_blank', 'noopener,noreferrer');
@@ -476,7 +509,8 @@ if (authed) {
         document.getElementById('p-url').value   = '';
         document.getElementById('p-memo').value  = '';
         document.getElementById('p-star').value  = '0';
-        msg('추가됨. 새로고침 시 목록에 반영됩니다.');
+        const saved = await res.json();
+        msg('추가됨' + (saved.site ? ' [' + (SITE_LABELS[saved.site] || saved.site) + ']' : '') + ': ' + saved.title + ' (새로고침 시 목록에 반영)');
       } else { msg('저장 실패', false); }
     });
 
@@ -484,10 +518,12 @@ if (authed) {
     async function panelSearch() {
       const q    = document.getElementById('ps-q').value.trim();
       const { star, star_op } = parseStarParam(document.getElementById('ps-star').value);
+      const site = document.getElementById('ps-site').value;
       const p = new URLSearchParams();
       if (q)       p.set('q', q);
       if (star)    p.set('star', star);
       if (star_op) p.set('star_op', star_op);
+      if (site)    p.set('site', site);
       const { rows } = await fetch('/api/ziha-bookmarks?' + p).then(r => r.json());
       const ul = document.getElementById('p-result');
       ul.innerHTML = '';
@@ -496,6 +532,7 @@ if (authed) {
         const li = document.createElement('li');
         li.innerHTML =
           '<span class="star" style="color:#FACB3D;font-size:.7rem;flex-shrink:0;">' + '★'.repeat(r.star) + '</span>' +
+          siteBadge(r.site) +
           '<a class="item-title" href="' + esc(r.url) + '" target="_blank" rel="noopener">' + esc(r.title) + (r.memo ? ' <span style="color:#6A7FA0;font-size:.7rem;">— ' + esc(r.memo) + '</span>' : '') + '</a>' +
           '<button class="btn btn-primary btn-sm" data-id="' + r.id + '" data-title="' + esc(r.title) + '" data-url="' + esc(r.url) + '" data-star="' + r.star + '" data-memo="' + esc(r.memo || '') + '" data-sort="' + (r.sort == null ? '' : r.sort) + '">편집</button>' +
           '<button class="btn btn-danger  btn-sm" data-del="' + r.id + '">삭제</button>';
@@ -584,6 +621,30 @@ if (authed) {
       } else {
         prMsg('교체 실패: ' + (data.error ?? ''), false);
       }
+    });
+
+    // 제목·태그 일괄 정리
+    function pnMsg(t, ok = true) {
+      const el = document.getElementById('pn-msg');
+      el.style.color = ok ? '#080' : '#c00';
+      el.textContent = t;
+    }
+
+    document.getElementById('pn-run').addEventListener('click', async () => {
+      const pv = await fetch('/api/ziha-bookmarks', {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: 'normalize', preview: true }),
+      }).then(r => r.json());
+      if (!pv.count) { pnMsg('정리할 항목이 없습니다.'); return; }
+      const sample = (pv.samples || []).map(s => '  ' + s.before + '\\n→ ' + s.after).join('\\n');
+      if (!confirm('제목 ' + pv.titleCount + '건, 태그 ' + pv.siteCount + '건을 정리합니다.' + (sample ? '\\n\\n예시:\\n' + sample : ''))) return;
+      const res = await fetch('/api/ziha-bookmarks', {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: 'normalize', preview: false }),
+      });
+      const data = await res.json();
+      if (res.ok) pnMsg(data.updated + '건 정리 완료. 새로고침 시 반영됩니다.');
+      else pnMsg('정리 실패: ' + (data.error ?? ''), false);
     });
   })();
   </script>

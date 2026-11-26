@@ -55,6 +55,8 @@
     "db:migrate:auth:remote": "wrangler d1 execute bl-house --file=./migrations/0002_auth_schema.sql",
     "db:migrate:golf": "wrangler d1 execute bl-house --local --file=./migrations/0009_golf_score.sql",
     "db:migrate:golf:remote": "wrangler d1 execute bl-house --remote --file=./migrations/0009_golf_score.sql",
+    "db:migrate:ziha-site": "wrangler d1 execute bl-house --local --file=./migrations/0010_bookmarks_site.sql",
+    "db:migrate:ziha-site:remote": "wrangler d1 execute bl-house --remote --file=./migrations/0010_bookmarks_site.sql",
     "db:studio": "wrangler d1 execute bl-house --local --command='SELECT name FROM sqlite_master WHERE type=\"table\";'",
     "db:generate": "prisma generate",
     "db:reset": "wrangler d1 execute bl-house --local --command='DROP TABLE IF EXISTS reservations; DROP TABLE IF EXISTS room_prices; DROP TABLE IF EXISTS rooms; DROP TABLE IF EXISTS room_types; DROP TABLE IF EXISTS hotels;'",
