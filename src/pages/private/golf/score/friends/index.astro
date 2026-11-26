@@ -97,7 +97,7 @@ const periodHref = (k: PeriodKey) => hrefWith(sort, k)
                 <div class="truncate text-[17px] font-semibold">{b.display_name}</div>
                 <div class="text-[13px] text-kb-subdued">
                   {period.recent && b.total_rounds > b.rounds
-                    ? <>최근 {b.rounds}라운드 기준 · 전체 {b.total_rounds}</>
+                    ? <>최근 {b.rounds}라운드 기준</>
                     : <>{b.total_rounds}라운드 함께</>} · 최근 {b.last_on}
                 </div>
               </div>
