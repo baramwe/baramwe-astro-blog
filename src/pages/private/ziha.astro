@@ -58,47 +58,66 @@ if (authed) {
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>북마크</title>
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#0B1628" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
   <style>
     * { box-sizing: border-box; }
     html, body { max-width: 100%; overflow-x: hidden; }
-    body { font-family: system-ui, sans-serif; margin: 0; padding: 1rem 1.5rem 5rem; background: #fafafa; font-size: 1.04rem; }
+    html { color-scheme: dark; background: #07101F; }
+    ::selection { background: rgba(97, 162, 255, .35); }
+    button { color: inherit; }
+    option, optgroup { background: #0B1628; color: #CAD3E2; }
+    input::placeholder { color: #6A7FA0; }
+    input:focus, select:focus { outline: none; border-color: #61A2FF !important; box-shadow: 0 0 0 1px #61A2FF; }
+    body { font-family: Inter, 'Pretendard Variable', Pretendard, system-ui, -apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif; margin: 0; padding: 1rem 1.5rem 5rem; background: #07101F; color: #CAD3E2; font-size: 1.04rem; -webkit-font-smoothing: antialiased; }
     ul { list-style: none; margin: 0; padding: 0; }
     li { padding: .3rem 0; display: flex; align-items: baseline; gap: .4rem; min-width: 0; }
-    a { color: #1a0dab; text-decoration: none; overflow-wrap: anywhere; word-break: break-word; min-width: 0; }
+    a { color: #61A2FF; text-decoration: none; overflow-wrap: anywhere; word-break: break-word; min-width: 0; }
     a:hover { text-decoration: underline; }
-    .star { color: #f5a623; margin-right: .1rem; font-size: .88rem; }
-    .memo { color: #888; font-size: .88rem; margin-left: .35rem; }
-    .btn-open { background: #1a56db; color: #fff; }
-    #search-bar { position: sticky; top: 0; background: #fafafa; padding: .5rem 0; display: flex; gap: .5rem; align-items: center; z-index: 10; border-bottom: 1px solid #e8e8e8; margin-bottom: .75rem; }
-    #search-bar input { flex: 1; padding: .4rem .6rem; border: 1px solid #ccc; border-radius: 4px; font-size: 1.04rem; }
-    #search-bar select { padding: .4rem .5rem; border: 1px solid #ccc; border-radius: 4px; font-size: 1.04rem; }
+    .star { color: #FACB3D; margin-right: .1rem; font-size: .88rem; }
+    .memo { color: #6A7FA0; font-size: .88rem; margin-left: .35rem; }
+    .btn-open { background: #61A2FF; color: #07101F; font-weight: 500; }
+    #search-bar { position: sticky; top: 0; background: #07101F; padding: .5rem 0; display: flex; gap: .5rem; align-items: center; z-index: 10; border-bottom: 1px solid #2B394F; margin-bottom: .75rem; }
+    #search-bar input { flex: 1; padding: .4rem .6rem; background: #07101F; color: #E3E8F2; border: 1px solid #2B394F; border-radius: 4px; font-size: 1.04rem; }
+    #search-bar select { padding: .4rem .5rem; background: #07101F; color: #E3E8F2; border: 1px solid #2B394F; border-radius: 4px; font-size: 1.04rem; }
     #search-bar button { padding: .4rem .8rem; border: none; border-radius: 4px; cursor: pointer; font-size: 1.04rem; }
-    .btn-dark  { background: #333; color: #fff; }
-    .btn-grey  { background: #888; color: #fff; }
+    .btn-dark  { background: rgba(97, 162, 255, .12); color: #61A2FF; font-weight: 500; }
+    .btn-grey  { background: #13223A; color: #CAD3E2; border: 1px solid #2B394F !important; }
     #ziha-mgmt { position: fixed; bottom: 1rem; right: 1rem; z-index: 9999; display: flex; flex-direction: column; align-items: flex-end; gap: .5rem; }
-    #ziha-toggle { background: #333; color: #fff; border: none; border-radius: 50%; width: 2.5rem; height: 2.5rem; font-size: 1.2rem; cursor: pointer; }
-    #ziha-panel { display: none; background: #fff; border: 1px solid #ccc; border-radius: 8px; padding: 1rem; width: 540px; box-shadow: 0 4px 16px rgba(0,0,0,.2); font-size: .8rem; }
-    #ziha-panel input, #ziha-panel select { width: 100%; padding: .35rem .5rem; border: 1px solid #ccc; border-radius: 4px; font-size: .8rem; box-sizing: border-box; margin-bottom: .3rem; }
+    #ziha-toggle { background: #0B1628; color: #CAD3E2; border: 1px solid #2B394F; border-radius: 50%; width: 2.5rem; height: 2.5rem; font-size: 1.2rem; cursor: pointer; }
+    #ziha-panel { display: none; background: #0B1628; color: #CAD3E2; border: 1px solid #2B394F; border-radius: 8px; padding: 1rem; width: 540px; box-shadow: 0 3px 10px rgba(0,0,0,.52), 0 6px 14px rgba(0,0,0,.28); font-size: .8rem; }
+    #ziha-panel input, #ziha-panel select { width: 100%; padding: .35rem .5rem; background: #07101F; color: #E3E8F2; border: 1px solid #2B394F; border-radius: 4px; font-size: .8rem; box-sizing: border-box; margin-bottom: .3rem; }
     .btn { padding: .35rem .7rem; border: none; border-radius: 4px; cursor: pointer; font-size: .8rem; }
     .btn-sm { padding: .2rem .4rem; font-size: .72rem; }
-    .btn-primary { background: #333; color: #fff; }
-    .btn-danger  { background: #c00; color: #fff; }
-    #panel-tabs { display: flex; gap: .5rem; margin-bottom: .75rem; border-bottom: 1px solid #ddd; padding-bottom: .5rem; }
-    #panel-tabs button { background: none; border: none; cursor: pointer; font-size: .8rem; padding: .2rem .4rem; border-radius: 3px; }
-    #panel-tabs button.active { background: #333; color: #fff; }
+    .btn-primary { background: #61A2FF; color: #07101F; font-weight: 500; }
+    .btn-danger  { background: #4A1A1C; color: #F6726A; }
+    #panel-tabs { display: flex; gap: .5rem; margin-bottom: .75rem; border-bottom: 1px solid #2B394F; padding-bottom: .5rem; }
+    #panel-tabs button { background: none; color: #98A8C3; border: none; cursor: pointer; font-size: .8rem; padding: .2rem .4rem; border-radius: 3px; }
+    #panel-tabs button.active { background: #61A2FF; color: #07101F; }
     .panel-section { display: none; }
     .panel-section.active { display: block; }
     #p-result { list-style: none; margin: .4rem 0 0; padding: 0; max-height: 260px; overflow-y: auto; }
-    #p-result li { display: flex; align-items: center; gap: .4rem; padding: .25rem 0; border-bottom: 1px solid #f0f0f0; }
-    #p-result .item-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #1a0dab; text-decoration: none; }
+    #p-result li { display: flex; align-items: center; gap: .4rem; padding: .25rem 0; border-bottom: 1px solid #2B394F; }
+    #p-result .item-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #61A2FF; text-decoration: none; }
     #p-result .item-title:hover { text-decoration: underline; }
-    #p-msg { color: #080; font-size: .75rem; margin-top: .4rem; min-height: 1em; }
+    #p-msg { color: #24C292; font-size: .75rem; margin-top: .4rem; min-height: 1em; }
     #rank-result { list-style: none; margin: .4rem 0 0; padding: 0; max-height: 380px; overflow-y: auto; }
-    #rank-result li { display: flex; align-items: center; gap: .5rem; padding: .32rem .1rem; border-bottom: 1px solid #f0f0f0; }
-    #rank-result .rank-no { flex: 0 0 1.7rem; text-align: right; color: #888; font-size: .74rem; font-variant-numeric: tabular-nums; }
-    #rank-result .item-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #1a0dab; text-decoration: none; }
+    #rank-result li { display: flex; align-items: center; gap: .5rem; padding: .32rem .1rem; border-bottom: 1px solid #2B394F; }
+    #rank-result .rank-no { flex: 0 0 1.7rem; text-align: right; color: #6A7FA0; font-size: .74rem; font-variant-numeric: tabular-nums; }
+    #rank-result .item-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #61A2FF; text-decoration: none; }
     #rank-result .item-title:hover { text-decoration: underline; }
-    #rank-result .rank-cnt { flex: 0 0 auto; color: #f5a623; font-size: .74rem; }
+    #rank-result .rank-cnt { flex: 0 0 auto; color: #FACB3D; font-size: .74rem; }
+    #sq-ac { display: none; position: absolute; z-index: 20; margin: 0; padding: .25rem 0; list-style: none; background: #0B1628; border: 1px solid #2B394F; border-radius: 6px; box-shadow: 0 3px 10px rgba(0,0,0,.52), 0 6px 14px rgba(0,0,0,.28); max-height: 50vh; overflow-y: auto; }
+    #sq-ac li { display: flex; flex-wrap: nowrap; align-items: baseline; gap: .5rem; padding: .4rem .7rem; cursor: pointer; }
+    #sq-ac li.on, #sq-ac li:hover { background: #13223A; }
+    #sq-ac .ac-kind { flex: 0 0 auto; font-size: .72rem; line-height: 1.4; padding: 0 .35rem; border-radius: 3px; }
+    #sq-ac .ac-name  { background: #0D2F5E; color: #8BBAFF; }
+    #sq-ac .ac-memo  { background: #0B3A2E; color: #24C292; }
+    #sq-ac .ac-title { background: #13223A; color: #98A8C3; border: 1px solid #2B394F; }
+    #sq-ac .ac-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #E3E8F2; }
+    #sq-ac .ac-cnt { flex: 0 0 auto; color: #6A7FA0; font-size: .78rem; }
     @media (max-width: 640px) {
       body { padding: .75rem .85rem 5.5rem; font-size: 1rem; }
       li { align-items: flex-start; flex-wrap: wrap; gap: .18rem .35rem; }
@@ -128,7 +147,7 @@ if (authed) {
 </head>
 <body>
   <div id="search-bar">
-    <input type="text" id="sq" placeholder="제목 검색" />
+    <input type="text" id="sq" placeholder="제목·배우·메모 검색" autocomplete="off" />
     <select id="sstar">
       <option value="">★ 전체</option>
       <option value="1_gte">★ 이상</option>
@@ -141,6 +160,7 @@ if (authed) {
     <button class="btn-dark" id="sbtn">검색</button>
     <button class="btn-open" id="sbtn-open">열기</button>
     <button class="btn-grey" id="sbtn-reset">초기화</button>
+    <ul id="sq-ac" role="listbox"></ul>
   </div>
 
   <ul id="bm-list">
@@ -181,7 +201,7 @@ if (authed) {
           <button class="btn btn-primary btn-sm" id="ps-btn" style="flex-shrink:0;">검색</button>
         </div>
         <ul id="p-result"></ul>
-        <div id="p-edit-form" style="display:none;margin-top:.6rem;border-top:1px solid #eee;padding-top:.6rem;">
+        <div id="p-edit-form" style="display:none;margin-top:.6rem;border-top:1px solid #2B394F;padding-top:.6rem;">
           <input type="hidden" id="pe-id" />
           <input type="text"   id="pe-title" placeholder="제목" />
           <input type="text"   id="pe-url"   placeholder="URL" />
@@ -206,17 +226,17 @@ if (authed) {
         </div>
       </div>
       <div class="panel-section" id="tab-replace">
-        <p style="color:#555;font-size:.75rem;margin:0 0 .5rem;">URL 중 일치하는 텍스트를 일괄 교체합니다.</p>
-        <label style="font-size:.75rem;color:#666;">찾을 텍스트 (URL 내)</label>
+        <p style="color:#98A8C3;font-size:.75rem;margin:0 0 .5rem;">URL 중 일치하는 텍스트를 일괄 교체합니다.</p>
+        <label style="font-size:.75rem;color:#98A8C3;">찾을 텍스트 (URL 내)</label>
         <input type="text" id="pr-from" placeholder="예: kr43.topgirl.co" />
-        <label style="font-size:.75rem;color:#666;">바꿀 텍스트</label>
+        <label style="font-size:.75rem;color:#98A8C3;">바꿀 텍스트</label>
         <input type="text" id="pr-to"   placeholder="예: kr99.topgirl.co" />
         <button class="btn btn-primary" id="pr-check" style="width:100%;margin-top:.2rem;">변경하기</button>
         <p id="pr-msg" style="font-size:.75rem;margin:.4rem 0 0;min-height:1em;"></p>
       </div>
       <div class="panel-section" id="tab-rank">
-        <p style="color:#555;font-size:.72rem;margin:0 0 .5rem;">제목에서 추출한 배우 언급 순위 TOP 50. 이름을 누르면 검색 페이지가 새 창으로 열립니다.</p>
-        <ul id="rank-result"><li style="color:#999;padding:.3rem 0;">집계 준비 중…</li></ul>
+        <p style="color:#98A8C3;font-size:.72rem;margin:0 0 .5rem;">제목에서 추출한 배우 언급 순위 TOP 50. 이름을 누르면 검색 페이지가 새 창으로 열립니다.</p>
+        <ul id="rank-result"><li style="color:#6A7FA0;padding:.3rem 0;">집계 준비 중…</li></ul>
       </div>
       <p id="p-msg"></p>
     </div>
@@ -244,7 +264,7 @@ if (authed) {
 
     function msg(t, ok = true) {
       const el = document.getElementById('p-msg');
-      el.style.color = ok ? '#080' : '#c00';
+      el.style.color = ok ? '#24C292' : '#F6726A';
       el.textContent = t;
       setTimeout(() => el.textContent = '', 3000);
     }
@@ -293,7 +313,7 @@ if (authed) {
 
     async function computeRank() {
       var box = document.getElementById('rank-result');
-      box.innerHTML = '<li style="color:#999;padding:.3rem 0;">집계 중…</li>';
+      box.innerHTML = '<li style="color:#6A7FA0;padding:.3rem 0;">집계 중…</li>';
       try {
         var res = await fetch('/api/ziha-bookmarks').then(function (r) { return r.json(); });
         var rows = res.rows || [];
@@ -322,9 +342,9 @@ if (authed) {
                 '<a class="item-title" href="' + esc(link) + '" target="_blank" rel="noopener">' + esc(e[0]) + '</a>' +
                 '<span class="rank-cnt">' + e[1] + '회</span></li>';
             }).join('')
-          : '<li style="color:#999;padding:.3rem 0;">데이터 없음</li>';
+          : '<li style="color:#6A7FA0;padding:.3rem 0;">데이터 없음</li>';
       } catch (e) {
-        box.innerHTML = '<li style="color:#c00;padding:.3rem 0;">집계 실패</li>';
+        box.innerHTML = '<li style="color:#F6726A;padding:.3rem 0;">집계 실패</li>';
       }
     }
 
@@ -339,11 +359,91 @@ if (authed) {
       const { rows } = await fetch('/api/ziha-bookmarks?' + p).then(r => r.json());
       document.getElementById('bm-list').innerHTML = rows.length
         ? rows.map(r => '<li>' + (r.star > 0 ? '<span class="star">' + '★'.repeat(r.star) + '</span>' : '') + '<a href="' + esc(r.url) + '" target="_blank" rel="noopener">' + esc(r.title) + '</a>' + (r.memo ? '<span class="memo">' + esc(r.memo) + '</span>' : '') + '</li>').join('')
-        : '<li style="color:#999;">결과 없음</li>';
+        : '<li style="color:#6A7FA0;">결과 없음</li>';
     }
 
     document.getElementById('sbtn').addEventListener('click', mainSearch);
-    document.getElementById('sq').addEventListener('keydown', e => { if (e.key === 'Enter') mainSearch(); });
+    // 검색 자동완성: 배우이름·메모·제목 (첫 포커스 때 전체 목록을 한 번 받아 둔다)
+    var acData = null, acItems = [], acIdx = -1;
+    var sqEl = document.getElementById('sq');
+    var acBox = document.getElementById('sq-ac');
+    async function loadAc() {
+      if (acData) return acData;
+      var res = await fetch('/api/ziha-bookmarks').then(function (r) { return r.json(); });
+      var names = {}, memos = {}, titles = {};
+      (res.rows || []).forEach(function (r) {
+        extractNames(r.title).forEach(function (n) { names[n] = (names[n] || 0) + 1; });
+        var m = String(r.memo || '').trim();
+        if (m) memos[m] = (memos[m] || 0) + 1;
+        var t = String(r.title || '').trim();
+        if (t) titles[t] = 1;
+      });
+      var byCount = function (o) {
+        return Object.keys(o).map(function (k) { return [k, o[k]]; }).sort(function (a, b) { return b[1] - a[1]; });
+      };
+      acData = { names: byCount(names), memos: byCount(memos), titles: Object.keys(titles) };
+      return acData;
+    }
+    function acClose() { acBox.style.display = 'none'; acItems = []; acIdx = -1; }
+    function acRender() {
+      if (!acItems.length) { acClose(); return; }
+      acBox.innerHTML = acItems.map(function (it, i) {
+        return '<li data-i="' + i + '"' + (i === acIdx ? ' class="on"' : '') + '>' +
+          '<span class="ac-kind ac-' + it.kind + '">' + it.label + '</span>' +
+          '<span class="ac-text">' + esc(it.text) + '</span>' +
+          (it.cnt ? '<span class="ac-cnt">' + it.cnt + '</span>' : '') + '</li>';
+      }).join('');
+      acBox.style.left = sqEl.offsetLeft + 'px';
+      acBox.style.top = (sqEl.offsetTop + sqEl.offsetHeight + 2) + 'px';
+      acBox.style.width = sqEl.offsetWidth + 'px';
+      acBox.style.display = 'block';
+      var on = acBox.querySelector('li.on');
+      if (on) on.scrollIntoView({ block: 'nearest' });
+    }
+    async function acUpdate() {
+      var q = sqEl.value.trim().toLowerCase();
+      if (!q) { acClose(); return; }
+      var d = await loadAc();
+      if (sqEl.value.trim().toLowerCase() !== q) return; // 기다리는 사이 입력이 바뀌었으면 버린다
+      var hit = function (s) { return s.toLowerCase().indexOf(q) !== -1; };
+      var out = [];
+      d.names.filter(function (e) { return hit(e[0]); }).slice(0, 5)
+        .forEach(function (e) { out.push({ kind: 'name', label: '배우', text: e[0], cnt: e[1] }); });
+      d.memos.filter(function (e) { return hit(e[0]); }).slice(0, 5)
+        .forEach(function (e) { out.push({ kind: 'memo', label: '메모', text: e[0], cnt: e[1] }); });
+      d.titles.filter(hit).slice(0, 8)
+        .forEach(function (t) { out.push({ kind: 'title', label: '제목', text: t }); });
+      acItems = out; acIdx = -1; acRender();
+    }
+    function acPick(i) {
+      var it = acItems[i];
+      if (!it) return;
+      sqEl.value = it.text;
+      acClose();
+      mainSearch();
+    }
+    sqEl.addEventListener('input', acUpdate);
+    sqEl.addEventListener('focus', function () { loadAc(); if (sqEl.value.trim()) acUpdate(); });
+    sqEl.addEventListener('keydown', function (e) {
+      if (e.isComposing || e.keyCode === 229) return; // 한글 조합 중 Enter·화살표는 무시
+      var open = acBox.style.display === 'block' && acItems.length > 0;
+      if (e.key === 'ArrowDown' && open) { e.preventDefault(); acIdx = (acIdx + 1) % acItems.length; acRender(); return; }
+      if (e.key === 'ArrowUp' && open) { e.preventDefault(); acIdx = acIdx <= 0 ? acItems.length - 1 : acIdx - 1; acRender(); return; }
+      if (e.key === 'Escape') { acClose(); return; }
+      if (e.key === 'Enter') {
+        if (open && acIdx >= 0) acPick(acIdx);
+        else { acClose(); mainSearch(); }
+      }
+    });
+    acBox.addEventListener('mousedown', function (e) {
+      var li = e.target.closest('li[data-i]');
+      if (!li) return;
+      e.preventDefault(); // 입력창 blur 보다 먼저 고른다
+      acPick(Number(li.dataset.i));
+    });
+    document.addEventListener('click', function (e) {
+      if (e.target !== sqEl && !acBox.contains(e.target)) acClose();
+    });
     document.getElementById('sbtn-reset').addEventListener('click', () => location.reload());
 
     document.getElementById('sbtn-open').addEventListener('click', async () => {
@@ -391,12 +491,12 @@ if (authed) {
       const { rows } = await fetch('/api/ziha-bookmarks?' + p).then(r => r.json());
       const ul = document.getElementById('p-result');
       ul.innerHTML = '';
-      if (!rows.length) { ul.innerHTML = '<li style="color:#999;padding:.3rem 0;">결과 없음</li>'; return; }
+      if (!rows.length) { ul.innerHTML = '<li style="color:#6A7FA0;padding:.3rem 0;">결과 없음</li>'; return; }
       for (const r of rows) {
         const li = document.createElement('li');
         li.innerHTML =
-          '<span class="star" style="color:#f5a623;font-size:.7rem;flex-shrink:0;">' + '★'.repeat(r.star) + '</span>' +
-          '<a class="item-title" href="' + esc(r.url) + '" target="_blank" rel="noopener">' + esc(r.title) + (r.memo ? ' <span style="color:#aaa;font-size:.7rem;">— ' + esc(r.memo) + '</span>' : '') + '</a>' +
+          '<span class="star" style="color:#FACB3D;font-size:.7rem;flex-shrink:0;">' + '★'.repeat(r.star) + '</span>' +
+          '<a class="item-title" href="' + esc(r.url) + '" target="_blank" rel="noopener">' + esc(r.title) + (r.memo ? ' <span style="color:#6A7FA0;font-size:.7rem;">— ' + esc(r.memo) + '</span>' : '') + '</a>' +
           '<button class="btn btn-primary btn-sm" data-id="' + r.id + '" data-title="' + esc(r.title) + '" data-url="' + esc(r.url) + '" data-star="' + r.star + '" data-memo="' + esc(r.memo || '') + '" data-sort="' + (r.sort == null ? '' : r.sort) + '">편집</button>' +
           '<button class="btn btn-danger  btn-sm" data-del="' + r.id + '">삭제</button>';
         ul.appendChild(li);
@@ -454,7 +554,7 @@ if (authed) {
     // 주소변경
     function prMsg(t, ok = true) {
       const el = document.getElementById('pr-msg');
-      el.style.color = ok ? '#080' : '#c00';
+      el.style.color = ok ? '#24C292' : '#F6726A';
       el.textContent = t;
     }
 
@@ -502,29 +602,34 @@ const isError = Astro.request.method === 'POST';
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>인증</title>
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#0B1628" />
     <style>
-      body { font-family: system-ui, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #f5f5f5; }
-      input[type="text"], input[type="password"] { padding: .6rem .8rem; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; width: 100%; box-sizing: border-box; }
-      button { padding: .6rem; background: #333; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; width: 100%; }
-      button:hover { background: #555; }
-      .error { color: #c00; font-size: .875rem; }
+      html { color-scheme: dark; background: #07101F; }
+      body { font-family: Inter, 'Pretendard Variable', Pretendard, system-ui, -apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #07101F; color: #CAD3E2; }
+      input[type="text"], input[type="password"] { padding: .6rem .8rem; background: #07101F; color: #E3E8F2; border: 1px solid #2B394F; border-radius: 4px; font-size: 1rem; width: 100%; box-sizing: border-box; }
+      button { padding: .6rem; background: #61A2FF; color: #07101F; font-weight: 500; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; width: 100%; }
+      button:hover { background: #8BBAFF; }
+      input::placeholder { color: #6A7FA0; }
+      input:focus { outline: none; border-color: #61A2FF; box-shadow: 0 0 0 1px #61A2FF; }
+      .error { color: #F6726A; font-size: .875rem; }
     </style>
   </head>
   <body>
     <div style="display:flex;flex-direction:column;gap:1rem;width:280px;">
-      <form method="POST" style="background:#fff;padding:2rem;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.1);display:flex;flex-direction:column;gap:1rem;">
-        <label style="font-weight:600">오늘의 코드</label>
+      <form method="POST" style="background:#0B1628;border:1px solid #2B394F;padding:2rem;border-radius:8px;box-shadow:0 1px 2px rgba(0,0,0,.35);display:flex;flex-direction:column;gap:1rem;">
+        <label style="font-weight:600;color:#E3E8F2">오늘의 코드</label>
         <input type="text" name="token" autocomplete="off" autofocus placeholder="xxxxxxxx" />
         {isError && <span class="error">잘못된 코드입니다.</span>}
         <button type="submit">확인</button>
       </form>
 
-      <details style="background:#fff;padding:1rem 1.5rem;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.1);font-size:.875rem;">
-        <summary style="cursor:pointer;font-weight:600;color:#555;">코드 계산기</summary>
+      <details style="background:#0B1628;border:1px solid #2B394F;padding:1rem 1.5rem;border-radius:8px;box-shadow:0 1px 2px rgba(0,0,0,.35);font-size:.875rem;">
+        <summary style="cursor:pointer;font-weight:600;color:#98A8C3;">코드 계산기</summary>
         <div style="margin-top:.75rem;display:flex;flex-direction:column;gap:.5rem;">
           <input id="calc-secret" type="password" placeholder="비밀키 입력" style="letter-spacing:.15em;" />
           <button id="calc-btn" type="button">오늘 코드 보기</button>
-          <code id="calc-result" style="display:none;text-align:center;font-size:1.4rem;letter-spacing:.2em;padding:.5rem;background:#f0f0f0;border-radius:4px;"></code>
+          <code id="calc-result" style="display:none;text-align:center;font-size:1.4rem;letter-spacing:.2em;padding:.5rem;background:#0E1A2E;color:#E3E8F2;border-radius:4px;"></code>
         </div>
       </details>
     </div>

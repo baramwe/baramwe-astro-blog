@@ -3,7 +3,7 @@ import { getDB } from '../../lib/auth/db'
 
 export const prerender = false
 
-// GET ?q=검색어&star=2&star_op=gte   (star_op: gte=이상, eq=정확히, 기본 gte)
+// GET ?q=검색어&star=2&star_op=gte   (q 는 제목·메모에서 찾는다. star_op: gte=이상, eq=정확히, 기본 gte)
 export const GET: APIRoute = async ({ locals, request, url }) => {
   const db = getDB(locals, request)
   if (!db) return json({ rows: [] })
@@ -18,12 +18,12 @@ export const GET: APIRoute = async ({ locals, request, url }) => {
   if (q) {
     if (q.includes('&&')) {
       for (const term of q.split('&&').map(t => t.trim()).filter(Boolean)) {
-        conditions.push('LOWER(title) LIKE ?')
-        bindings.push(`%${term.toLowerCase()}%`)
+        conditions.push("(LOWER(title) LIKE ? OR LOWER(COALESCE(memo, '')) LIKE ?)")
+        bindings.push(`%${term.toLowerCase()}%`, `%${term.toLowerCase()}%`)
       }
     } else {
-      conditions.push('LOWER(title) LIKE ?')
-      bindings.push(`%${q.toLowerCase()}%`)
+      conditions.push("(LOWER(title) LIKE ? OR LOWER(COALESCE(memo, '')) LIKE ?)")
+      bindings.push(`%${q.toLowerCase()}%`, `%${q.toLowerCase()}%`)
     }
   }
   if (starRaw !== null && starRaw !== '') {
