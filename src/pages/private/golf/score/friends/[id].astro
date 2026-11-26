@@ -37,7 +37,7 @@ const winRate = Math.round((buddy.wins / (buddy.rounds || 1)) * 100)
         <h1 class="truncate text-xl font-bold">{selfName} <span class="font-normal text-kb-muted">vs</span> {buddy.display_name}</h1>
         <p class="text-sm text-kb-subdued">
           {period.recent && buddy.total_rounds > buddy.rounds
-            ? <>최근 {buddy.rounds}라운드 기준 · 전체 {buddy.total_rounds}</>
+            ? <>최근 {buddy.rounds}라운드 기준</>
             : <>{buddy.total_rounds}라운드 함께</>} · 최근 {buddy.last_on}
         </p>
       </div>
