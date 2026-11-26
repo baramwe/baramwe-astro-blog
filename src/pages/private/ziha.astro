@@ -159,6 +159,12 @@ if (authed) {
     .qe-key:hover { border-color: #61A2FF; color: #E3E8F2; }
     .qe-key.on { background: #0B3A2E; border-color: #0B3A2E; color: #24C292; }
     .qe-status { min-height: 1.1em; color: #6A7FA0; font-size: .7rem; text-align: right; }
+    .qe-foot { display: flex; align-items: center; gap: .5rem; padding-top: .45rem; border-top: 1px solid #1C2A40; }
+    .qe-foot .qe-status { flex: 1; min-width: 0; }
+    .qe-del { flex: 0 0 auto; padding: .3rem .65rem; border: 1px solid rgba(246, 114, 106, .45); border-radius: 6px; background: transparent; color: #F6726A; font-size: .74rem; font-family: inherit; cursor: pointer; }
+    .qe-del:hover { background: rgba(246, 114, 106, .12); border-color: #F6726A; }
+    .qe-del.armed { background: #F6726A; border-color: #F6726A; color: #07101F; font-weight: 500; }
+    .qe-del:disabled { opacity: .5; cursor: default; }
     .tt { color: #E3E8F2; font-size: calc(.78rem + 1px); line-height: 1.38; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
     .hh { color: #6A7FA0; font-size: calc(.74rem + 1px); margin-top: .15rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .tags { display: flex; flex-wrap: wrap; gap: .25rem; margin-top: .35rem; }
@@ -308,7 +314,10 @@ if (authed) {
       <button class="qe-btn" type="button" id="qe-save">저장</button>
     </div>
     <div class="qe-keys" id="qe-keys"></div>
-    <div class="qe-status" id="qe-status"></div>
+    <div class="qe-foot">
+      <button class="qe-del" type="button" id="qe-del" title="이 북마크를 삭제">삭제</button>
+      <div class="qe-status" id="qe-status"></div>
+    </div>
   </div>
 
   <div id="ziha-mgmt">
@@ -658,6 +667,7 @@ if (authed) {
       qeMemo.value = memoOf(qeRow);
       qeTitle.value = String(qeRow.title || '');
       qeStatus('');
+      qeDelReset();
       qeFill();
       qe.hidden = false;
       qePlace();
@@ -738,6 +748,43 @@ if (authed) {
       }
     });
     document.getElementById('qe-save').addEventListener('click', function () { qeSave({ memo: qeMemo.value }); });
+    // 삭제: 실수 방지로 두 번 누르게 한다(첫 클릭 → '정말 삭제?', 3초 안에 한 번 더).
+    var qeDel = document.getElementById('qe-del'), qeDelTimer = null;
+    function qeDelReset() {
+      clearTimeout(qeDelTimer);
+      qeDel.classList.remove('armed');
+      qeDel.disabled = false;
+      qeDel.textContent = '삭제';
+    }
+    qeDel.addEventListener('click', async function () {
+      var r = qeRow;
+      if (!r) return;
+      if (!qeDel.classList.contains('armed')) {
+        qeDel.classList.add('armed');
+        qeDel.textContent = '정말 삭제?';
+        qeDelTimer = setTimeout(qeDelReset, 3000);
+        return;
+      }
+      clearTimeout(qeDelTimer);
+      qeDel.disabled = true;
+      qeStatus('삭제 중…');
+      try {
+        var res = await fetch('/api/ziha-bookmarks', {
+          method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: r.id }),
+        });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+      } catch (e) {
+        qeDelReset();
+        qeStatus('삭제 실패', 'err');
+        return;
+      }
+      ALL = ALL.filter(function (x) { return x.id !== r.id; });
+      actorCache = null; acData = null; // 배우 순위·자동완성도 다시 센다
+      buildChips();
+      render(); // 팝업도 닫힌다
+      toast('‘' + displayTitle(r.title) + '’ 삭제됨');
+    });
     function qeSaveTitle() {
       var t = qeTitle.value.trim();
       if (!t) { qeStatus('제목을 입력하세요', 'err'); return; }
