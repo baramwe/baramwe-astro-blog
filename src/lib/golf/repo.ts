@@ -496,6 +496,8 @@ export async function homeSummary(db: D1Database, ownerId: string, year: string)
 export interface Buddy {
   id: string; display_name: string
   rounds: number; wins: number; losses: number; draws: number
+  /** 함께 친 전체 라운드 수 (recent 로 잘라도 전체 기준) */
+  total_rounds: number
   last_on: string
   /** 18홀 라운드 평균 (함께한 라운드 기준) */
   my_avg: number | null; their_avg: number | null
@@ -504,30 +506,34 @@ export interface Buddy {
 /**
  * 나와 함께 친 동반자 목록 (함께한 라운드 수 많은 순).
  * 승패는 같은 라운드에서 본인 타수와 비교 — 적게 친 쪽이 승.
- * minRounds: 이 횟수 이상 함께한 사람만 (조인 1회성 동반자 제외용)
+ * minRounds: 이 횟수 이상 함께한 사람만 (조인 1회성 동반자 제외용, 전체 라운드 기준)
+ * recent: 동반자별 최근 N라운드만 집계 (null 이면 전체). 정렬은 전체 라운드 수 기준 그대로
  */
-export async function listBuddies(db: D1Database, ownerId: string, minRounds = 1): Promise<Buddy[]> {
+export async function listBuddies(db: D1Database, ownerId: string, minRounds = 1, recent: number | null = null): Promise<Buddy[]> {
   const { results } = await db.prepare(
     `WITH me AS (SELECT id FROM golf_players WHERE owner_user_id = ?1 AND is_self = 1),
      pairs AS (
        SELECT r.played_on, r.back_course_id IS NOT NULL AS full18,
-              o.player_id AS opp, m.total AS my, o.total AS their
+              o.player_id AS opp, m.total AS my, o.total AS their,
+              row_number() OVER (PARTITION BY o.player_id ORDER BY r.played_on DESC, r.created_at DESC) AS rn,
+              count(*) OVER (PARTITION BY o.player_id) AS total_rounds
          FROM golf_rounds r
          JOIN golf_round_players m ON m.round_id = r.id AND m.player_id = (SELECT id FROM me)
          JOIN golf_round_players o ON o.round_id = r.id AND o.player_id <> m.player_id
         WHERE r.owner_user_id = ?1
      )
      SELECT p.id, p.display_name,
-            count(*) AS rounds,
+            count(*) AS rounds, max(total_rounds) AS total_rounds,
             sum(my < their) AS wins, sum(my > their) AS losses, sum(my = their) AS draws,
             max(played_on) AS last_on,
             round(avg(CASE WHEN full18 THEN my END), 1) AS my_avg,
             round(avg(CASE WHEN full18 THEN their END), 1) AS their_avg
        FROM pairs JOIN golf_players p ON p.id = pairs.opp
+      WHERE ?3 IS NULL OR rn <= ?3
       GROUP BY p.id
-     HAVING count(*) >= ?2
-      ORDER BY rounds DESC, last_on DESC, p.display_name`
-  ).bind(ownerId, minRounds).all<Buddy>()
+     HAVING max(total_rounds) >= ?2
+      ORDER BY total_rounds DESC, last_on DESC, p.display_name`
+  ).bind(ownerId, minRounds, recent).all<Buddy>()
   return results
 }
 
