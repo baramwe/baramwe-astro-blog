@@ -83,11 +83,8 @@ const medal = (_i: number) => 'bg-kb-sunken text-kb-subdued border border-kb-bor
 
   {showClubs && (
     <section class="mb-6">
-      <div class="mb-2 flex items-end justify-between">
-        <div>
-          <h2 class="text-lg font-bold">자주 찾은 골프장</h2>
-          <p class="text-xs text-kb-subdued">라운드 수 {sorts.clubSort === 'low' ? '적은' : '많은'} 순 · 평균은 내 18홀 기준</p>
-        </div>
+      <div class="mb-2 flex items-center justify-between">
+        <h2 class="text-lg font-bold">자주 찾은 골프장</h2>
         <div class="flex shrink-0 items-center gap-2">
           {clubs.length > 1 && (
             <Dropdown
@@ -124,11 +121,8 @@ const medal = (_i: number) => 'bg-kb-sunken text-kb-subdued border border-kb-bor
 
   {showPlayers && (
     <section class="mb-6">
-      <div class="mb-2 flex items-end justify-between">
-        <div>
-          <h2 class="text-lg font-bold">동반자 평균타수 랭킹</h2>
-          <p class="text-xs text-kb-subdued">나와 {MIN_ROUNDS}회 이상 함께 · 함께 친 18홀 평균 {sorts.playerSort === 'low' ? '낮은' : '높은'} 순</p>
-        </div>
+      <div class="mb-2 flex items-center justify-between">
+        <h2 class="text-lg font-bold">동반자 평균타수<span class="ml-1 text-xs font-normal text-kb-subdued">(나와 {MIN_ROUNDS}회 이상)</span></h2>
         <div class="flex shrink-0 items-center gap-2">
           {players.length > 1 && (
             <Dropdown
@@ -165,11 +159,8 @@ const medal = (_i: number) => 'bg-kb-sunken text-kb-subdued border border-kb-bor
 
   {showBestClubs && (
     <section class="mb-6">
-      <div class="mb-2 flex items-end justify-between">
-        <div>
-          <h2 class="text-lg font-bold">평균타수 {sorts.bestSort === 'low' ? '낮은' : '높은'} 골프장</h2>
-          <p class="text-xs text-kb-subdued">내 18홀 평균 {sorts.bestSort === 'low' ? '낮은' : '높은'} 순</p>
-        </div>
+      <div class="mb-2 flex items-center justify-between">
+        <h2 class="text-lg font-bold">평균타수 {sorts.bestSort === 'low' ? '낮은' : '높은'} 골프장</h2>
         <div class="flex shrink-0 items-center gap-2">
           {bestClubs.length > 1 && (
             <Dropdown
