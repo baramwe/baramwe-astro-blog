@@ -143,7 +143,7 @@ if (authed) {
     .card:hover .card-edit { color: #98A8C3; }
     .card-edit:hover, .card-edit[aria-expanded="true"] { color: #E3E8F2; background: #13223A; border-color: #2B394F; }
     .card-edit:focus-visible { outline: none; border-color: #61A2FF; color: #E3E8F2; }
-    .qe { position: absolute; z-index: 30; width: 300px; max-width: calc(100vw - 16px); padding: .7rem .75rem .55rem; background: #0B1628; color: #CAD3E2; border: 1px solid #2B394F; border-radius: 10px; box-shadow: 0 3px 10px rgba(0,0,0,.52), 0 6px 14px rgba(0,0,0,.28); font-size: .8rem; }
+    .qe { position: absolute; z-index: 30; width: 300px; max-width: calc(100vw - 16px); padding: .6rem .65rem .45rem; background: #0B1628; color: #CAD3E2; border: 1px solid #2B394F; border-radius: 10px; box-shadow: 0 3px 10px rgba(0,0,0,.52), 0 6px 14px rgba(0,0,0,.28); font-size: .8rem; }
     .qe[hidden] { display: none; }
     .qe-title { color: #98A8C3; font-size: .74rem; margin-bottom: .6rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .qe-row { display: flex; align-items: center; gap: .5rem; margin-bottom: .5rem; }
@@ -154,16 +154,16 @@ if (authed) {
     .qe-hint { margin-left: auto; color: #4A5D7A; font-size: .68rem; white-space: nowrap; }
     .qe-row input { flex: 1; min-width: 0; padding: .38rem .5rem; background: #07101F; color: #E3E8F2; border: 1px solid #2B394F; border-radius: 6px; font-size: .8rem; font-family: inherit; }
     .qe-btn { flex: 0 0 auto; padding: .38rem .65rem; border: none; border-radius: 6px; background: #61A2FF; color: #07101F; font-weight: 500; font-size: .78rem; font-family: inherit; cursor: pointer; }
-    .qe-keys { display: flex; flex-wrap: wrap; gap: .25rem; margin: -.15rem 0 .4rem 2.5rem; }
-    .qe-key { padding: .1rem .5rem; border: 1px solid #2B394F; border-radius: 999px; background: transparent; color: #98A8C3; font-size: .7rem; font-family: inherit; cursor: pointer; }
-    .qe-key:hover { border-color: #61A2FF; color: #E3E8F2; }
-    .qe-key.on { background: #0B3A2E; border-color: #0B3A2E; color: #24C292; }
     .qe-status { min-height: 1.1em; color: #6A7FA0; font-size: .7rem; text-align: right; }
-    .qe-foot { display: flex; align-items: center; gap: .5rem; padding-top: .45rem; border-top: 1px solid #1C2A40; }
-    .qe-foot .qe-status { flex: 1; min-width: 0; }
-    .qe-del { flex: 0 0 auto; padding: .3rem .65rem; border: 1px solid rgba(246, 114, 106, .45); border-radius: 6px; background: transparent; color: #F6726A; font-size: .74rem; font-family: inherit; cursor: pointer; }
-    .qe-del:hover { background: rgba(246, 114, 106, .12); border-color: #F6726A; }
-    .qe-del.armed { background: #F6726A; border-color: #F6726A; color: #07101F; font-weight: 500; }
+    .qe-foot { display: flex; align-items: center; justify-content: center; gap: 1rem; margin-top: .3rem; padding: .75rem 0 .2rem; border-top: 1px solid #1C2A40; }
+    .qe-foot .qe-btn, .qe-del { min-width: 3.8rem; padding: .26rem .7rem; border: 1px solid transparent; border-radius: 6px; font-size: .72rem; font-weight: 500; font-family: inherit; text-align: center; cursor: pointer; }
+    .qe-foot .qe-btn { background: #61A2FF; border-color: #61A2FF; color: #07101F; }
+    .qe-foot .qe-btn:hover { background: #7DB3FF; border-color: #7DB3FF; }
+    .qe-foot + .qe-status { min-height: 0; margin-top: .3rem; text-align: center; }
+    .qe-foot + .qe-status:empty { display: none; } /* 메시지가 없을 땐 자리를 비워 버튼이 바닥에 붙게 */
+    .qe-del { flex: 0 0 auto; background: #F6726A; border-color: #F6726A; color: #07101F; }
+    .qe-del:hover { background: #FF8A82; border-color: #FF8A82; }
+    .qe-del.armed { background: #D9443B; border-color: #D9443B; color: #fff; box-shadow: 0 0 0 2px rgba(246, 114, 106, .35); }
     .qe-del:disabled { opacity: .5; cursor: default; }
     .tt { color: #E3E8F2; font-size: calc(.78rem + 1px); line-height: 1.38; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
     .hh { color: #6A7FA0; font-size: calc(.74rem + 1px); margin-top: .15rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -295,11 +295,14 @@ if (authed) {
   </div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <div class="qe" id="qe" role="dialog" aria-label="메모·별 편집" hidden>
+  <div class="qe" id="qe" role="dialog" aria-label="북마크 편집" hidden>
     <div class="qe-row">
       <span class="qe-label">제목</span>
       <input type="text" id="qe-title" placeholder="제목" autocomplete="off" />
-      <button class="qe-btn" type="button" id="qe-title-save">저장</button>
+    </div>
+    <div class="qe-row">
+      <span class="qe-label">주소</span>
+      <input type="text" id="qe-url" placeholder="https://…" title="사이트 태그는 도메인으로 다시 판정" autocomplete="off" spellcheck="false" />
     </div>
     <div class="qe-row">
       <span class="qe-label">별</span>
@@ -310,14 +313,13 @@ if (authed) {
     </div>
     <div class="qe-row">
       <span class="qe-label">메모</span>
-      <input type="text" id="qe-memo" maxlength="100" placeholder="여러 개는 | 로 구분" title="Enter 로 저장 · 비우고 저장하면 메모 삭제" autocomplete="off" />
-      <button class="qe-btn" type="button" id="qe-save">저장</button>
+      <input type="text" id="qe-memo" maxlength="100" placeholder="여러 개는 | 로 구분" title="비우고 저장하면 메모 삭제" autocomplete="off" />
     </div>
-    <div class="qe-keys" id="qe-keys"></div>
     <div class="qe-foot">
+      <button class="qe-btn" type="button" id="qe-save" title="제목·주소·메모 저장 (Enter)">저장</button>
       <button class="qe-del" type="button" id="qe-del" title="이 북마크를 삭제">삭제</button>
-      <div class="qe-status" id="qe-status"></div>
     </div>
+    <div class="qe-status" id="qe-status"></div>
   </div>
 
   <div id="ziha-mgmt">
@@ -626,6 +628,7 @@ if (authed) {
     var qe = document.getElementById('qe');
     var qeMemo = document.getElementById('qe-memo');
     var qeTitle = document.getElementById('qe-title');
+    var qeUrl = document.getElementById('qe-url');
     var qeRow = null, qeBtn = null, qeTimer = null;
     function qeStatus(t, kind) {
       var el = document.getElementById('qe-status');
@@ -639,14 +642,6 @@ if (authed) {
       qe.querySelectorAll('.qe-star').forEach(function (b) {
         b.classList.toggle('on', Number(b.dataset.star) <= (r.star || 0));
       });
-      // 이 카드의 키워드는 항상 먼저(켜진 상태로) 보여 주고, 나머지는 많이 쓰는 순으로 채운다
-      var mine = memosOf(r);
-      var memos = mine.map(function (k) { return [k]; })
-        .concat(countMemos().filter(function (e) { return mine.indexOf(e[0]) === -1; }))
-        .slice(0, Math.max(8, mine.length));
-      document.getElementById('qe-keys').innerHTML = memos.map(function (e) {
-        return '<button class="qe-key' + (mine.indexOf(e[0]) !== -1 ? ' on' : '') + '" type="button" data-memo="' + esc(e[0]) + '">' + esc(e[0]) + '</button>';
-      }).join('');
     }
     function qePlace() {
       if (!qeRow || !qeBtn) return;
@@ -666,6 +661,7 @@ if (authed) {
       btn.closest('.card').classList.add('editing');
       qeMemo.value = memoOf(qeRow);
       qeTitle.value = String(qeRow.title || '');
+      qeUrl.value = String(qeRow.url || '');
       qeStatus('');
       qeDelReset();
       qeFill();
@@ -702,10 +698,14 @@ if (authed) {
         });
         if (!res.ok) throw new Error('HTTP ' + res.status);
         if ('star' in patch) r.star = patch.star;
-        var saved = ('memo' in patch || 'title' in patch) ? await res.json().catch(function () { return {}; }) : {};
+        var saved = ('memo' in patch || 'title' in patch || 'url' in patch) ? await res.json().catch(function () { return {}; }) : {};
         if ('memo' in patch) r.memo = 'memo' in saved ? saved.memo : (splitMemo(patch.memo).join('|') || null); // 서버가 정리한 최종 메모
         if ('title' in patch) {
           r.title = saved.title || patch.title.trim(); // 서버가 사이트명을 지운 최종 제목
+        }
+        if ('url' in patch) { // 서버가 도메인으로 다시 판정한 사이트 태그까지 받는다
+          r.url = saved.url || patch.url.trim();
+          r.site = 'site' in saved ? saved.site : r.site;
         }
         acData = null; // 자동완성의 메모 목록도 다시 만든다
         if (qeRow !== r) return; // 저장 중에 다른 카드로 바뀌었으면 화면만 건너뛴다
@@ -714,6 +714,7 @@ if (authed) {
         syncChips();
         if ('memo' in patch) qeMemo.value = memoOf(r); // 다른 칸에 입력 중인 내용은 건드리지 않는다
         if ('title' in patch) qeTitle.value = r.title;
+        if ('url' in patch) qeUrl.value = r.url;
         qeFill();
         qePlace();
         qeStatus('저장됨', 'ok');
@@ -737,17 +738,28 @@ if (authed) {
         qeSave({ star: qeRow.star === n ? 0 : n }); // 같은 별을 다시 누르면 해제
         return;
       }
-      var key = e.target.closest('.qe-key');
-      if (key && qeRow) {
-        // 키워드 칩은 켜고 끄기: 없으면 '|' 로 덧붙이고, 있으면 그 키워드만 뺀다
-        var cur = memosOf(qeRow), k = key.dataset.memo, at = cur.indexOf(k);
-        if (at === -1) cur.push(k); else cur.splice(at, 1);
-        var m = cur.join('|');
-        qeMemo.value = m;
-        qeSave({ memo: m });
-      }
     });
-    document.getElementById('qe-save').addEventListener('click', function () { qeSave({ memo: qeMemo.value }); });
+    // 저장 버튼 하나로 제목·주소·메모 중 바뀐 것만 한 번에 저장한다 (별은 누르면 바로 저장).
+    function qeSaveAll() {
+      var r = qeRow;
+      if (!r) return;
+      var t = qeTitle.value.trim(), u = qeUrl.value.trim(), m = splitMemo(qeMemo.value).join('|');
+      if (!t) { qeStatus('제목을 입력하세요', 'err'); return; }
+      if (!u) { qeStatus('주소를 입력하세요', 'err'); return; }
+      var patch = {};
+      if (t !== r.title) patch.title = t;
+      if (u !== r.url) patch.url = u;
+      if (m !== memosOf(r).join('|')) patch.memo = qeMemo.value;
+      if (!Object.keys(patch).length) { qeStatus('변경 없음'); return; }
+      qeSave(patch);
+    }
+    document.getElementById('qe-save').addEventListener('click', qeSaveAll);
+    [qeTitle, qeUrl, qeMemo].forEach(function (el) {
+      el.addEventListener('keydown', function (e) {
+        if (e.isComposing || e.keyCode === 229) return;
+        if (e.key === 'Enter') { e.preventDefault(); qeSaveAll(); }
+      });
+    });
     // 삭제: 실수 방지로 두 번 누르게 한다(첫 클릭 → '정말 삭제?', 3초 안에 한 번 더).
     var qeDel = document.getElementById('qe-del'), qeDelTimer = null;
     function qeDelReset() {
@@ -784,21 +796,6 @@ if (authed) {
       buildChips();
       render(); // 팝업도 닫힌다
       toast('‘' + displayTitle(r.title) + '’ 삭제됨');
-    });
-    function qeSaveTitle() {
-      var t = qeTitle.value.trim();
-      if (!t) { qeStatus('제목을 입력하세요', 'err'); return; }
-      if (qeRow && t === qeRow.title) { qeStatus('변경 없음'); return; }
-      qeSave({ title: t });
-    }
-    document.getElementById('qe-title-save').addEventListener('click', qeSaveTitle);
-    qeTitle.addEventListener('keydown', function (e) {
-      if (e.isComposing || e.keyCode === 229) return;
-      if (e.key === 'Enter') { e.preventDefault(); qeSaveTitle(); }
-    });
-    qeMemo.addEventListener('keydown', function (e) {
-      if (e.isComposing || e.keyCode === 229) return;
-      if (e.key === 'Enter') { e.preventDefault(); qeSave({ memo: qeMemo.value }); }
     });
     document.addEventListener('mousedown', function (e) {
       if (qe.hidden) return;

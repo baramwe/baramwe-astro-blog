@@ -85,9 +85,12 @@ export const PATCH: APIRoute = async ({ locals, request }) => {
     if (!titleVal) return json({ error: '제목이 비어 있음' }, 400)
     fields.push('title = ?'); bindings.push(titleVal)
   }
-  if (url   !== undefined) {
-    fields.push('url = ?');  bindings.push(url.trim())
-    fields.push('site = ?'); bindings.push(detectSite(url))
+  const urlVal = url !== undefined ? url.trim() : undefined
+  const siteVal = urlVal !== undefined ? detectSite(urlVal) : undefined
+  if (urlVal !== undefined) {
+    if (!urlVal) return json({ error: '주소가 비어 있음' }, 400)
+    fields.push('url = ?');  bindings.push(urlVal)
+    fields.push('site = ?'); bindings.push(siteVal ?? null)
   }
   if (star  !== undefined) { fields.push('star = ?');  bindings.push(Math.min(3, Math.max(0, star))) }
   const memoVal = memo !== undefined ? normalizeMemo(memo) : undefined
@@ -102,6 +105,7 @@ export const PATCH: APIRoute = async ({ locals, request }) => {
     ok: true,
     ...(titleVal !== undefined ? { title: titleVal } : {}),
     ...(memoVal !== undefined ? { memo: memoVal } : {}),
+    ...(urlVal !== undefined ? { url: urlVal, site: siteVal ?? null } : {}),
   })
 }
 
