@@ -1,12 +1,22 @@
 ---
 import GolfLayout from '../../../../../layouts/GolfLayout.astro'
 import BuddyRecord from '../../../../../components/golf/BuddyRecord.astro'
+import Dropdown from '../../../../../components/golf/Dropdown.astro'
 import { getDB } from '../../../../../lib/auth/db'
 import { countryName, getBuddy } from '../../../../../lib/golf/repo'
 export const prerender = false
 
+// 집계 기간: 골친 목록과 같은 조건 (전체 / 최근 5·10 라운드)
+const PERIODS = [
+  { key: 'all', label: '전체', recent: null },
+  { key: '5', label: '최근5', recent: 5 },
+  { key: '10', label: '최근10', recent: 10 },
+] as const
+const period = PERIODS.find((p) => p.key === Astro.url.searchParams.get('n')) ?? PERIODS[0]
+const withPeriod = (path: string, key: string) => (key === 'all' ? path : `${path}?n=${key}`)
+
 const db = getDB(Astro.locals, Astro.request)!
-const data = await getBuddy(db, Astro.locals.golf!.user.id, String(Astro.params.id))
+const data = await getBuddy(db, Astro.locals.golf!.user.id, String(Astro.params.id), period.recent)
 if (!data) return new Response('Not found', { status: 404 })
 const { buddy, self_name: selfName, rounds } = data
 
@@ -19,13 +29,17 @@ const BADGE = {
 const winRate = Math.round((buddy.wins / (buddy.rounds || 1)) * 100)
 ---
 <GolfLayout title={`${buddy.display_name} 전적`} active="friends">
-  <a href="/private/golf/score/friends" class="mb-3 inline-flex items-center gap-1 text-sm text-kb-primary">← 골친</a>
+  <a href={withPeriod('/private/golf/score/friends', period.key)} class="mb-3 inline-flex items-center gap-1 text-sm text-kb-primary">← 골친</a>
 
   <section class="g-card mb-5 !p-5">
     <div class="mb-4 flex items-start justify-between gap-3">
       <div class="min-w-0">
         <h1 class="truncate text-xl font-bold">{selfName} <span class="font-normal text-kb-muted">vs</span> {buddy.display_name}</h1>
-        <p class="text-sm text-kb-subdued">{buddy.rounds}라운드 함께 · 최근 {buddy.last_on}</p>
+        <p class="text-sm text-kb-subdued">
+          {period.recent && buddy.total_rounds > buddy.rounds
+            ? <>최근 {buddy.rounds}라운드 기준 · 전체 {buddy.total_rounds}</>
+            : <>{buddy.total_rounds}라운드 함께</>} · 최근 {buddy.last_on}
+        </p>
       </div>
       <div class="shrink-0 rounded-xl bg-kb-primary-subtle px-3 py-1.5 text-center">
         <div class="text-[11px] text-kb-primary">승률</div>
@@ -41,7 +55,16 @@ const winRate = Math.round((buddy.wins / (buddy.rounds || 1)) * 100)
     )}
   </section>
 
-  <h2 class="mb-2 text-lg font-semibold">함께한 라운드 <span class="text-sm font-normal text-kb-subdued">최근순</span></h2>
+  <div class="mb-2 flex items-center justify-between gap-3">
+    <h2 class="text-lg font-semibold">함께한 라운드</h2>
+    <Dropdown
+      ariaLabel="집계 기간"
+      align="right"
+      label={period.label}
+      highlight={period.key !== 'all'}
+      items={PERIODS.map((p) => ({ href: withPeriod(Astro.url.pathname, p.key), label: p.label, current: p.key === period.key }))}
+    />
+  </div>
   <ul class="space-y-2.5">
     {rounds.map((r) => {
       const res = result(r.my, r.their)
@@ -70,4 +93,12 @@ const winRate = Math.round((buddy.wins / (buddy.rounds || 1)) * 100)
       )
     })}
   </ul>
+
+  <script>
+    // 드롭다운(details.g-dropdown) 바깥 클릭·Esc 로 닫기
+    const closeDropdowns = (except?: Element | null) =>
+      document.querySelectorAll<HTMLDetailsElement>('details.g-dropdown[open]').forEach((d) => { if (d !== except) d.open = false })
+    document.addEventListener('click', (e) => closeDropdowns((e.target as Element | null)?.closest('details.g-dropdown')))
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDropdowns() })
+  </script>
 </GolfLayout>

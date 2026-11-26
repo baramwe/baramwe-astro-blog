@@ -545,9 +545,9 @@ export interface BuddyRound {
   others: string | null
 }
 
-/** 특정 동반자와 함께 친 라운드 (최근순) + 동반자 정보 */
-export async function getBuddy(db: D1Database, ownerId: string, buddyId: string): Promise<{ buddy: Buddy; self_name: string; rounds: BuddyRound[] } | null> {
-  const buddy = (await listBuddies(db, ownerId)).find((b) => b.id === buddyId)
+/** 특정 동반자와 함께 친 라운드 (최근순) + 동반자 정보. recent: 최근 N라운드만 (null 이면 전체) */
+export async function getBuddy(db: D1Database, ownerId: string, buddyId: string, recent: number | null = null): Promise<{ buddy: Buddy; self_name: string; rounds: BuddyRound[] } | null> {
+  const buddy = (await listBuddies(db, ownerId, 1, recent)).find((b) => b.id === buddyId)
   if (!buddy) return null
   const self = await db.prepare(`SELECT display_name FROM golf_players WHERE owner_user_id = ? AND is_self = 1`)
     .bind(ownerId).first<{ display_name: string }>()
@@ -566,8 +566,9 @@ export async function getBuddy(db: D1Database, ownerId: string, buddyId: string)
         AND m.player_id = (SELECT id FROM golf_players WHERE owner_user_id = ?1 AND is_self = 1)
        JOIN golf_round_players o ON o.round_id = r.id AND o.player_id = ?2
       WHERE r.owner_user_id = ?1
-      ORDER BY r.played_on DESC, r.created_at DESC`
-  ).bind(ownerId, buddyId).all<BuddyRound>()
+      ORDER BY r.played_on DESC, r.created_at DESC
+      LIMIT ?3`
+  ).bind(ownerId, buddyId, recent ?? -1).all<BuddyRound>()
   return { buddy, self_name: self?.display_name ?? '나', rounds: results }
 }
 
