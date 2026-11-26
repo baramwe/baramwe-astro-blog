@@ -32,6 +32,8 @@ const authed = Astro.request.method === 'GET' && (isLocal || cookieMatch?.[1] ==
 
 type Bookmark = { id: number; title: string; url: string; star: number; memo: string | null; site: string | null };
 let bookmarks: Bookmark[] = [];
+let hiddenMemos: string[] = [];
+let hiddenActors: string[] = [];
 
 if (authed) {
   const db = getDB(Astro.locals, Astro.request);
@@ -40,19 +42,27 @@ if (authed) {
       .prepare('SELECT id, title, url, star, memo, sort, site FROM bookmarks ORDER BY CASE WHEN sort = 0 THEN 0 WHEN sort = 1 THEN 1 ELSE 2 END ASC, id DESC')
       .all<Bookmark>();
     bookmarks = results;
+    try {
+      const hidden = await db.prepare('SELECT memo FROM ziha_hidden_memos ORDER BY created_at, memo').all<{ memo: string }>();
+      hiddenMemos = hidden.results.map(r => r.memo);
+    } catch {
+      hiddenMemos = []; // 0011 마이그레이션 전이면 숨김 없이 전부 노출
+    }
+    try {
+      const hidden = await db.prepare('SELECT name FROM ziha_hidden_actors ORDER BY created_at, name').all<{ name: string }>();
+      hiddenActors = hidden.results.map(r => r.name);
+    } catch {
+      hiddenActors = [];
+    }
   }
 }
 
 // 인증된 경우 북마크 페이지 반환
 if (authed) {
-  const stars = (n: number) => '★'.repeat(n);
-  const esc = (s: string) =>
-    String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-
-  const siteLabel = (s: string | null) => (s && (SITE_LABELS as Record<string, string>)[s]) || '';
-  const items = bookmarks.map(b =>
-    `<li>${b.star > 0 ? `<span class="star">${stars(b.star)}</span>` : ''}<a href="${esc(b.url)}" target="_blank" rel="noopener">${esc(b.title)}</a>${b.site ? `<span class="site site-${esc(b.site)}">${esc(siteLabel(b.site))}</span>` : ''}${b.memo ? `<span class="memo">${esc(b.memo)}</span>` : ''}</li>`
-  ).join('\n');
+  // 목록은 클라이언트가 그린다(필터·분류를 즉시 하려고). </script> 조기 종료를 막도록 '<' 를 이스케이프한다.
+  const dataJson = JSON.stringify(bookmarks).replace(/</g, '\\u003c');
+  const hiddenJson = JSON.stringify(hiddenMemos).replace(/</g, '\\u003c');
+  const hiddenActorsJson = JSON.stringify(hiddenActors).replace(/</g, '\\u003c');
   const siteOptions = SITES.map(k => `<option value="${k}">${SITE_LABELS[k]}</option>`).join('') + '<option value="none">기타</option>';
 
   const html = `<!DOCTYPE html>
@@ -74,24 +84,95 @@ if (authed) {
     option, optgroup { background: #0B1628; color: #CAD3E2; }
     input::placeholder { color: #6A7FA0; }
     input:focus, select:focus { outline: none; border-color: #61A2FF !important; box-shadow: 0 0 0 1px #61A2FF; }
-    body { font-family: Inter, 'Pretendard Variable', Pretendard, system-ui, -apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif; margin: 0; padding: 1rem 1.5rem 5rem; background: #07101F; color: #CAD3E2; font-size: 1.04rem; -webkit-font-smoothing: antialiased; }
+    body { font-family: Inter, 'Pretendard Variable', Pretendard, system-ui, -apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif; margin: 0; padding: 0 0 5rem; background: #07101F; color: #CAD3E2; font-size: 1.04rem; -webkit-font-smoothing: antialiased; }
     ul { list-style: none; margin: 0; padding: 0; }
-    li { padding: .3rem 0; display: flex; align-items: baseline; gap: .4rem; min-width: 0; }
     a { color: #61A2FF; text-decoration: none; overflow-wrap: anywhere; word-break: break-word; min-width: 0; }
     a:hover { text-decoration: underline; }
-    .star { color: #FACB3D; margin-right: .1rem; font-size: .88rem; }
-    .memo { color: #6A7FA0; font-size: .88rem; margin-left: .35rem; }
+    .wrap { max-width: 1320px; margin: 0 auto; padding: 0 1.5rem; }
+    header { position: sticky; top: 0; z-index: 10; background: rgba(7, 16, 31, .94); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-bottom: 1px solid #1C2A40; padding: .55rem 0 .5rem; }
+    .top { display: flex; align-items: center; gap: .6rem; }
+    h1 { margin: 0; font-size: .92rem; font-weight: 600; color: #E3E8F2; display: flex; align-items: center; gap: .5rem; white-space: nowrap; }
+    h1 .dot { width: .48rem; height: .48rem; border-radius: 50%; background: #61A2FF; box-shadow: 0 0 0 3px rgba(97, 162, 255, .18); }
+    .search { position: relative; flex: 1; min-width: 0; display: flex; align-items: center; gap: .5rem; background: #0B1628; border: 1px solid #2B394F; border-radius: 7px; padding: 0 .55rem; color: #6A7FA0; }
+    .search:focus-within { border-color: #61A2FF; box-shadow: 0 0 0 1px #61A2FF; }
+    .search input { flex: 1; min-width: 0; background: transparent; border: none; color: #E3E8F2; font-size: .84rem; padding: .36rem 0; font-family: inherit; }
+    .search input:focus { box-shadow: none; }
+    .search kbd { font: 500 .66rem Inter, sans-serif; color: #6A7FA0; border: 1px solid #2B394F; border-radius: 4px; padding: .05rem .38rem; }
+    .ctrls { display: flex; gap: .35rem; align-items: center; }
+    .ctrls select { padding: .32rem .45rem; background: #0B1628; color: #E3E8F2; border: 1px solid #2B394F; border-radius: 6px; font-size: .78rem; font-family: inherit; }
+    .ctrls button { padding: .34rem .7rem; border: none; border-radius: 6px; cursor: pointer; font-size: .78rem; font-family: inherit; white-space: nowrap; }
+    .stats { color: #6A7FA0; font-size: .72rem; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .chip-row { display: flex; align-items: center; gap: .6rem; margin-top: .5rem; min-width: 0; }
+    .chip-label { flex: 0 0 2.6rem; font-size: .72rem; color: #6A7FA0; }
+    .chips { display: flex; gap: .35rem; overflow-x: auto; scrollbar-width: none; min-width: 0; padding: 1px; }
+    .chips::-webkit-scrollbar { display: none; }
+    .chips.dragging { cursor: grabbing; user-select: none; }
+    .chips.dragging .chip { pointer-events: none; }
+    .chip { flex: 0 0 auto; display: inline-flex; align-items: center; gap: .35rem; border: 1px solid #2B394F; background: #0B1628; color: #98A8C3; border-radius: 999px; padding: .26rem .7rem; font-size: .8rem; font-family: inherit; cursor: pointer; }
+    .chip:hover { border-color: #61A2FF; color: #E3E8F2; }
+    .chip[aria-pressed="true"] { background: #61A2FF; border-color: #61A2FF; color: #07101F; font-weight: 500; }
+    .chip .n { font-size: .7rem; opacity: .7; font-variant-numeric: tabular-nums; }
+    .chip-empty { font-size: .76rem; color: #4A5D7A; }
+    .chip-x { display: inline-grid; place-items: center; width: 1rem; height: 1rem; margin: 0 -.35rem 0 -.1rem; border-radius: 50%; font-size: .85rem; line-height: 1; color: #6A7FA0; }
+    .chip-x:hover { background: rgba(246, 114, 106, .18); color: #F6726A; }
+    .chip[aria-pressed="true"] .chip-x { color: #07101F; }
+    @media (hover: hover) {
+      .chip .chip-x { opacity: 0; transition: opacity .12s; }
+      .chip:hover .chip-x, .chip:focus-visible .chip-x { opacity: 1; }
+    }
+    .chip-hidden { border-style: dashed; color: #6A7FA0; }
+    .mh { width: 280px; }
+    .mh-row { display: flex; align-items: center; gap: .5rem; padding: .4rem 0; border-top: 1px solid #1C2A40; }
+    .mh-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #E3E8F2; }
+    .mh-cnt { flex: 0 0 auto; color: #6A7FA0; font-size: .7rem; font-variant-numeric: tabular-nums; }
+    .mh-show { flex: 0 0 auto; padding: .2rem .55rem; border: 1px solid #2B394F; border-radius: 6px; background: transparent; color: #61A2FF; font-size: .72rem; font-family: inherit; cursor: pointer; }
+    .mh-show:hover { border-color: #61A2FF; background: rgba(97, 162, 255, .12); }
+    .mh-empty { padding: .4rem 0 .2rem; color: #6A7FA0; font-size: .75rem; }
+    .toast { position: fixed; left: 50%; bottom: 1.2rem; z-index: 10000; transform: translateX(-50%); max-width: calc(100vw - 32px); padding: .45rem .9rem; background: #13223A; border: 1px solid #2B394F; border-radius: 8px; color: #E3E8F2; font-size: .8rem; box-shadow: 0 3px 10px rgba(0,0,0,.52); opacity: 0; pointer-events: none; transition: opacity .15s; }
+    .toast.show { opacity: 1; }
+    main.wrap { padding-top: .4rem; }
+    section h2 { display: flex; align-items: center; gap: .5rem; margin: 1.3rem 0 .6rem; font-size: .85rem; font-weight: 600; color: #98A8C3; }
+    section h2 .cnt { font-size: .7rem; font-weight: 500; color: #6A7FA0; background: #13223A; border-radius: 999px; padding: .05rem .5rem; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: .55rem; }
+    .card { position: relative; min-width: 0; background: #0B1628; border: 1px solid #1C2A40; border-radius: 10px; transition: border-color .12s, background .12s; }
+    .card:hover, .card.editing { border-color: #61A2FF; background: #0E1B31; }
+    .card-link { display: flex; flex-direction: column; min-width: 0; height: 100%; padding: .65rem 2.3rem .65rem .8rem; color: inherit; }
+    .card-link:hover { text-decoration: none; }
+    .card-link:visited .tt { color: #B9C2D3; }
+    .card-edit { position: absolute; top: .38rem; right: .38rem; width: 1.65rem; height: 1.65rem; display: grid; place-items: center; padding: 0; border: 1px solid transparent; border-radius: 6px; background: transparent; color: #4A5D7A; cursor: pointer; transition: color .12s, background .12s, border-color .12s; }
+    .card:hover .card-edit { color: #98A8C3; }
+    .card-edit:hover, .card-edit[aria-expanded="true"] { color: #E3E8F2; background: #13223A; border-color: #2B394F; }
+    .card-edit:focus-visible { outline: none; border-color: #61A2FF; color: #E3E8F2; }
+    .qe { position: absolute; z-index: 30; width: 300px; max-width: calc(100vw - 16px); padding: .7rem .75rem .55rem; background: #0B1628; color: #CAD3E2; border: 1px solid #2B394F; border-radius: 10px; box-shadow: 0 3px 10px rgba(0,0,0,.52), 0 6px 14px rgba(0,0,0,.28); font-size: .8rem; }
+    .qe[hidden] { display: none; }
+    .qe-title { color: #98A8C3; font-size: .74rem; margin-bottom: .6rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .qe-row { display: flex; align-items: center; gap: .5rem; margin-bottom: .5rem; }
+    .qe-label { flex: 0 0 2rem; color: #6A7FA0; font-size: .72rem; }
+    .qe-star { padding: .05rem .12rem; border: none; background: none; color: #2B394F; font-size: 1.2rem; line-height: 1; cursor: pointer; }
+    .qe-star.on { color: #FACB3D; }
+    .qe-star:hover { color: #FFD966; }
+    .qe-hint { margin-left: auto; color: #4A5D7A; font-size: .68rem; white-space: nowrap; }
+    .qe-row input { flex: 1; min-width: 0; padding: .38rem .5rem; background: #07101F; color: #E3E8F2; border: 1px solid #2B394F; border-radius: 6px; font-size: .8rem; font-family: inherit; }
+    .qe-btn { flex: 0 0 auto; padding: .38rem .65rem; border: none; border-radius: 6px; background: #61A2FF; color: #07101F; font-weight: 500; font-size: .78rem; font-family: inherit; cursor: pointer; }
+    .qe-keys { display: flex; flex-wrap: wrap; gap: .25rem; margin: -.15rem 0 .4rem 2.5rem; }
+    .qe-key { padding: .1rem .5rem; border: 1px solid #2B394F; border-radius: 999px; background: transparent; color: #98A8C3; font-size: .7rem; font-family: inherit; cursor: pointer; }
+    .qe-key:hover { border-color: #61A2FF; color: #E3E8F2; }
+    .qe-key.on { background: #0B3A2E; border-color: #0B3A2E; color: #24C292; }
+    .qe-status { min-height: 1.1em; color: #6A7FA0; font-size: .7rem; text-align: right; }
+    .tt { color: #E3E8F2; font-size: calc(.78rem + 1px); line-height: 1.38; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .hh { color: #6A7FA0; font-size: calc(.74rem + 1px); margin-top: .15rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tags { display: flex; flex-wrap: wrap; gap: .25rem; margin-top: .35rem; }
+    .tag { font-size: calc(.68rem + 1px); line-height: 1.3; padding: .1rem .4rem; border-radius: 4px; background: #13223A; color: #98A8C3; }
+    .tag.star { background: rgba(250, 203, 61, .12); color: #FACB3D; }
+    .tag.memo { background: #0B3A2E; color: #24C292; }
+    .empty { text-align: center; color: #6A7FA0; padding: 3rem 0; }
     .btn-open { background: #61A2FF; color: #07101F; font-weight: 500; }
-    #search-bar { position: sticky; top: 0; background: #07101F; padding: .5rem 0; display: flex; gap: .5rem; align-items: center; z-index: 10; border-bottom: 1px solid #2B394F; margin-bottom: .75rem; }
-    #search-bar input { flex: 1; padding: .4rem .6rem; background: #07101F; color: #E3E8F2; border: 1px solid #2B394F; border-radius: 4px; font-size: 1.04rem; }
-    #search-bar select { padding: .4rem .5rem; background: #07101F; color: #E3E8F2; border: 1px solid #2B394F; border-radius: 4px; font-size: 1.04rem; }
     .site { flex: 0 0 auto; font-size: .7rem; line-height: 1; padding: .18rem .35rem; border-radius: 3px; background: #13223A; color: #98A8C3; white-space: nowrap; align-self: center; }
     .site-topgirl { background: rgba(246, 114, 168, .14); color: #F672A8; }
     .site-sogirl  { background: rgba(97, 162, 255, .14);  color: #61A2FF; }
     .site-123av   { background: rgba(74, 210, 140, .14);  color: #4AD28C; }
     .site-missav  { background: rgba(250, 175, 80, .14);  color: #FAAF50; }
     .site-njav    { background: rgba(176, 140, 255, .14); color: #B08CFF; }
-    #search-bar button { padding: .4rem .8rem; border: none; border-radius: 4px; cursor: pointer; font-size: 1.04rem; }
     .btn-dark  { background: rgba(97, 162, 255, .12); color: #61A2FF; font-weight: 500; }
     .btn-grey  { background: #13223A; color: #CAD3E2; border: 1px solid #2B394F !important; }
     #ziha-mgmt { position: fixed; bottom: 1rem; right: 1rem; z-index: 9999; display: flex; flex-direction: column; align-items: flex-end; gap: .5rem; }
@@ -118,7 +199,7 @@ if (authed) {
     #rank-result .item-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #61A2FF; text-decoration: none; }
     #rank-result .item-title:hover { text-decoration: underline; }
     #rank-result .rank-cnt { flex: 0 0 auto; color: #FACB3D; font-size: .74rem; }
-    #sq-ac { display: none; position: absolute; z-index: 20; margin: 0; padding: .25rem 0; list-style: none; background: #0B1628; border: 1px solid #2B394F; border-radius: 6px; box-shadow: 0 3px 10px rgba(0,0,0,.52), 0 6px 14px rgba(0,0,0,.28); max-height: 50vh; overflow-y: auto; }
+    #sq-ac { display: none; position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 20; margin: 0; padding: .25rem 0; list-style: none; background: #0B1628; border: 1px solid #2B394F; border-radius: 6px; box-shadow: 0 3px 10px rgba(0,0,0,.52), 0 6px 14px rgba(0,0,0,.28); max-height: 50vh; overflow-y: auto; }
     #sq-ac li { display: flex; flex-wrap: nowrap; align-items: baseline; gap: .5rem; padding: .4rem .7rem; cursor: pointer; }
     #sq-ac li.on, #sq-ac li:hover { background: #13223A; }
     #sq-ac .ac-kind { flex: 0 0 auto; font-size: .72rem; line-height: 1.4; padding: 0 .35rem; border-radius: 3px; }
@@ -128,16 +209,18 @@ if (authed) {
     #sq-ac .ac-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #E3E8F2; }
     #sq-ac .ac-cnt { flex: 0 0 auto; color: #6A7FA0; font-size: .78rem; }
     @media (max-width: 640px) {
-      body { padding: .75rem .85rem 5.5rem; font-size: 1rem; }
-      li { align-items: flex-start; flex-wrap: wrap; gap: .18rem .35rem; }
-      li a { flex: 1 1 0; }
-      .star { flex: 0 0 auto; line-height: 1.5; }
-      .site { align-self: flex-start; margin-top: .2rem; }
-      .memo { flex: 1 0 100%; margin-left: 0; padding-left: 0; overflow-wrap: anywhere; }
-      #search-bar { flex-wrap: wrap; gap: .4rem; padding: .5rem 0; }
-      #search-bar input { flex: 1 1 100%; width: 100%; min-width: 0; }
-      #search-bar select { flex: 1 1 100%; width: 100%; min-width: 0; }
-      #search-bar button { flex: 1 1 calc(33.333% - .4rem); min-width: 0; padding: .45rem .35rem; white-space: nowrap; }
+      body { padding: 0 0 5.5rem; font-size: 1rem; }
+      .wrap { padding: 0 .85rem; }
+      header { position: static; padding-top: .65rem; }
+      .top { flex-wrap: wrap; gap: .5rem; }
+      h1 { flex: 1 1 auto; }
+      .stats { order: 2; }
+      .search { order: 3; flex: 1 1 100%; }
+      .search kbd { display: none; }
+      .ctrls { order: 4; flex: 1 1 100%; }
+      .ctrls select, .ctrls button { flex: 1 1 0; min-width: 0; padding: .34rem .3rem; }
+      .chip-label { flex-basis: 2.2rem; }
+      .grid { grid-template-columns: 1fr; gap: .45rem; }
       #ziha-mgmt { left: .75rem; right: .75rem; bottom: .75rem; align-items: flex-end; pointer-events: none; }
       #ziha-toggle, #ziha-panel { pointer-events: auto; }
       #ziha-panel { width: 100%; max-width: none; max-height: calc(100vh - 6rem); overflow-y: auto; padding: .85rem; }
@@ -156,30 +239,77 @@ if (authed) {
   </style>
 </head>
 <body>
-  <div id="search-bar">
-    <input type="text" id="sq" placeholder="제목·배우·메모 검색" autocomplete="off" />
-    <select id="sstar">
-      <option value="">★ 전체</option>
-      <option value="1_gte">★ 이상</option>
-      <option value="2_gte">★★ 이상</option>
-      <option value="3_gte">★★★</option>
-      <option value="1_eq">★ 정확히</option>
-      <option value="2_eq">★★ 정확히</option>
-      <option value="3_eq">★★★ 정확히</option>
-    </select>
-    <select id="ssite">
-      <option value="">사이트 전체</option>
-      ${siteOptions}
-    </select>
-    <button class="btn-dark" id="sbtn">검색</button>
-    <button class="btn-open" id="sbtn-open">열기</button>
-    <button class="btn-grey" id="sbtn-reset">초기화</button>
-    <ul id="sq-ac" role="listbox"></ul>
-  </div>
+  <header>
+    <div class="wrap">
+      <div class="top">
+        <h1><span class="dot"></span>북마크</h1>
+        <div class="search">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+          <input type="search" id="sq" placeholder="제목·배우·메모 검색 (&& 로 AND)" autocomplete="off" />
+          <kbd>/</kbd>
+          <ul id="sq-ac" role="listbox"></ul>
+        </div>
+        <div class="ctrls">
+          <select id="sstar" aria-label="별점">
+            <option value="">★ 전체</option>
+            <option value="1_gte">★ 이상</option>
+            <option value="2_gte">★★ 이상</option>
+            <option value="3_gte">★★★</option>
+            <option value="1_eq">★ 정확히</option>
+            <option value="2_eq">★★ 정확히</option>
+            <option value="3_eq">★★★ 정확히</option>
+          </select>
+          <select id="sgroup" aria-label="분류">
+            <option value="sort">정렬순</option>
+            <option value="site">사이트별</option>
+            <option value="memo">메모별</option>
+          </select>
+          <button class="btn-open" id="sbtn-open">열기</button>
+          <button class="btn-grey" id="sbtn-reset">초기화</button>
+        </div>
+        <div class="stats" id="stats"></div>
+      </div>
+      <div class="chip-row"><span class="chip-label">메모</span><div class="chips" id="chips-memo"></div></div>
+      <div class="chip-row"><span class="chip-label">사이트</span><div class="chips" id="chips-site"></div></div>
+      <div class="chip-row"><span class="chip-label">배우</span><div class="chips" id="chips-actor"></div></div>
+    </div>
+  </header>
 
-  <ul id="bm-list">
-    ${items}
-  </ul>
+  <main class="wrap">
+    <div id="bm-list"></div>
+    <div class="empty" id="empty" style="display:none;">검색 결과가 없습니다</div>
+  </main>
+  <script id="bm-data" type="application/json">${dataJson}</script>
+  <script id="hidden-memos" type="application/json">${hiddenJson}</script>
+  <script id="hidden-actors" type="application/json">${hiddenActorsJson}</script>
+
+  <div class="qe mh" id="mh" role="dialog" aria-label="숨긴 메모" hidden>
+    <div class="qe-title" id="mh-head" title="북마크의 메모 값은 그대로 유지돼요">상단에서 숨긴 메모</div>
+    <div id="mh-list"></div>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <div class="qe" id="qe" role="dialog" aria-label="메모·별 편집" hidden>
+    <div class="qe-row">
+      <span class="qe-label">제목</span>
+      <input type="text" id="qe-title" placeholder="제목" autocomplete="off" />
+      <button class="qe-btn" type="button" id="qe-title-save">저장</button>
+    </div>
+    <div class="qe-row">
+      <span class="qe-label">별</span>
+      <button class="qe-star" type="button" data-star="1" aria-label="별 1개">★</button>
+      <button class="qe-star" type="button" data-star="2" aria-label="별 2개">★</button>
+      <button class="qe-star" type="button" data-star="3" aria-label="별 3개">★</button>
+      <span class="qe-hint">다시 누르면 해제</span>
+    </div>
+    <div class="qe-row">
+      <span class="qe-label">메모</span>
+      <input type="text" id="qe-memo" maxlength="100" placeholder="여러 개는 | 로 구분" title="Enter 로 저장 · 비우고 저장하면 메모 삭제" autocomplete="off" />
+      <button class="qe-btn" type="button" id="qe-save">저장</button>
+    </div>
+    <div class="qe-keys" id="qe-keys"></div>
+    <div class="qe-status" id="qe-status"></div>
+  </div>
 
   <div id="ziha-mgmt">
     <div id="ziha-panel">
@@ -192,7 +322,7 @@ if (authed) {
       <div class="panel-section active" id="tab-add">
         <input type="text" id="p-title" placeholder="제목" />
         <input type="text" id="p-url"   placeholder="URL (사이트 태그는 도메인으로 자동 저장, 제목의 사이트명은 자동 제거)" />
-        <input type="text" id="p-memo"  placeholder="메모 (선택, 최대 100자)" maxlength="100" />
+        <input type="text" id="p-memo"  placeholder="메모 (선택, 여러 개는 | 로 구분, 최대 100자)" maxlength="100" />
         <select id="p-star">
           <option value="0">별 없음</option>
           <option value="1">★</option>
@@ -223,7 +353,7 @@ if (authed) {
           <input type="hidden" id="pe-id" />
           <input type="text"   id="pe-title" placeholder="제목" />
           <input type="text"   id="pe-url"   placeholder="URL" />
-          <input type="text"   id="pe-memo"  placeholder="메모 (선택, 최대 100자)" maxlength="100" />
+          <input type="text"   id="pe-memo"  placeholder="메모 (선택, 여러 개는 | 로 구분, 최대 100자)" maxlength="100" />
           <div style="display:flex;gap:.4rem;">
             <select id="pe-star" style="flex:1;">
               <option value="0">별 없음</option>
@@ -376,35 +506,462 @@ if (authed) {
       }
     }
 
-    // 메인 검색
-    async function mainSearch() {
-      const q    = document.getElementById('sq').value.trim();
-      const { star, star_op } = parseStarParam(document.getElementById('sstar').value);
-      const site = document.getElementById('ssite').value;
-      const p = new URLSearchParams();
-      if (q)       p.set('q', q);
-      if (star)    p.set('star', star);
-      if (star_op) p.set('star_op', star_op);
-      if (site)    p.set('site', site);
-      const { rows } = await fetch('/api/ziha-bookmarks?' + p).then(r => r.json());
-      document.getElementById('bm-list').innerHTML = rows.length
-        ? rows.map(r => '<li>' + (r.star > 0 ? '<span class="star">' + '★'.repeat(r.star) + '</span>' : '') + '<a href="' + esc(r.url) + '" target="_blank" rel="noopener">' + esc(r.title) + '</a>' + siteBadge(r.site) + (r.memo ? '<span class="memo">' + esc(r.memo) + '</span>' : '') + '</li>').join('')
-        : '<li style="color:#6A7FA0;">결과 없음</li>';
+    // ── 메인 목록: 서버가 심어 둔 전체 북마크를 필터·분류해서 카드로 그린다 ──
+    var ALL = JSON.parse(document.getElementById('bm-data').textContent || '[]');
+    var SITE_KEYS = Object.keys(SITE_LABELS);
+    var SORT_LABELS = { '0': '고정', '1': '즐겨찾기', '2': '기본' };
+    var state = { q: '', star: '', site: '', memo: '', actor: [], group: 'sort' }; // actor 는 여러 명 선택(OR)
+    var current = [];
+    var listEl = document.getElementById('bm-list');
+
+    function fullUrl(u) { u = String(u || ''); return u.indexOf('://') === -1 ? 'https://' + u : u; }
+    function hostOf(u) { try { return new URL(fullUrl(u)).host; } catch (e) { return String(u || ''); } }
+    function memoOf(r) { return String(r.memo || '').trim(); }
+    // 메모는 '|' 로 여러 키워드를 담는다 (예: "학생|학교|선생") — 칩·필터·태그·분류는 키워드 단위로 본다.
+    function splitMemo(s) {
+      var out = [];
+      String(s || '').split('|').forEach(function (t) { t = t.trim(); if (t && out.indexOf(t) === -1) out.push(t); });
+      return out;
+    }
+    function memosOf(r) { return splitMemo(r.memo); }
+    function displayTitle(t) { var s = String(t || '').split('🔳').join('').trim(); return s || String(t || ''); }
+
+    // 검색어는 API 와 같은 규칙: '&&' 로 나누면 AND, 각 단어는 제목·메모에서 찾는다.
+    function matches(r) {
+      if (state.q) {
+        var terms = state.q.indexOf('&&') !== -1 ? state.q.split('&&') : [state.q];
+        var hay = (String(r.title || '') + ' ' + memoOf(r)).toLowerCase();
+        for (var i = 0; i < terms.length; i++) {
+          var t = terms[i].trim().toLowerCase();
+          if (t && hay.indexOf(t) === -1) return false;
+        }
+      }
+      if (state.star) {
+        var p = state.star.split('_'), n = Number(p[0]);
+        if (p[1] === 'eq' ? r.star !== n : r.star < n) return false;
+      }
+      if (state.site && (state.site === 'none' ? !!r.site : r.site !== state.site)) return false;
+      if (state.memo && memosOf(r).indexOf(state.memo) === -1) return false;
+      if (state.actor.length) { // 고른 배우 중 한 명이라도 제목에 있으면 보인다
+        var nt = normTitle(r.title);
+        if (!state.actor.some(function (a) { return nt.indexOf(a) !== -1; })) return false;
+      }
+      return true;
     }
 
-    document.getElementById('sbtn').addEventListener('click', mainSearch);
-    // 검색 자동완성: 배우이름·메모·제목 (첫 포커스 때 전체 목록을 한 번 받아 둔다)
+    // 섹션 안 순서는 항상 서버 정렬(sort 그룹 → 최근 등록순)을 그대로 따른다.
+    function groupsOf(rows) {
+      var order = [], map = {};
+      function add(k, label, r) {
+        if (!map[k]) { map[k] = { label: label, rows: [] }; order.push(k); }
+        map[k].rows.push(r);
+      }
+      if (state.group === 'site') {
+        rows.forEach(function (r) { add(r.site || '~', r.site ? (SITE_LABELS[r.site] || r.site) : '기타', r); });
+        var idx = function (k) { var i = SITE_KEYS.indexOf(k); return i === -1 ? 999 : i; };
+        order.sort(function (a, b) { return idx(a) - idx(b); });
+      } else if (state.group === 'memo') {
+        rows.forEach(function (r) {
+          var ms = memosOf(r);
+          if (!ms.length) add('~', '메모 없음', r);
+          ms.forEach(function (m) { add(m, m, r); }); // 키워드가 여러 개면 각 섹션에 모두 보인다
+        });
+        order.sort(function (a, b) {
+          if (a === '~' || b === '~') return a === '~' ? 1 : -1;
+          return map[b].rows.length - map[a].rows.length;
+        });
+      } else {
+        rows.forEach(function (r) { var k = r.sort === 0 ? '0' : r.sort === 1 ? '1' : '2'; add(k, SORT_LABELS[k], r); });
+        order.sort();
+      }
+      return order.map(function (k) { return map[k]; });
+    }
+
+    function cardHtml(r) {
+      var host = hostOf(r.url);
+      var tags = '';
+      if (r.star > 0) tags += '<span class="tag star">' + '★'.repeat(r.star) + '</span>';
+      if (r.site) tags += '<span class="tag site-' + esc(r.site) + '">' + esc(SITE_LABELS[r.site] || r.site) + '</span>';
+      memosOf(r).forEach(function (m) { tags += '<span class="tag memo">' + esc(m) + '</span>'; });
+      // 링크 안에 버튼을 넣을 수 없어서 카드 = 링크 + 편집 버튼(형제)으로 나눈다.
+      return '<div class="card" data-id="' + r.id + '">' +
+        '<a class="card-link" href="' + esc(fullUrl(r.url)) + '" target="_blank" rel="noopener" title="' + esc(r.url) + '">' +
+        '<span class="tt">' + esc(displayTitle(r.title)) + '</span>' +
+        (r.site ? '' : '<span class="hh">' + esc(host) + '</span>') + // 사이트 태그가 있으면 도메인은 중복이라 숨긴다
+        (tags ? '<span class="tags">' + tags + '</span>' : '') + '</a>' +
+        '<button class="card-edit" type="button" data-id="' + r.id + '" aria-label="메모·별 편집" title="메모·별 편집" aria-expanded="false">' +
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>' +
+        '</button></div>';
+    }
+
+    function syncChips() {
+      document.querySelectorAll('.chip[data-kind]').forEach(function (c) {
+        var v = state[c.dataset.kind];
+        c.setAttribute('aria-pressed', String(Array.isArray(v) ? (c.dataset.k ? v.indexOf(c.dataset.k) !== -1 : !v.length) : v === c.dataset.k));
+      });
+    }
+
+    function render() {
+      qeClose();
+      current = ALL.filter(matches);
+      listEl.innerHTML = groupsOf(current).map(function (g) {
+        return '<section><h2>' + esc(g.label) + '<span class="cnt">' + g.rows.length + '</span></h2>' +
+          '<div class="grid">' + g.rows.map(cardHtml).join('') + '</div></section>';
+      }).join('');
+      document.getElementById('empty').style.display = current.length ? 'none' : 'block';
+      document.getElementById('stats').textContent = current.length + ' / ' + ALL.length + '개';
+      syncChips();
+    }
+
+    // ── 카드 빠른 편집 팝업: 별·메모를 바로 저장한다 ──
+    var qe = document.getElementById('qe');
+    var qeMemo = document.getElementById('qe-memo');
+    var qeTitle = document.getElementById('qe-title');
+    var qeRow = null, qeBtn = null, qeTimer = null;
+    function qeStatus(t, kind) {
+      var el = document.getElementById('qe-status');
+      el.textContent = t;
+      el.style.color = kind === 'ok' ? '#24C292' : kind === 'err' ? '#F6726A' : '#6A7FA0';
+      clearTimeout(qeTimer);
+      if (kind === 'ok') qeTimer = setTimeout(function () { el.textContent = ''; }, 1800);
+    }
+    function qeFill() {
+      var r = qeRow;
+      qe.querySelectorAll('.qe-star').forEach(function (b) {
+        b.classList.toggle('on', Number(b.dataset.star) <= (r.star || 0));
+      });
+      // 이 카드의 키워드는 항상 먼저(켜진 상태로) 보여 주고, 나머지는 많이 쓰는 순으로 채운다
+      var mine = memosOf(r);
+      var memos = mine.map(function (k) { return [k]; })
+        .concat(countMemos().filter(function (e) { return mine.indexOf(e[0]) === -1; }))
+        .slice(0, Math.max(8, mine.length));
+      document.getElementById('qe-keys').innerHTML = memos.map(function (e) {
+        return '<button class="qe-key' + (mine.indexOf(e[0]) !== -1 ? ' on' : '') + '" type="button" data-memo="' + esc(e[0]) + '">' + esc(e[0]) + '</button>';
+      }).join('');
+    }
+    function qePlace() {
+      if (!qeRow || !qeBtn) return;
+      var b = qeBtn.getBoundingClientRect();
+      var vw = document.documentElement.clientWidth;
+      var w = qe.offsetWidth;
+      var left = Math.min(Math.max(8, b.right - w), vw - w - 8);
+      qe.style.left = (left + window.scrollX) + 'px';
+      qe.style.top = (b.bottom + 6 + window.scrollY) + 'px';
+    }
+    function qeOpen(btn) {
+      var id = Number(btn.dataset.id);
+      qeRow = ALL.find(function (x) { return x.id === id; }) || null;
+      if (!qeRow) return;
+      qeBtn = btn;
+      btn.setAttribute('aria-expanded', 'true');
+      btn.closest('.card').classList.add('editing');
+      qeMemo.value = memoOf(qeRow);
+      qeTitle.value = String(qeRow.title || '');
+      qeStatus('');
+      qeFill();
+      qe.hidden = false;
+      qePlace();
+    }
+    function qeClose() {
+      if (qeBtn) {
+        qeBtn.setAttribute('aria-expanded', 'false');
+        var c = qeBtn.closest('.card');
+        if (c) c.classList.remove('editing');
+      }
+      qeRow = null; qeBtn = null;
+      if (qe) qe.hidden = true;
+    }
+    // 저장 후에는 목록 전체를 다시 그리지 않고 해당 카드와 칩만 바꾼다(팝업이 그대로 열려 있도록).
+    function qeRefreshCard() {
+      var old = listEl.querySelector('.card[data-id="' + qeRow.id + '"]');
+      if (!old) return;
+      old.outerHTML = cardHtml(qeRow);
+      var card = listEl.querySelector('.card[data-id="' + qeRow.id + '"]');
+      card.classList.add('editing');
+      qeBtn = card.querySelector('.card-edit');
+      qeBtn.setAttribute('aria-expanded', 'true');
+    }
+    async function qeSave(patch) {
+      var r = qeRow;
+      if (!r) return;
+      qeStatus('저장 중…');
+      try {
+        var res = await fetch('/api/ziha-bookmarks', {
+          method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(Object.assign({ id: r.id }, patch)),
+        });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        if ('star' in patch) r.star = patch.star;
+        var saved = ('memo' in patch || 'title' in patch) ? await res.json().catch(function () { return {}; }) : {};
+        if ('memo' in patch) r.memo = 'memo' in saved ? saved.memo : (splitMemo(patch.memo).join('|') || null); // 서버가 정리한 최종 메모
+        if ('title' in patch) {
+          r.title = saved.title || patch.title.trim(); // 서버가 사이트명을 지운 최종 제목
+        }
+        acData = null; // 자동완성의 메모 목록도 다시 만든다
+        if (qeRow !== r) return; // 저장 중에 다른 카드로 바뀌었으면 화면만 건너뛴다
+        qeRefreshCard();
+        buildChips();
+        syncChips();
+        if ('memo' in patch) qeMemo.value = memoOf(r); // 다른 칸에 입력 중인 내용은 건드리지 않는다
+        if ('title' in patch) qeTitle.value = r.title;
+        qeFill();
+        qePlace();
+        qeStatus('저장됨', 'ok');
+      } catch (e) {
+        qeStatus('저장 실패', 'err');
+      }
+    }
+    listEl.addEventListener('click', function (e) {
+      var btn = e.target.closest('.card-edit');
+      if (!btn) return;
+      e.preventDefault();
+      e.stopPropagation();
+      var same = qeBtn === btn;
+      qeClose();
+      if (!same) qeOpen(btn);
+    });
+    qe.addEventListener('click', function (e) {
+      var star = e.target.closest('.qe-star');
+      if (star && qeRow) {
+        var n = Number(star.dataset.star);
+        qeSave({ star: qeRow.star === n ? 0 : n }); // 같은 별을 다시 누르면 해제
+        return;
+      }
+      var key = e.target.closest('.qe-key');
+      if (key && qeRow) {
+        // 키워드 칩은 켜고 끄기: 없으면 '|' 로 덧붙이고, 있으면 그 키워드만 뺀다
+        var cur = memosOf(qeRow), k = key.dataset.memo, at = cur.indexOf(k);
+        if (at === -1) cur.push(k); else cur.splice(at, 1);
+        var m = cur.join('|');
+        qeMemo.value = m;
+        qeSave({ memo: m });
+      }
+    });
+    document.getElementById('qe-save').addEventListener('click', function () { qeSave({ memo: qeMemo.value }); });
+    function qeSaveTitle() {
+      var t = qeTitle.value.trim();
+      if (!t) { qeStatus('제목을 입력하세요', 'err'); return; }
+      if (qeRow && t === qeRow.title) { qeStatus('변경 없음'); return; }
+      qeSave({ title: t });
+    }
+    document.getElementById('qe-title-save').addEventListener('click', qeSaveTitle);
+    qeTitle.addEventListener('keydown', function (e) {
+      if (e.isComposing || e.keyCode === 229) return;
+      if (e.key === 'Enter') { e.preventDefault(); qeSaveTitle(); }
+    });
+    qeMemo.addEventListener('keydown', function (e) {
+      if (e.isComposing || e.keyCode === 229) return;
+      if (e.key === 'Enter') { e.preventDefault(); qeSave({ memo: qeMemo.value }); }
+    });
+    document.addEventListener('mousedown', function (e) {
+      if (qe.hidden) return;
+      if (qe.contains(e.target) || e.target.closest('.card-edit')) return;
+      qeClose();
+    });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !qe.hidden) qeClose(); });
+    window.addEventListener('resize', qePlace);
+
+    // 칩: 메모 키워드 · 사이트 · 배우. 개수는 전체 기준.
+    var HIDE_TITLE = { memo: '상단에서 숨기기 (메모 값은 유지)', actor: '상단에서 숨기기 (다음 순위 배우가 채워짐)' };
+    function chip(kind, key, label, n, removable) {
+      return '<button class="chip" type="button" data-kind="' + kind + '" data-k="' + esc(key) + '">' +
+        esc(label) + (n != null ? '<span class="n">' + n + '</span>' : '') +
+        (removable ? '<span class="chip-x" data-hide="' + esc(key) + '" title="' + HIDE_TITLE[kind] + '" aria-label="상단에서 숨기기">×</span>' : '') +
+        '</button>';
+    }
+    // 상단 칩에서 숨긴 메모·배우 (DB: ziha_hidden_memos / ziha_hidden_actors). 북마크 값은 그대로다.
+    var HIDDEN = {
+      memo: JSON.parse(document.getElementById('hidden-memos').textContent || '[]'),
+      actor: JSON.parse(document.getElementById('hidden-actors').textContent || '[]'),
+    };
+    var HIDDEN_LABEL = { memo: '메모', actor: '배우' };
+    function isHidden(kind, v) { return HIDDEN[kind].indexOf(v) !== -1; }
+    // 메모 키워드별 북마크 수 → [[키워드, 개수], ...] (많은 순)
+    function countMemos() {
+      var c = {};
+      ALL.forEach(function (r) { memosOf(r).forEach(function (k) { c[k] = (c[k] || 0) + 1; }); });
+      return Object.keys(c).map(function (k) { return [k, c[k]]; }).sort(function (a, b) { return b[1] - a[1] || a[0].localeCompare(b[0]); });
+    }
+    // 배우: 제목에서 뽑은 이름 후보마다 '제목에 그 이름이 들어간 북마크 수'를 센다 → 칩 숫자 = 눌렀을 때 나오는 개수.
+    // ⚙️ 순위 탭과 같은 규칙으로, 메모에 '은퇴'가 있는 북마크의 배우는 뺀다.
+    function normTitle(t) { return String(t || '').replace(/\\s+/g, ' '); }
+    var actorCache = null;
+    function countActors() {
+      if (actorCache) return actorCache;
+      var names = {};
+      ALL.forEach(function (r) { extractNames(r.title).forEach(function (n) { names[n] = 1; }); });
+      var titles = ALL.map(function (r) { return normTitle(r.title); });
+      var retired = ALL.filter(function (r) { return memoOf(r).indexOf('은퇴') !== -1; }).map(function (r) { return normTitle(r.title); });
+      actorCache = Object.keys(names)
+        .filter(function (n) { return !retired.some(function (t) { return t.indexOf(n) !== -1; }); })
+        .map(function (n) { return [n, titles.filter(function (t) { return t.indexOf(n) !== -1; }).length]; })
+        .sort(function (a, b) { return b[1] - a[1] || a[0].localeCompare(b[0]); });
+      return actorCache;
+    }
+    var ACTOR_TOP = 40;
+    function hiddenBtn(kind) {
+      return HIDDEN[kind].length
+        ? '<button class="chip chip-hidden" type="button" data-hk="' + kind + '" aria-expanded="false">숨김<span class="n">' + HIDDEN[kind].length + '</span></button>'
+        : '';
+    }
+    function buildChips() {
+      var memos = countMemos().filter(function (e) { return !isHidden('memo', e[0]); });
+      document.getElementById('chips-memo').innerHTML = (memos.length
+        ? chip('memo', '', '전체', ALL.length) + memos.map(function (e) { return chip('memo', e[0], e[0], e[1], true); }).join('')
+        : '<span class="chip-empty">' + (HIDDEN.memo.length ? '노출 중인 메모가 없습니다' : '메모가 있는 북마크가 없습니다') + '</span>') + hiddenBtn('memo');
+      var siteCount = {}, none = 0;
+      ALL.forEach(function (r) { if (r.site) siteCount[r.site] = (siteCount[r.site] || 0) + 1; else none++; });
+      document.getElementById('chips-site').innerHTML = chip('site', '', '전체', ALL.length) +
+        SITE_KEYS.filter(function (k) { return siteCount[k]; }).map(function (k) { return chip('site', k, SITE_LABELS[k], siteCount[k]); }).join('') +
+        (none ? chip('site', 'none', '기타', none) : '');
+      // 숨긴 배우를 빼고 TOP 40 → 숨기면 41위가 올라와 40명을 채운다.
+      var actors = countActors().filter(function (e) { return !isHidden('actor', e[0]); }).slice(0, ACTOR_TOP);
+      document.getElementById('chips-actor').innerHTML = (actors.length
+        ? chip('actor', '', '전체', null) + actors.map(function (e) { return chip('actor', e[0], e[0], e[1], true); }).join('')
+        : '<span class="chip-empty">노출할 배우가 없습니다</span>') + hiddenBtn('actor');
+    }
+    var toastTimer = null;
+    function toast(t) {
+      var el = document.getElementById('toast');
+      el.textContent = t;
+      el.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(function () { el.classList.remove('show'); }, 2200);
+    }
+    async function setHidden(kind, v, hide) {
+      try {
+        var res = await fetch('/api/ziha-hidden-memos', {
+          method: hide ? 'POST' : 'DELETE', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ kind: kind, memo: v }),
+        });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+      } catch (e) {
+        toast(hide ? '숨기기 실패' : '다시 표시 실패');
+        return;
+      }
+      if (hide) { if (!isHidden(kind, v)) HIDDEN[kind].push(v); }
+      else HIDDEN[kind] = HIDDEN[kind].filter(function (m) { return m !== v; });
+      toast(hide ? '‘' + v + '’ 상단에서 숨김' : '‘' + v + '’ 다시 표시');
+      buildChips();
+      if (hide && kind === 'actor' && state.actor.indexOf(v) !== -1) { state.actor = state.actor.filter(function (a) { return a !== v; }); render(); } // 숨긴 칩으로 걸린 필터는 푼다
+      else if (hide && state[kind] === v) { state[kind] = ''; render(); }
+      else syncChips();
+      if (!mh.hidden && mhKind === kind) {
+        if (HIDDEN[kind].length) mhOpen(kind); else mhClose();
+      }
+    }
+
+    // 숨긴 메모·배우 관리 팝업 (한 번에 한 종류만 연다)
+    var mh = document.getElementById('mh');
+    var mhKind = 'memo';
+    function mhBtn(kind) { return document.querySelector('.chip-hidden[data-hk="' + kind + '"]'); }
+    function mhFill(kind) {
+      var cnt = {};
+      if (kind === 'memo') ALL.forEach(function (r) { memosOf(r).forEach(function (m) { cnt[m] = (cnt[m] || 0) + 1; }); });
+      else countActors().forEach(function (e) { cnt[e[0]] = e[1]; });
+      document.getElementById('mh-head').textContent = '상단에서 숨긴 ' + HIDDEN_LABEL[kind];
+      document.getElementById('mh-head').title = kind === 'memo' ? '북마크의 메모 값은 그대로 유지돼요' : '다시 표시하면 순위에 맞춰 돌아와요';
+      mh.setAttribute('aria-label', '숨긴 ' + HIDDEN_LABEL[kind]);
+      document.getElementById('mh-list').innerHTML = HIDDEN[kind].length
+        ? HIDDEN[kind].map(function (m) {
+            return '<div class="mh-row"><span class="mh-name" title="' + esc(m) + '">' + esc(m) + '</span>' +
+              '<span class="mh-cnt">' + (cnt[m] || 0) + '개</span>' +
+              '<button class="mh-show" type="button" data-show="' + esc(m) + '">다시 표시</button></div>';
+          }).join('')
+        : '<div class="mh-empty">숨긴 ' + HIDDEN_LABEL[kind] + '가 없습니다</div>';
+    }
+    function mhOpen(kind) {
+      var btn = mhBtn(kind);
+      if (!btn) { mhClose(); return; }
+      if (mhKind !== kind) { var old = mhBtn(mhKind); if (old) old.setAttribute('aria-expanded', 'false'); }
+      mhKind = kind;
+      btn.setAttribute('aria-expanded', 'true');
+      mhFill(kind);
+      mh.hidden = false;
+      var b = btn.getBoundingClientRect();
+      var vw = document.documentElement.clientWidth, w = mh.offsetWidth;
+      var left = Math.min(Math.max(8, b.left), vw - w - 8);
+      mh.style.left = (left + window.scrollX) + 'px';
+      mh.style.top = (b.bottom + 6 + window.scrollY) + 'px';
+    }
+    function mhClose() {
+      mh.hidden = true;
+      var btn = mhBtn(mhKind);
+      if (btn) btn.setAttribute('aria-expanded', 'false');
+    }
+    mh.addEventListener('click', function (e) {
+      var b = e.target.closest('.mh-show');
+      if (b) setHidden(mhKind, b.dataset.show, false);
+    });
+    document.addEventListener('mousedown', function (e) {
+      if (mh.hidden) return;
+      if (mh.contains(e.target) || e.target.closest('.chip-hidden')) return;
+      mhClose();
+    });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !mh.hidden) mhClose(); });
+    window.addEventListener('resize', function () { if (!mh.hidden) mhOpen(mhKind); });
+
+    document.querySelector('header').addEventListener('click', function (e) {
+      var x = e.target.closest('.chip-x');
+      if (x) { e.preventDefault(); e.stopPropagation(); setHidden(x.closest('.chip').dataset.kind, x.dataset.hide, true); return; }
+      var hb = e.target.closest('.chip-hidden');
+      if (hb) { var hk = hb.dataset.hk; if (mh.hidden || mhKind !== hk) mhOpen(hk); else mhClose(); return; }
+      var c = e.target.closest('.chip');
+      if (!c) return;
+      var k = c.dataset.kind, v = c.dataset.k;
+      if (k === 'actor') { // 배우는 여러 명: 누르면 추가, 다시 누르면 빼기, '전체'는 모두 해제
+        if (!v) state.actor = [];
+        else if (state.actor.indexOf(v) !== -1) state.actor = state.actor.filter(function (a) { return a !== v; });
+        else state.actor = state.actor.concat(v);
+      } else state[k] = (v && state[k] === v) ? '' : v; // 켜진 칩을 다시 누르면 해제
+      render();
+    });
+
+    // 칩 줄 가로 스크롤: 스크롤바를 숨겨 둬서 마우스 휠(세로)을 가로로 바꾸고, 끌어서도 넘길 수 있게 한다.
+    document.querySelectorAll('.chips').forEach(function (el) {
+      el.addEventListener('wheel', function (e) {
+        if (el.scrollWidth <= el.clientWidth || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return; // 트랙패드 가로 스와이프는 그대로
+        var max = el.scrollWidth - el.clientWidth;
+        if ((e.deltaY < 0 && el.scrollLeft <= 0) || (e.deltaY > 0 && el.scrollLeft >= max - 1)) return; // 끝이면 페이지 스크롤로 넘긴다
+        e.preventDefault();
+        el.scrollLeft += e.deltaY;
+      }, { passive: false });
+      var drag = null, eatClick = false;
+      // 끌기가 끝난 직후 이어지는 click 은 칩 선택으로 치지 않는다
+      el.addEventListener('click', function (ev) { if (eatClick) { ev.stopPropagation(); ev.preventDefault(); } }, true);
+      el.addEventListener('pointerdown', function (e) {
+        if (e.pointerType !== 'mouse' || e.button !== 0 || el.scrollWidth <= el.clientWidth) return;
+        drag = { x: e.clientX, left: el.scrollLeft, moved: false, id: e.pointerId };
+      });
+      el.addEventListener('pointermove', function (e) {
+        if (!drag || e.pointerId !== drag.id) return;
+        var dx = e.clientX - drag.x;
+        if (!drag.moved && Math.abs(dx) < 5) return; // 살짝 흔들린 건 클릭으로 본다
+        if (!drag.moved) { drag.moved = true; el.classList.add('dragging'); el.setPointerCapture(drag.id); }
+        el.scrollLeft = drag.left - dx;
+      });
+      function endDrag() {
+        if (!drag) return;
+        if (drag.moved) {
+          eatClick = true;
+          setTimeout(function () { eatClick = false; el.classList.remove('dragging'); }, 0);
+        }
+        drag = null;
+      }
+      el.addEventListener('pointerup', endDrag);
+      el.addEventListener('pointercancel', endDrag);
+    });
+
+    // 검색 자동완성: 배우이름·메모·제목
     var acData = null, acItems = [], acIdx = -1;
     var sqEl = document.getElementById('sq');
     var acBox = document.getElementById('sq-ac');
-    async function loadAc() {
+    function loadAc() {
       if (acData) return acData;
-      var res = await fetch('/api/ziha-bookmarks').then(function (r) { return r.json(); });
       var names = {}, memos = {}, titles = {};
-      (res.rows || []).forEach(function (r) {
+      ALL.forEach(function (r) {
         extractNames(r.title).forEach(function (n) { names[n] = (names[n] || 0) + 1; });
-        var m = String(r.memo || '').trim();
-        if (m) memos[m] = (memos[m] || 0) + 1;
+        memosOf(r).forEach(function (m) { memos[m] = (memos[m] || 0) + 1; });
         var t = String(r.title || '').trim();
         if (t) titles[t] = 1;
       });
@@ -423,18 +980,14 @@ if (authed) {
           '<span class="ac-text">' + esc(it.text) + '</span>' +
           (it.cnt ? '<span class="ac-cnt">' + it.cnt + '</span>' : '') + '</li>';
       }).join('');
-      acBox.style.left = sqEl.offsetLeft + 'px';
-      acBox.style.top = (sqEl.offsetTop + sqEl.offsetHeight + 2) + 'px';
-      acBox.style.width = sqEl.offsetWidth + 'px';
       acBox.style.display = 'block';
       var on = acBox.querySelector('li.on');
       if (on) on.scrollIntoView({ block: 'nearest' });
     }
-    async function acUpdate() {
+    function acUpdate() {
       var q = sqEl.value.trim().toLowerCase();
       if (!q) { acClose(); return; }
-      var d = await loadAc();
-      if (sqEl.value.trim().toLowerCase() !== q) return; // 기다리는 사이 입력이 바뀌었으면 버린다
+      var d = loadAc();
       var hit = function (s) { return s.toLowerCase().indexOf(q) !== -1; };
       var out = [];
       d.names.filter(function (e) { return hit(e[0]); }).slice(0, 5)
@@ -449,11 +1002,17 @@ if (authed) {
       var it = acItems[i];
       if (!it) return;
       sqEl.value = it.text;
+      state.q = it.text;
       acClose();
-      mainSearch();
+      render();
     }
-    sqEl.addEventListener('input', acUpdate);
-    sqEl.addEventListener('focus', function () { loadAc(); if (sqEl.value.trim()) acUpdate(); });
+    var searchTimer = null;
+    sqEl.addEventListener('input', function () {
+      acUpdate();
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(function () { state.q = sqEl.value.trim(); render(); }, 120);
+    });
+    sqEl.addEventListener('focus', function () { if (sqEl.value.trim()) acUpdate(); });
     sqEl.addEventListener('keydown', function (e) {
       if (e.isComposing || e.keyCode === 229) return; // 한글 조합 중 Enter·화살표는 무시
       var open = acBox.style.display === 'block' && acItems.length > 0;
@@ -461,8 +1020,8 @@ if (authed) {
       if (e.key === 'ArrowUp' && open) { e.preventDefault(); acIdx = acIdx <= 0 ? acItems.length - 1 : acIdx - 1; acRender(); return; }
       if (e.key === 'Escape') { acClose(); return; }
       if (e.key === 'Enter') {
-        if (open && acIdx >= 0) acPick(acIdx);
-        else { acClose(); mainSearch(); }
+        if (open && acIdx >= 0) { e.preventDefault(); acPick(acIdx); }
+        else { acClose(); clearTimeout(searchTimer); state.q = sqEl.value.trim(); render(); }
       }
     });
     acBox.addEventListener('mousedown', function (e) {
@@ -474,24 +1033,41 @@ if (authed) {
     document.addEventListener('click', function (e) {
       if (e.target !== sqEl && !acBox.contains(e.target)) acClose();
     });
-    document.getElementById('ssite').addEventListener('change', mainSearch);
-    document.getElementById('sbtn-reset').addEventListener('click', () => location.reload());
-
-    document.getElementById('sbtn-open').addEventListener('click', async () => {
-      const q = document.getElementById('sq').value.trim();
-      const { star, star_op } = parseStarParam(document.getElementById('sstar').value);
-      const site = document.getElementById('ssite').value;
-      const p = new URLSearchParams();
-      if (q)       p.set('q', q);
-      if (star)    p.set('star', star);
-      if (star_op) p.set('star_op', star_op);
-      if (site)    p.set('site', site);
-      const { rows } = await fetch('/api/ziha-bookmarks?' + p).then(r => r.json());
-      rows.forEach((r, i) => setTimeout(() => {
-        const w = window.open(r.url, '_blank', 'noopener,noreferrer');
-        if (w) { w.blur(); window.focus(); }
-      }, i * 100));
+    // '/' 로 검색창 포커스 (입력 중일 때는 무시)
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== '/' || e.metaKey || e.ctrlKey || e.altKey) return;
+      var tag = (document.activeElement && document.activeElement.tagName) || '';
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      e.preventDefault();
+      sqEl.focus();
     });
+
+    document.getElementById('sstar').addEventListener('change', function (e) { state.star = e.target.value; render(); });
+    document.getElementById('sgroup').addEventListener('change', function (e) { state.group = e.target.value; render(); });
+    document.getElementById('sbtn-reset').addEventListener('click', function () {
+      state = { q: '', star: '', site: '', memo: '', actor: [], group: 'sort' };
+      sqEl.value = '';
+      document.getElementById('sstar').value = '';
+      document.getElementById('sgroup').value = 'sort';
+      acClose();
+      render();
+    });
+
+    // 열기: 지금 화면에 걸러진 북마크를 모두 새 탭으로 연다.
+    document.getElementById('sbtn-open').addEventListener('click', function () {
+      var rows = current.slice();
+      if (!rows.length) return;
+      if (rows.length > 30 && !confirm(rows.length + '개를 모두 새 탭으로 열까요?')) return;
+      rows.forEach(function (r, i) {
+        setTimeout(function () {
+          var w = window.open(fullUrl(r.url), '_blank', 'noopener,noreferrer');
+          if (w) { w.blur(); window.focus(); }
+        }, i * 100);
+      });
+    });
+
+    buildChips();
+    render();
 
     // 추가
     document.getElementById('p-add').addEventListener('click', async () => {

@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro'
 import { getDB } from '../../lib/auth/db'
-import { detectSite, isSite, stripSiteFromTitle } from '../../lib/ziha-site'
+import { detectSite, isSite, normalizeMemo, stripSiteFromTitle } from '../../lib/ziha-site'
 
 export const prerender = false
 
@@ -61,7 +61,7 @@ export const POST: APIRoute = async ({ locals, request }) => {
   const urlVal   = url.trim()
   const titleVal = stripSiteFromTitle(title)
   const site     = detectSite(urlVal)
-  const memoVal  = memo?.trim().slice(0, 100) || null
+  const memoVal  = normalizeMemo(memo)
   const result = await db
     .prepare('INSERT INTO bookmarks (title, url, star, memo, sort, site) VALUES (?, ?, ?, ?, ?, ?)')
     .bind(titleVal, urlVal, Math.min(3, Math.max(0, star)), memoVal, sort, site)
@@ -79,20 +79,30 @@ export const PATCH: APIRoute = async ({ locals, request }) => {
   const fields: string[] = []
   const bindings: (string | number | null)[] = []
 
-  if (title !== undefined) { fields.push('title = ?'); bindings.push(stripSiteFromTitle(title)) }
+  // 제목은 저장 규칙(사이트명 제거)을 거친 값을 돌려줘서 화면이 실제 저장값을 그대로 보여 주게 한다.
+  const titleVal = title !== undefined ? stripSiteFromTitle(title) : undefined
+  if (titleVal !== undefined) {
+    if (!titleVal) return json({ error: '제목이 비어 있음' }, 400)
+    fields.push('title = ?'); bindings.push(titleVal)
+  }
   if (url   !== undefined) {
     fields.push('url = ?');  bindings.push(url.trim())
     fields.push('site = ?'); bindings.push(detectSite(url))
   }
   if (star  !== undefined) { fields.push('star = ?');  bindings.push(Math.min(3, Math.max(0, star))) }
-  if (memo  !== undefined) { fields.push('memo = ?');  bindings.push(memo.trim().slice(0, 100) || null) }
+  const memoVal = memo !== undefined ? normalizeMemo(memo) : undefined
+  if (memoVal !== undefined) { fields.push('memo = ?'); bindings.push(memoVal) }
   if (sort  !== undefined) { fields.push('sort = ?');  bindings.push(sort) }
 
   if (!fields.length) return json({ error: '변경 항목 없음' }, 400)
 
   bindings.push(id)
   await db.prepare(`UPDATE bookmarks SET ${fields.join(', ')} WHERE id = ?`).bind(...bindings).run()
-  return json({ ok: true })
+  return json({
+    ok: true,
+    ...(titleVal !== undefined ? { title: titleVal } : {}),
+    ...(memoVal !== undefined ? { memo: memoVal } : {}),
+  })
 }
 
 // PUT { from, to, preview }

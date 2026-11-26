@@ -58,3 +58,24 @@ export function stripSiteFromTitle(title: string): string {
   t = t.replace(/\s{2,}/g, ' ').trim()
   return t || src.trim()
 }
+
+// 메모는 '|' 로 여러 키워드를 담는다 (예: "학생|학교|선생").
+// 앞뒤 공백·빈 키워드·중복을 정리하고, 100자를 넘기면 넘치는 키워드는 통째로 버린다(키워드를 중간에서 자르지 않는다).
+export const MEMO_SEP = '|'
+export function splitMemo(memo: string | null | undefined): string[] {
+  const out: string[] = []
+  for (const t of String(memo ?? '').split(MEMO_SEP)) {
+    const k = t.trim()
+    if (k && !out.includes(k)) out.push(k)
+  }
+  return out
+}
+export function normalizeMemo(memo: string | null | undefined, max = 100): string | null {
+  let joined = ''
+  for (const k of splitMemo(memo)) {
+    const next = joined ? joined + MEMO_SEP + k : k
+    if (next.length > max) break
+    joined = next
+  }
+  return joined || null
+}
