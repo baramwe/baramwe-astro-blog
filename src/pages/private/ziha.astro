@@ -854,11 +854,11 @@ if (authed) {
     function buildChips() {
       var memos = countMemos().filter(function (e) { return !isHidden('memo', e[0]); });
       document.getElementById('chips-memo').innerHTML = (memos.length
-        ? chip('memo', '', '전체', ALL.length) + memos.map(function (e) { return chip('memo', e[0], e[0], e[1], true); }).join('')
+        ? chip('memo', '', '전체', null) + memos.map(function (e) { return chip('memo', e[0], e[0], e[1], true); }).join('')
         : '<span class="chip-empty">' + (HIDDEN.memo.length ? '노출 중인 메모가 없습니다' : '메모가 있는 북마크가 없습니다') + '</span>') + hiddenBtn('memo');
       var siteCount = {}, none = 0;
       ALL.forEach(function (r) { if (r.site) siteCount[r.site] = (siteCount[r.site] || 0) + 1; else none++; });
-      document.getElementById('chips-site').innerHTML = chip('site', '', '전체', ALL.length) +
+      document.getElementById('chips-site').innerHTML = chip('site', '', '전체', null) +
         SITE_KEYS.filter(function (k) { return siteCount[k]; }).map(function (k) { return chip('site', k, SITE_LABELS[k], siteCount[k]); }).join('') +
         (none ? chip('site', 'none', '기타', none) : '');
       // 숨긴 배우를 빼고 TOP 40 → 숨기면 41위가 올라와 40명을 채운다.
