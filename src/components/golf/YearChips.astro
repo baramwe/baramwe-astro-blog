@@ -27,7 +27,7 @@ const chips = [{ key: 'all', label: '전체', count: total }, ...years.map((y) =
             aria-current={active ? 'true' : undefined}
             data-active={active ? '' : undefined}
             class:list={[
-              'year-chip group inline-flex items-center gap-1.5 rounded border px-3.5 py-1.5 text-base transition',
+              'year-chip group inline-flex items-center gap-1.5 rounded border px-3.5 py-1.5 text-[17px] transition',
               active
                 ? 'border-kb-primary bg-kb-primary text-kb-ink font-medium'
                 : 'border-kb-border bg-kb-panel text-kb-text hover:border-kb-primary hover:text-kb-primary-hover',
@@ -36,7 +36,7 @@ const chips = [{ key: 'all', label: '전체', count: total }, ...years.map((y) =
             <span class:list={['font-semibold tabular-nums text-inherit', c.key === 'all' && 'tracking-tight']}>{c.label}</span>
             <span
               class:list={[
-                'rounded px-1.5 text-sm leading-[1.4rem] tabular-nums',
+                'rounded px-1.5 text-[15px] leading-[1.4rem] tabular-nums',
                 active ? 'bg-kb-ink/20 text-kb-ink' : 'bg-kb-sunken text-kb-subdued group-hover:bg-kb-primary-subtle group-hover:text-kb-primary-hover',
               ]}
             >{c.count}</span>

@@ -32,7 +32,7 @@ const ARROW_PATH: Record<Arrow, string> = { up: 'M6 10V2.5M2.75 5.5 6 2.25 9.25 
   <summary
     aria-label={ariaLabel}
     class:list={[
-      'flex cursor-pointer list-none items-center gap-1.5 rounded border bg-kb-page py-1 pl-2.5 pr-2 text-sm transition select-none [&::-webkit-details-marker]:hidden',
+      'flex cursor-pointer list-none items-center gap-1.5 rounded border bg-kb-page py-1 pl-2.5 pr-2 text-[15px] transition select-none [&::-webkit-details-marker]:hidden',
       highlight ? 'border-kb-primary font-semibold text-kb-primary' : 'border-kb-border text-kb-text hover:border-kb-border-strong',
     ]}
   >
@@ -44,7 +44,7 @@ const ARROW_PATH: Record<Arrow, string> = { up: 'M6 10V2.5M2.75 5.5 6 2.25 9.25 
   </summary>
   <ul
     class:list={[
-      'absolute top-full z-30 mt-1 max-h-[22rem] min-w-full w-max overflow-y-auto rounded-[2px] border border-kb-border bg-kb-panel py-1 text-[13px] shadow-[0_3px_10px_rgba(0,0,0,.52),0_6px_14px_rgba(0,0,0,.28)]',
+      'absolute top-full z-30 mt-1 max-h-[22rem] min-w-full w-max overflow-y-auto rounded-[2px] border border-kb-border bg-kb-panel py-1 text-[14px] shadow-[0_3px_10px_rgba(0,0,0,.52),0_6px_14px_rgba(0,0,0,.28)]',
       align === 'right' ? 'right-0' : 'left-0',
     ]}
   >

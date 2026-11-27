@@ -18,10 +18,10 @@ const num = lg ? 'text-4xl' : 'text-2xl'
 <div>
   <div class="grid grid-cols-[1fr_auto_1fr] items-end gap-2">
     <div class="min-w-0">
-      <div class:list={['truncate text-kb-subdued', lg ? 'text-sm' : 'text-[13px]']}>{selfName}</div>
+      <div class:list={['truncate text-kb-subdued', lg ? 'text-[15px]' : 'text-[14px]']}>{selfName}</div>
       <div class="flex items-baseline gap-1">
         <span class:list={[num, 'font-extrabold leading-none tabular-nums text-kb-win']}>{wins}</span>
-        <span class:list={['font-semibold text-kb-win', lg ? 'text-base' : 'text-sm']}>승</span>
+        <span class:list={['font-semibold text-kb-win', lg ? 'text-[17px]' : 'text-[15px]']}>승</span>
       </div>
     </div>
 
@@ -29,7 +29,7 @@ const num = lg ? 'text-4xl' : 'text-2xl'
       <span
         class:list={[
           'inline-flex items-center gap-1 rounded-full border border-kb-border bg-kb-sunken font-medium text-kb-subdued tabular-nums',
-          lg ? 'px-3 py-1 text-sm' : 'px-2.5 py-0.5 text-xs',
+          lg ? 'px-3 py-1 text-[15px]' : 'px-2.5 py-0.5 text-[13px]',
         ]}
       >
         <span class="h-1.5 w-1.5 rounded-full bg-kb-muted"></span>{draws}무
@@ -37,10 +37,10 @@ const num = lg ? 'text-4xl' : 'text-2xl'
     </div>
 
     <div class="min-w-0 text-right">
-      <div class:list={['truncate text-kb-subdued', lg ? 'text-sm' : 'text-[13px]']}>{buddyName}</div>
+      <div class:list={['truncate text-kb-subdued', lg ? 'text-[15px]' : 'text-[14px]']}>{buddyName}</div>
       <div class="flex items-baseline justify-end gap-1">
         <span class:list={[num, 'font-extrabold leading-none tabular-nums text-kb-loss']}>{losses}</span>
-        <span class:list={['font-semibold text-kb-loss', lg ? 'text-base' : 'text-sm']}>패</span>
+        <span class:list={['font-semibold text-kb-loss', lg ? 'text-[17px]' : 'text-[15px]']}>패</span>
       </div>
     </div>
   </div>

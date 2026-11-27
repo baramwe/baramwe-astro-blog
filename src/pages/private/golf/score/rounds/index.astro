@@ -30,16 +30,16 @@ const diffText = diff == null ? '' : diff === 0 ? '±0' : diff > 0 ? `+${diff}` 
   {found ? (
     <>
       <div class="flex items-center gap-3 mb-3">
-        <h1 class="min-w-0 flex-1 truncate text-lg font-bold">'{q}' 검색 결과 <span class="text-sm font-normal text-kb-subdued">{found.total}</span></h1>
-        <a href="/private/golf/score" class="g-btn-ghost shrink-0 text-sm">홈</a>
+        <h1 class="min-w-0 flex-1 truncate text-lg font-bold">'{q}' 검색 결과 <span class="text-[15px] font-normal text-kb-subdued">{found.total}</span></h1>
+        <a href="/private/golf/score" class="g-btn-ghost shrink-0 text-[15px]">홈</a>
       </div>
       {found.total === 0
-        ? <p class="g-card text-sm text-kb-text text-center">맞는 라운드가 없어요. 골프장 이름·나라(일본)·지역(구마모토)으로 찾아보세요.</p>
+        ? <p class="g-card text-[15px] text-kb-text text-center">맞는 라운드가 없어요. 골프장 이름·나라(일본)·지역(구마모토)으로 찾아보세요.</p>
         : found.groups.map((g) => (
           <section class="mb-5">
-            <h2 class="mb-2 flex items-baseline gap-2 text-sm font-semibold text-kb-title">
+            <h2 class="mb-2 flex items-baseline gap-2 text-[15px] font-semibold text-kb-title">
               <span class="min-w-0 flex-1 truncate">{g.title}</span>
-              <span class="shrink-0 text-xs font-normal text-kb-subdued">{g.rounds.length}라운드</span>
+              <span class="shrink-0 text-[13px] font-normal text-kb-subdued">{g.rounds.length}라운드</span>
             </h2>
             <RoundList rounds={g.rounds} />
           </section>
@@ -47,22 +47,22 @@ const diffText = diff == null ? '' : diff === 0 ? '±0' : diff > 0 ? `+${diff}` 
     </>
   ) : (<>
   <div class="flex items-center gap-3 mb-3">
-    <h1 class="min-w-0 flex-1 truncate text-lg font-bold">{clubName ?? '내 라운드'} <span class="text-sm font-normal text-kb-subdued">{rounds.length}</span></h1>
+    <h1 class="min-w-0 flex-1 truncate text-lg font-bold">{clubName ?? '내 라운드'} <span class="text-[15px] font-normal text-kb-subdued">{rounds.length}</span></h1>
     {clubAvg != null && (
       <div class="shrink-0 text-right leading-tight" title={`내 전체 평균 ${overall?.avg} 대비`}>
-        <span class="text-xs text-kb-subdued">평균</span>
+        <span class="text-[13px] text-kb-subdued">평균</span>
         <span class="ml-0.5 text-lg font-bold tabular-nums text-kb-primary">{clubAvg}</span>
         {diff != null && (
-          <span class:list={['ml-1 text-sm font-semibold tabular-nums', diff > 0 ? 'text-kb-danger' : diff < 0 ? 'text-kb-primary' : 'text-kb-subdued']}>{diffText}</span>
+          <span class:list={['ml-1 text-[15px] font-semibold tabular-nums', diff > 0 ? 'text-kb-danger' : diff < 0 ? 'text-kb-primary' : 'text-kb-subdued']}>{diffText}</span>
         )}
       </div>
     )}
     {clubId
-      ? <a href="/private/golf/score" class="g-btn-ghost shrink-0 text-sm">홈</a>
-      : <a href="/private/golf/score/rounds/new" class="g-btn shrink-0 text-sm">+ 입력</a>}
+      ? <a href="/private/golf/score" class="g-btn-ghost shrink-0 text-[15px]">홈</a>
+      : <a href="/private/golf/score/rounds/new" class="g-btn shrink-0 text-[15px]">+ 입력</a>}
   </div>
   {rounds.length === 0
-    ? <p class="g-card text-sm text-kb-text text-center">아직 기록이 없어요.</p>
+    ? <p class="g-card text-[15px] text-kb-text text-center">아직 기록이 없어요.</p>
     : <RoundList rounds={rounds} />}
   </>)}
 </GolfLayout>

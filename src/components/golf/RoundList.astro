@@ -9,13 +9,13 @@ const { rounds } = Astro.props
     <li>
       <a href={`/private/golf/score/rounds/${r.id}`} class="g-card !px-3.5 !py-4 flex items-center gap-3 hover:border-kb-primary">
         <div class="flex-1 min-w-0">
-          <div class="text-[13px] text-kb-subdued">{r.played_on} · {countryName(r.country_code)}{countryFlag(r.country_code) && <span class="ml-0.5 text-[12px]" aria-hidden="true">{countryFlag(r.country_code)}</span>}{r.region ? ` ${r.region}` : ''}</div>
-          <div class="text-[17px] font-semibold truncate mt-0.5">
+          <div class="text-[14px] text-kb-subdued">{r.played_on} · {countryName(r.country_code)}{countryFlag(r.country_code) && <span class="ml-0.5 text-[13px]" aria-hidden="true">{countryFlag(r.country_code)}</span>}{r.region ? ` ${r.region}` : ''}</div>
+          <div class="text-[18px] font-semibold truncate mt-0.5">
             {r.club_name}
-            <span class="text-[13px] font-normal text-kb-subdued ml-1">{r.front_course}{r.back_course ? ` · ${r.back_course}` : ' (9홀)'}</span>
+            <span class="text-[14px] font-normal text-kb-subdued ml-1">{r.front_course}{r.back_course ? ` · ${r.back_course}` : ' (9홀)'}</span>
           </div>
-          {r.companions && <div class="text-[13px] text-kb-subdued truncate">{r.companions}</div>}
-          {r.memo && <div class="text-[15px] text-kb-text truncate mt-1">{r.memo}</div>}
+          {r.companions && <div class="text-[14px] text-kb-subdued truncate">{r.companions}</div>}
+          {r.memo && <div class="text-[16px] text-kb-text truncate mt-1">{r.memo}</div>}
         </div>
         <div class="text-[1.75rem] font-bold text-kb-primary tabular-nums">{r.my_total ?? '-'}</div>
       </a>

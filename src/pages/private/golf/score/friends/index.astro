@@ -80,7 +80,7 @@ const periodHref = (k: PeriodKey) => hrefWith(sort, k)
   </div>
 
   {buddies.length === 0 ? (
-    <p class="g-card text-center text-sm text-kb-text">아직 동반자와 함께 기록한 라운드가 없어요.</p>
+    <p class="g-card text-center text-[15px] text-kb-text">아직 동반자와 함께 기록한 라운드가 없어요.</p>
   ) : (
     <ol class="space-y-3">
       {buddies.map((b, i) => (
@@ -89,20 +89,20 @@ const periodHref = (k: PeriodKey) => hrefWith(sort, k)
             <div class="mb-3 flex items-center gap-3">
               <span
                 class:list={[
-                  'flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold tabular-nums',
+                  'flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[15px] font-bold tabular-nums',
                   'bg-kb-sunken text-kb-subdued border border-kb-border',
                 ]}
               >{i + 1}</span>
               <div class="min-w-0 flex-1">
-                <div class="truncate text-[17px] font-semibold">{b.display_name}</div>
-                <div class="text-[13px] text-kb-subdued">
+                <div class="truncate text-[18px] font-semibold">{b.display_name}</div>
+                <div class="text-[14px] text-kb-subdued">
                   {period.recent && b.total_rounds > b.rounds
                     ? <>최근 {b.rounds}라운드 기준</>
                     : <>{b.total_rounds}라운드 함께</>} · 최근 {b.last_on}
                 </div>
               </div>
               <div class="text-right">
-                <div class="text-[11px] text-kb-muted">승률</div>
+                <div class="text-[13px] text-kb-muted">승률</div>
                 <div class="text-lg font-bold tabular-nums text-kb-primary">{winRate(b)}%</div>
               </div>
             </div>
@@ -110,7 +110,7 @@ const periodHref = (k: PeriodKey) => hrefWith(sort, k)
             <BuddyRecord selfName={selfName} buddyName={b.display_name} wins={b.wins} draws={b.draws} losses={b.losses} />
 
             {b.my_avg !== null && (
-              <div class="mt-2.5 flex justify-between text-xs text-kb-subdued tabular-nums">
+              <div class="mt-2.5 flex justify-between text-[13px] text-kb-subdued tabular-nums">
                 <span>평균 <b class="font-semibold text-kb-text">{b.my_avg}</b></span>
                 <span class="text-kb-muted">18홀 기준</span>
                 <span>평균 <b class="font-semibold text-kb-text">{b.their_avg}</b></span>

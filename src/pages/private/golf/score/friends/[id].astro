@@ -29,28 +29,28 @@ const BADGE = {
 const winRate = Math.round((buddy.wins / (buddy.rounds || 1)) * 100)
 ---
 <GolfLayout title={`${buddy.display_name} 전적`} active="friends">
-  <a href={withPeriod('/private/golf/score/friends', period.key)} class="mb-3 inline-flex items-center gap-1 text-sm text-kb-primary">← 골친</a>
+  <a href={withPeriod('/private/golf/score/friends', period.key)} class="mb-3 inline-flex items-center gap-1 text-[15px] text-kb-primary">← 골친</a>
 
   <section class="g-card mb-5 !p-5">
     <div class="mb-4 flex items-start justify-between gap-3">
       <div class="min-w-0">
         <h1 class="truncate text-xl font-bold">{selfName} <span class="font-normal text-kb-muted">vs</span> {buddy.display_name}</h1>
-        <p class="text-sm text-kb-subdued">
+        <p class="text-[15px] text-kb-subdued">
           {period.recent && buddy.total_rounds > buddy.rounds
             ? <>최근 {buddy.rounds}라운드 기준</>
             : <>{buddy.total_rounds}라운드 함께</>} · 최근 {buddy.last_on}
         </p>
       </div>
       <div class="shrink-0 rounded-xl bg-kb-primary-subtle px-3 py-1.5 text-center">
-        <div class="text-[11px] text-kb-primary">승률</div>
+        <div class="text-[13px] text-kb-primary">승률</div>
         <div class="text-xl font-bold tabular-nums text-kb-primary">{winRate}%</div>
       </div>
     </div>
     <BuddyRecord size="lg" selfName={selfName} buddyName={buddy.display_name} wins={buddy.wins} draws={buddy.draws} losses={buddy.losses} />
     {buddy.my_avg !== null && (
-      <div class="mt-3 grid grid-cols-2 gap-2 text-center text-sm tabular-nums">
-        <div class="rounded-lg bg-kb-sunken py-2"><div class="text-[11px] text-kb-subdued">{selfName} 평균</div><b class="text-lg text-kb-title">{buddy.my_avg}</b></div>
-        <div class="rounded-lg bg-kb-sunken py-2"><div class="text-[11px] text-kb-subdued">{buddy.display_name} 평균</div><b class="text-lg text-kb-title">{buddy.their_avg}</b></div>
+      <div class="mt-3 grid grid-cols-2 gap-2 text-center text-[15px] tabular-nums">
+        <div class="rounded-lg bg-kb-sunken py-2"><div class="text-[13px] text-kb-subdued">{selfName} 평균</div><b class="text-lg text-kb-title">{buddy.my_avg}</b></div>
+        <div class="rounded-lg bg-kb-sunken py-2"><div class="text-[13px] text-kb-subdued">{buddy.display_name} 평균</div><b class="text-lg text-kb-title">{buddy.their_avg}</b></div>
       </div>
     )}
   </section>
@@ -73,19 +73,19 @@ const winRate = Math.round((buddy.wins / (buddy.rounds || 1)) * 100)
         <li>
           <a href={`/private/golf/score/rounds/${r.id}`} class="g-card flex items-center gap-3 !px-3.5 !py-4 hover:border-kb-primary">
             <div class="min-w-0 flex-1">
-              <div class="text-[13px] text-kb-subdued">{r.played_on} · {countryName(r.country_code)}{r.region ? ` ${r.region}` : ''}</div>
-              <div class="mt-0.5 truncate text-[17px] font-semibold">
+              <div class="text-[14px] text-kb-subdued">{r.played_on} · {countryName(r.country_code)}{r.region ? ` ${r.region}` : ''}</div>
+              <div class="mt-0.5 truncate text-[18px] font-semibold">
                 {r.club_name}
-                <span class="ml-1 text-[13px] font-normal text-kb-subdued">{r.front_course}{r.back_course ? ` · ${r.back_course}` : ' (9홀)'}</span>
+                <span class="ml-1 text-[14px] font-normal text-kb-subdued">{r.front_course}{r.back_course ? ` · ${r.back_course}` : ' (9홀)'}</span>
               </div>
-              {r.others && <div class="truncate text-[13px] text-kb-muted">{r.others} 동반</div>}
+              {r.others && <div class="truncate text-[14px] text-kb-muted">{r.others} 동반</div>}
             </div>
             <div class="shrink-0 text-right">
               <div class="flex items-center justify-end gap-2 tabular-nums">
                 <span class:list={['text-2xl font-bold leading-none', res === 'win' ? 'text-kb-win' : 'text-kb-title']}>{r.my}</span>
-                <span class="text-xs font-medium text-kb-muted">vs</span>
+                <span class="text-[13px] font-medium text-kb-muted">vs</span>
                 <span class:list={['text-2xl font-bold leading-none', res === 'loss' ? 'text-kb-loss' : 'text-kb-title']}>{r.their}</span>
-                <span class:list={['ml-1 inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-bold', b.cls]}>{b.label}</span>
+                <span class:list={['ml-1 inline-flex h-7 w-7 items-center justify-center rounded-full text-[15px] font-bold', b.cls]}>{b.label}</span>
               </div>
             </div>
           </a>
