@@ -63,6 +63,7 @@ if (authed) {
   const dataJson = JSON.stringify(bookmarks).replace(/</g, '\\u003c');
   const hiddenJson = JSON.stringify(hiddenMemos).replace(/</g, '\\u003c');
   const hiddenActorsJson = JSON.stringify(hiddenActors).replace(/</g, '\\u003c');
+  const siteLabelsJson = JSON.stringify(SITE_LABELS).replace(/</g, '\\u003c');
   const siteOptions = SITES.map(k => `<option value="${k}">${SITE_LABELS[k]}</option>`).join('') + '<option value="none">기타</option>';
 
   const html = `<!DOCTYPE html>
@@ -297,6 +298,7 @@ if (authed) {
     <div class="empty" id="empty" style="display:none;">검색 결과가 없습니다</div>
   </main>
   <script id="bm-data" type="application/json">${dataJson}</script>
+  <script id="site-labels" type="application/json">${siteLabelsJson}</script>
   <script id="hidden-memos" type="application/json">${hiddenJson}</script>
   <script id="hidden-actors" type="application/json">${hiddenActorsJson}</script>
 
@@ -462,7 +464,8 @@ if (authed) {
       return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
 
-    var SITE_LABELS = ${JSON.stringify(SITE_LABELS)};
+    // 인라인 <script> 안에 \${} 를 두면 vite dev 의존성 스캔(esbuild)이 JS 로 파싱하다 깨져서, JSON 태그로 넘긴다
+    var SITE_LABELS = JSON.parse(document.getElementById('site-labels').textContent || '{}');
     function siteBadge(site) {
       return site ? '<span class="site site-' + esc(site) + '">' + esc(SITE_LABELS[site] || site) + '</span>' : '';
     }
