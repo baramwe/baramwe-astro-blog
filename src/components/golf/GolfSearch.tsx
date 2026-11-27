@@ -1,55 +1,22 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { openDetail } from '../../lib/golf/app'
+import { isAreaQuery } from '../../lib/golf/area-search'
 
 // 헤더 검색: 골프장(기본) → 그 골프장 라운드 목록, 동반자 → 상대전적(함께 친 라운드) 페이지.
 // 이름 목록은 localStorage 에 캐시해 두고 바로 쓰며, 뒤에서 한 번 새로 받아 갱신한다.
-// 나라('일본', '해외')·지역('구마모토') 으로도 골프장을 찾고, 지역으로 찾으면 같은 여행에 간 골프장도 함께 보여 준다.
-// 쉼표로 여러 검색어를 넣으면 합쳐서 보여 준다 ('이바라키,지바').
+// 엔터(또는 '검색 결과' 행)는 /rounds?q= 결과 페이지로 간다 — 나라('일본')·지역('구마모토') 검색과
+// 같은 여행 골프장 묶음은 그 페이지에서 보여 준다 (lib/golf/area-search.ts).
 
 interface Item { id: string; name: string; rounds: number }
-interface ClubItem extends Item { country_code?: string; region?: string | null; trips?: string[] }
+interface ClubItem extends Item { country_code?: string; region?: string | null }
 interface Index { clubs: ClubItem[]; players: Item[] }
-type Hit = Item & { kind: 'club' | 'player'; sub?: string }
+type Hit = Item & { kind: 'club' | 'player' | 'query' }
 
 const BASE = '/private/golf/score'
-const CACHE_KEY = 'golf-search-index-v2'
+const CACHE_KEY = 'golf-search-index-v3'
 const MAX_PER_GROUP = 6
-const MAX_AREA_CLUBS = 40
 
 const norm = (s: string) => s.toLowerCase().replace(/\s+/g, '')
-
-const COUNTRY_NAMES: Record<string, string[]> = {
-  KR: ['한국', '국내', '대한민국'],
-  JP: ['일본'],
-  CN: ['중국'],
-  VN: ['베트남'],
-  TH: ['태국'],
-  PH: ['필리핀'],
-  MY: ['말레이시아'],
-  TW: ['대만'],
-  MN: ['몽골'],
-  US: ['미국'],
-  ID: ['인도네시아'],
-  KH: ['캄보디아'],
-  LA: ['라오스'],
-  GU: ['괌'],
-  MP: ['사이판'],
-}
-const countryLabel = (cc?: string) => COUNTRY_NAMES[cc ?? '']?.[0] ?? cc ?? ''
-
-/** 검색어가 나라 이름이면 그 나라 코드 ('해외' 는 KR 이 아닌 전부) */
-function countryMatch(k: string, cc?: string): boolean {
-  if (!cc || k.length < 2) return false
-  if ('해외'.startsWith(k)) return cc !== 'KR'
-  return (COUNTRY_NAMES[cc] ?? []).some((n) => n.startsWith(k)) || cc.toLowerCase() === k
-}
-
-/** 검색어가 골프장의 나라 이름이나 지역명에 맞는지 (2글자 이상) */
-function areaMatch(k: string, c: ClubItem): boolean {
-  if (k.length < 2) return false
-  if (countryMatch(k, c.country_code)) return true
-  return !!c.region && norm(c.region).includes(k)
-}
 
 function readCache(): Index | null {
   try {
@@ -68,7 +35,7 @@ function writeCache(idx: Index) {
   }
 }
 
-const hrefOf = (h: Hit) => (h.kind === 'club' ? `${BASE}/rounds?club=${encodeURIComponent(h.id)}` : `${BASE}/friends/${encodeURIComponent(h.id)}`)
+const hrefOf = (h: Hit) => (h.kind === 'query' ? `${BASE}/rounds?q=${encodeURIComponent(h.name)}` : h.kind === 'club' ? `${BASE}/rounds?club=${encodeURIComponent(h.id)}` : `${BASE}/friends/${encodeURIComponent(h.id)}`)
 
 export default function GolfSearch({ autoFocus = false }: { autoFocus?: boolean }) {
   const [index, setIndex] = useState<Index | null>(null)
@@ -102,42 +69,22 @@ export default function GolfSearch({ autoFocus = false }: { autoFocus?: boolean 
   }, [])
 
   // 골프장 먼저(기본), 그다음 동반자. 앞부분이 맞는 이름을 위로.
+  // '검색 결과' 행: 나라·지역 검색어면 맨 위(엔터 = 결과 페이지), 아니면 맨 아래.
   const hits = useMemo<Hit[]>(() => {
-    const keys = q.split(/[,，]/).map(norm).filter(Boolean)
-    if (!keys.length || !index) return []
-
-    // 골프장: 이름 매칭 > 나라·지역 매칭 > 지역 매칭 골프장과 같은 여행 순
-    const rank = new Map<string, number>()
-    const put = (id: string, r: number) => rank.set(id, Math.min(rank.get(id) ?? 9, r))
-    const regionTrips = new Set<string>()
-    for (const k of keys) {
-      for (const c of index.clubs) {
-        const pos = norm(c.name).indexOf(k)
-        if (pos >= 0) put(c.id, pos === 0 ? 0 : 1)
-        else if (areaMatch(k, c)) {
-          put(c.id, 2)
-          if (!countryMatch(k, c.country_code)) c.trips?.forEach((t) => regionTrips.add(t))
-        }
-      }
-    }
-    if (regionTrips.size) for (const c of index.clubs) if (c.trips?.some((t) => regionTrips.has(t))) put(c.id, 3)
-    const areaSearch = [...rank.values()].some((r) => r >= 2)
-    const clubHits: Hit[] = index.clubs
-      .filter((c) => rank.has(c.id))
-      .sort((a, b) => rank.get(a.id)! - rank.get(b.id)! || b.rounds - a.rounds)
-      .slice(0, areaSearch ? MAX_AREA_CLUBS : MAX_PER_GROUP)
-      .map((c) => {
-        const area = [c.country_code && c.country_code !== 'KR' ? countryLabel(c.country_code) : '', c.region ?? ''].filter(Boolean).join(' ')
-        return { id: c.id, name: c.name, rounds: c.rounds, kind: 'club', sub: rank.get(c.id) === 3 ? `${area} · 같은 여행` : area || undefined }
-      })
-
-    const playerHits: Hit[] = index.players
-      .map((it) => ({ it, pos: Math.min(...keys.map((k) => { const p = norm(it.name).indexOf(k); return p < 0 ? Infinity : p })) }))
-      .filter((x) => x.pos !== Infinity)
-      .sort((a, b) => (a.pos === 0 ? 0 : 1) - (b.pos === 0 ? 0 : 1) || b.it.rounds - a.it.rounds)
-      .slice(0, MAX_PER_GROUP)
-      .map((x) => ({ ...x.it, kind: 'player' as const }))
-    return [...clubHits, ...playerHits]
+    const text = q.trim()
+    const k = norm(q)
+    if (!k) return []
+    const query: Hit = { id: text, name: text, rounds: 0, kind: 'query' }
+    if (!index) return [query]
+    const pick = <T extends Item>(list: T[], kind: 'club' | 'player') =>
+      list
+        .map((it) => ({ it, pos: norm(it.name).indexOf(k) }))
+        .filter((x) => x.pos >= 0)
+        .sort((a, b) => (a.pos === 0 ? 0 : 1) - (b.pos === 0 ? 0 : 1) || b.it.rounds - a.it.rounds)
+        .slice(0, MAX_PER_GROUP)
+        .map((x): Hit => ({ id: x.it.id, name: x.it.name, rounds: x.it.rounds, kind }))
+    const names = [...pick(index.clubs, 'club'), ...pick(index.players, 'player')]
+    return isAreaQuery(text, index.clubs) || names.length === 0 ? [query, ...names] : [...names, query]
   }, [q, index])
 
   useEffect(() => setActive(0), [q]) // 입력이 바뀌면 첫 결과(골프장 우선)가 자동 선택
@@ -165,6 +112,7 @@ export default function GolfSearch({ autoFocus = false }: { autoFocus?: boolean 
     }
   }
 
+  const firstClub = hits.findIndex((h) => h.kind === 'club')
   const firstPlayer = hits.findIndex((h) => h.kind === 'player')
 
   return (
@@ -176,7 +124,7 @@ export default function GolfSearch({ autoFocus = false }: { autoFocus?: boolean 
         autoComplete="off"
         autoFocus={autoFocus}
         value={q}
-        placeholder="골프장 · 지역 · 동반자 검색"
+        placeholder="골프장 · 나라 · 지역 · 동반자 검색"
         aria-label="골프장 또는 동반자 검색"
         role="combobox"
         aria-expanded={open && q.length > 0}
@@ -201,10 +149,9 @@ export default function GolfSearch({ autoFocus = false }: { autoFocus?: boolean 
           className="absolute left-0 right-0 top-full z-30 mt-1.5 max-h-[60vh] overflow-y-auto rounded border border-kb-border bg-kb-panel py-1 text-kb-text shadow-[0_3px_10px_rgba(0,0,0,.52),0_6px_14px_rgba(0,0,0,.28)]"
         >
           {!index && <li className="px-3 py-2.5 text-sm text-kb-subdued">불러오는 중…</li>}
-          {index && hits.length === 0 && <li className="px-3 py-2.5 text-sm text-kb-subdued">맞는 골프장·동반자가 없어요</li>}
           {hits.map((h, i) => (
             <li key={`${h.kind}:${h.id}`} role="option" aria-selected={i === active}>
-              {(i === 0 || i === firstPlayer) && (
+              {(i === firstClub || i === firstPlayer) && (
                 <div className="px-3 pb-0.5 pt-1.5 text-[11px] font-semibold uppercase tracking-wide text-kb-muted">{h.kind === 'club' ? '골프장' : '동반자'}</div>
               )}
               <a
@@ -216,11 +163,19 @@ export default function GolfSearch({ autoFocus = false }: { autoFocus?: boolean 
                 }}
                 className={`flex items-center gap-2 px-3 py-2 ${i === active ? 'bg-kb-primary-subtle text-kb-title' : ''}`}
               >
-                <span className="min-w-0 flex-1 truncate">
-                  {h.name}
-                  {h.sub && <span className="ml-1.5 text-xs text-kb-muted">{h.sub}</span>}
-                </span>
-                <span className="shrink-0 text-xs tabular-nums text-kb-muted">{h.rounds}회</span>
+                {h.kind === 'query' ? (
+                  <>
+                    <span className="min-w-0 flex-1 truncate">
+                      <span className="text-kb-muted">⌕ </span>'{h.name}' 라운드 검색 결과
+                    </span>
+                    <span className="shrink-0 text-xs text-kb-muted">나라·지역·여행</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="min-w-0 flex-1 truncate">{h.name}</span>
+                    <span className="shrink-0 text-xs tabular-nums text-kb-muted">{h.rounds}회</span>
+                  </>
+                )}
               </a>
             </li>
           ))}

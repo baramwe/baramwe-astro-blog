@@ -683,17 +683,14 @@ async function getBuddyRaw(db: D1Database, ownerId: string, buddyId: string, rec
 // ───────────────────────── 검색 ─────────────────────────
 
 export interface SearchIndex {
-  clubs: { id: string; name: string; rounds: number; country_code: string; region: string | null; trips: string[] }[]
+  clubs: { id: string; name: string; rounds: number; country_code: string; region: string | null }[]
   players: { id: string; name: string; rounds: number }[]
 }
 
-/** 해외 라운드를 날짜순으로 보고, 같은 나라에서 3일 이내로 이어지면 한 여행으로 묶는다 */
-const TRIP_GAP_DAYS = 3
-
 /** 헤더 검색 자동완성용 — 내가 라운드한 골프장, 함께 친 동반자만 (라운드 수 많은 순).
- *  골프장에는 나라·지역과 해외 여행 묶음(trips)을 붙여, 지역 검색 시 같은 여행에 간 골프장도 함께 보여 준다. */
+ *  골프장의 나라·지역은 '검색 결과' 행을 위로 올릴지 판단할 때 쓴다 (결과는 /rounds?q= 페이지). */
 async function searchIndexRaw(db: D1Database, ownerId: string): Promise<SearchIndex> {
-  const [clubs, players, abroad] = await db.batch([
+  const [clubs, players] = await db.batch([
     db.prepare(
       `SELECT c.id, c.name, c.country_code, c.region, count(*) AS rounds
          FROM golf_rounds r JOIN golf_clubs c ON c.id = r.club_id
@@ -708,32 +705,8 @@ async function searchIndexRaw(db: D1Database, ownerId: string): Promise<SearchIn
         WHERE p.owner_user_id = ? AND p.is_self = 0 AND r.owner_user_id = p.owner_user_id
         GROUP BY p.id ORDER BY rounds DESC, p.display_name`
     ).bind(ownerId),
-    db.prepare(
-      `SELECT r.club_id, r.played_on, c.country_code
-         FROM golf_rounds r JOIN golf_clubs c ON c.id = r.club_id
-        WHERE r.owner_user_id = ? AND c.country_code <> 'KR'`
-    ).bind(ownerId),
   ])
-
-  const tripsOf = new Map<string, Set<string>>()
-  const rows = (abroad.results as { club_id: string; played_on: string; country_code: string }[])
-    .slice()
-    .sort((a, b) => cmpStr(a.played_on, b.played_on))
-  let trip = ''
-  let prev: { played_on: string; country_code: string } | null = null
-  for (const r of rows) {
-    const gap = prev ? (Date.parse(r.played_on) - Date.parse(prev.played_on)) / 86400000 : Infinity
-    if (!prev || prev.country_code !== r.country_code || gap > TRIP_GAP_DAYS) trip = `${r.country_code}:${r.played_on}`
-    prev = r
-    let set = tripsOf.get(r.club_id)
-    if (!set) tripsOf.set(r.club_id, (set = new Set()))
-    set.add(trip)
-  }
-
-  return {
-    clubs: (clubs.results as Omit<SearchIndex['clubs'][number], 'trips'>[]).map((c) => ({ ...c, trips: [...(tripsOf.get(c.id) ?? [])] })),
-    players: players.results as SearchIndex['players'],
-  }
+  return { clubs: clubs.results as SearchIndex['clubs'], players: players.results as SearchIndex['players'] }
 }
 
 // ───────────────────────── 랭킹·통계 ─────────────────────────
@@ -816,7 +789,7 @@ export function getBuddy(db: D1Database, ownerId: string, buddyId: string, recen
 }
 /** 헤더 검색 자동완성용 — 내가 라운드한 골프장, 함께 친 동반자만 (라운드 수 많은 순) */
 export function searchIndex(db: D1Database, ownerId: string) {
-  return cached(db, ownerId, 'search:v2', () => searchIndexRaw(db, ownerId))
+  return cached(db, ownerId, 'search:v3', () => searchIndexRaw(db, ownerId))
 }
 /** 랭킹 페이지용 — 골프장별 방문 수, 연도별·월별 라운드 수. 평균은 18홀 본인 타수 기준 */
 export function rankingStats(db: D1Database, ownerId: string) {

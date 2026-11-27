@@ -2,18 +2,22 @@
 import GolfLayout from '../../../../../layouts/GolfLayout.astro'
 import RoundList from '../../../../../components/golf/RoundList.astro'
 import { getDB } from '../../../../../lib/auth/db'
-import { listRounds, periodSummary } from '../../../../../lib/golf/repo'
+import { countryName, listRounds, periodSummary } from '../../../../../lib/golf/repo'
+import { searchRounds } from '../../../../../lib/golf/area-search'
 export const prerender = false
 
 const db = getDB(Astro.locals, Astro.request)!
 const userId = Astro.locals.golf!.user.id
 // ?club=<id> 면 그 골프장 라운드만 (스코어 상세의 '더 보기')
 const clubId = Astro.url.searchParams.get('club') || undefined
+// ?q=<검색어> 면 골프장 이름·나라·지역 검색 결과 (지역으로 찾은 해외 라운드는 같은 여행 라운드도 함께)
+const q = clubId ? '' : (Astro.url.searchParams.get('q') ?? '').trim().slice(0, 50)
 const [rounds, overall] = await Promise.all([
   listRounds(db, userId, 2000, undefined, 'new', clubId),
   clubId ? periodSummary(db, userId) : Promise.resolve(null),
 ])
 const clubName = clubId ? rounds[0]?.club_name : undefined
+const found = q ? searchRounds(rounds, q, countryName) : null
 
 // 골프장 평균 — 18홀 + 본인 스코어가 있는 라운드만 (periodSummary 의 전체 평균과 같은 기준)
 const round1 = (n: number) => Math.round(n * 10) / 10
@@ -22,7 +26,26 @@ const clubAvg = clubId && clubFull.length ? round1(clubFull.reduce((s, r) => s +
 const diff = clubAvg != null && overall?.avg != null ? round1(clubAvg - overall.avg) : null
 const diffText = diff == null ? '' : diff === 0 ? '±0' : diff > 0 ? `+${diff}` : `${diff}`
 ---
-<GolfLayout title={clubName ? `${clubName} 라운드` : '라운드'} active="home">
+<GolfLayout title={found ? `'${q}' 검색` : clubName ? `${clubName} 라운드` : '라운드'} active="home">
+  {found ? (
+    <>
+      <div class="flex items-center gap-3 mb-3">
+        <h1 class="min-w-0 flex-1 truncate text-lg font-bold">'{q}' 검색 결과 <span class="text-sm font-normal text-kb-subdued">{found.total}</span></h1>
+        <a href="/private/golf/score" class="g-btn-ghost shrink-0 text-sm">홈</a>
+      </div>
+      {found.total === 0
+        ? <p class="g-card text-sm text-kb-text text-center">맞는 라운드가 없어요. 골프장 이름·나라(일본)·지역(구마모토)으로 찾아보세요.</p>
+        : found.groups.map((g) => (
+          <section class="mb-5">
+            <h2 class="mb-2 flex items-baseline gap-2 text-sm font-semibold text-kb-title">
+              <span class="min-w-0 flex-1 truncate">{g.title}</span>
+              <span class="shrink-0 text-xs font-normal text-kb-subdued">{g.rounds.length}라운드</span>
+            </h2>
+            <RoundList rounds={g.rounds} />
+          </section>
+        ))}
+    </>
+  ) : (<>
   <div class="flex items-center gap-3 mb-3">
     <h1 class="min-w-0 flex-1 truncate text-lg font-bold">{clubName ?? '내 라운드'} <span class="text-sm font-normal text-kb-subdued">{rounds.length}</span></h1>
     {clubAvg != null && (
@@ -41,4 +64,5 @@ const diffText = diff == null ? '' : diff === 0 ? '±0' : diff > 0 ? `+${diff}` 
   {rounds.length === 0
     ? <p class="g-card text-sm text-kb-text text-center">아직 기록이 없어요.</p>
     : <RoundList rounds={rounds} />}
+  </>)}
 </GolfLayout>
