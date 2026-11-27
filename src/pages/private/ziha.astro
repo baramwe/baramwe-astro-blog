@@ -550,7 +550,7 @@ if (authed) {
       var rank = function (v) { return v === 0 ? 0 : v === 1 ? 1 : 2; };
       ALL.sort(function (a, b) { return rank(a.sort) - rank(b.sort) || b.id - a.id; });
     }
-    var state = { q: '', star: '', site: '', memo: '', actor: [], group: 'sort' }; // actor 는 여러 명 선택(OR)
+    var state = { q: '', star: '', site: [], memo: [], actor: [], group: 'sort' }; // 메모·사이트·배우는 여러 개 선택(같은 줄 안에서는 OR)
     var current = [];
     var listEl = document.getElementById('bm-list');
 
@@ -581,8 +581,11 @@ if (authed) {
         var p = state.star.split('_'), n = Number(p[0]);
         if (p[1] === 'eq' ? r.star !== n : r.star < n) return false;
       }
-      if (state.site && (state.site === 'none' ? !!r.site : r.site !== state.site)) return false;
-      if (state.memo && memosOf(r).indexOf(state.memo) === -1) return false;
+      if (state.site.length && state.site.indexOf(r.site || 'none') === -1) return false; // 'none' = 사이트 태그 없음(기타)
+      if (state.memo.length) { // 고른 메모 중 하나라도 있으면 보인다
+        var ms = memosOf(r);
+        if (!state.memo.some(function (m) { return ms.indexOf(m) !== -1; })) return false;
+      }
       if (state.actor.length) { // 고른 배우 중 한 명이라도 제목에 있으면 보인다
         var nt = normTitle(r.title);
         if (!state.actor.some(function (a) { return nt.indexOf(a) !== -1; })) return false;
@@ -950,8 +953,7 @@ if (authed) {
       else HIDDEN[kind] = HIDDEN[kind].filter(function (m) { return m !== v; });
       toast(hide ? '‘' + v + '’ 상단에서 숨김' : '‘' + v + '’ 다시 표시');
       buildChips();
-      if (hide && kind === 'actor' && state.actor.indexOf(v) !== -1) { state.actor = state.actor.filter(function (a) { return a !== v; }); render(); } // 숨긴 칩으로 걸린 필터는 푼다
-      else if (hide && state[kind] === v) { state[kind] = ''; render(); }
+      if (hide && state[kind].indexOf(v) !== -1) { state[kind] = state[kind].filter(function (a) { return a !== v; }); render(); } // 숨긴 칩으로 걸린 필터는 푼다
       else syncChips();
       if (!mh.hidden && mhKind === kind) {
         if (HIDDEN[kind].length) mhOpen(kind); else mhClose();
@@ -1016,11 +1018,10 @@ if (authed) {
       var c = e.target.closest('.chip');
       if (!c) return;
       var k = c.dataset.kind, v = c.dataset.k;
-      if (k === 'actor') { // 배우는 여러 명: 누르면 추가, 다시 누르면 빼기, '전체'는 모두 해제
-        if (!v) state.actor = [];
-        else if (state.actor.indexOf(v) !== -1) state.actor = state.actor.filter(function (a) { return a !== v; });
-        else state.actor = state.actor.concat(v);
-      } else state[k] = (v && state[k] === v) ? '' : v; // 켜진 칩을 다시 누르면 해제
+      // 메모·사이트·배우 모두 여러 개: 누르면 추가, 다시 누르면 빼기, '전체'는 모두 해제
+      if (!v) state[k] = [];
+      else if (state[k].indexOf(v) !== -1) state[k] = state[k].filter(function (a) { return a !== v; });
+      else state[k] = state[k].concat(v);
       render();
     });
 
@@ -1152,7 +1153,7 @@ if (authed) {
     document.getElementById('sstar').addEventListener('change', function (e) { state.star = e.target.value; render(); });
     document.getElementById('sgroup').addEventListener('change', function (e) { state.group = e.target.value; render(); });
     document.getElementById('sbtn-reset').addEventListener('click', function () {
-      state = { q: '', star: '', site: '', memo: '', actor: [], group: 'sort' };
+      state = { q: '', star: '', site: [], memo: [], actor: [], group: 'sort' };
       sqEl.value = '';
       document.getElementById('sstar').value = '';
       document.getElementById('sgroup').value = 'sort';
