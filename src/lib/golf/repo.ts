@@ -9,6 +9,30 @@ export class GolfError extends Error {
 
 const uuid = () => crypto.randomUUID()
 
+// ───────────────────────── 집계 캐시 ─────────────────────────
+// 집계 조회(홈·골친·랭킹·라운드 목록 등)는 결과 JSON 을 golf_stats_cache 에 저장해 두고 다음부터 1행만 읽는다.
+// 라운드·플레이어·골프장·코스를 바꾸는 모든 쓰기는 같은 트랜잭션(batch)에서 캐시를 통째로 비운다.
+// 1인 전용 서비스라 owner 구분 없이 전부 비워도 비용이 작고, 골프장·코스처럼 owner 가 없는 공용 데이터 변경도 안전하게 덮는다.
+// ⚠️ 운영 DB 를 SQL 로 직접 고치면 `npm run db:golf:cache-clear:remote` 로 비워야 한다.
+
+const clearStatsCacheStmt = (db: D1Database) => db.prepare(`DELETE FROM golf_stats_cache`)
+
+async function cached<T>(db: D1Database, ownerId: string, key: string, compute: () => Promise<T>): Promise<T> {
+  try {
+    const hit = await db.prepare(`SELECT payload FROM golf_stats_cache WHERE owner_user_id = ? AND cache_key = ?`)
+      .bind(ownerId, key).first<{ payload: string }>()
+    if (hit) return JSON.parse(hit.payload) as T
+  } catch {
+    return compute() // 캐시 테이블이 없거나 깨졌으면 그냥 계산한다
+  }
+  const value = await compute()
+  try {
+    await db.prepare(`INSERT OR REPLACE INTO golf_stats_cache (owner_user_id, cache_key, payload) VALUES (?, ?, ?)`)
+      .bind(ownerId, key, JSON.stringify(value)).run()
+  } catch { /* 저장 실패해도 응답은 정상 */ }
+  return value
+}
+
 // ───────────────────────── 골프장 / 코스 ─────────────────────────
 
 export interface Club { id: string; name: string; country_code: string; region: string | null }
@@ -80,8 +104,11 @@ export async function createClub(db: D1Database, userId: string, body: any): Pro
   await assertClubNameFree(db, name, country)
 
   const id = uuid()
-  await db.prepare(`INSERT INTO golf_clubs (id, name, country_code, region, created_by) VALUES (?, ?, ?, ?, ?)`)
-    .bind(id, name, country, region, userId).run()
+  await db.batch([
+    db.prepare(`INSERT INTO golf_clubs (id, name, country_code, region, created_by) VALUES (?, ?, ?, ?, ?)`)
+      .bind(id, name, country, region, userId),
+    clearStatsCacheStmt(db),
+  ])
   return id
 }
 
@@ -89,8 +116,10 @@ export async function createClub(db: D1Database, userId: string, body: any): Pro
 export async function updateClub(db: D1Database, clubId: string, body: any): Promise<void> {
   const { name, country, region } = parseClub(body)
   await assertClubNameFree(db, name, country, clubId)
-  const res = await db.prepare(`UPDATE golf_clubs SET name = ?, country_code = ?, region = ? WHERE id = ?`)
-    .bind(name, country, region, clubId).run()
+  const [res] = await db.batch([
+    db.prepare(`UPDATE golf_clubs SET name = ?, country_code = ?, region = ? WHERE id = ?`).bind(name, country, region, clubId),
+    clearStatsCacheStmt(db),
+  ])
   if (!res.meta.changes) throw new GolfError('골프장을 찾을 수 없습니다.', 404)
 }
 
@@ -105,15 +134,20 @@ export async function createCourse(db: D1Database, userId: string, clubId: strin
   if (dup) throw new GolfError('이미 등록된 코스입니다.', 409)
 
   const id = uuid()
-  await db.prepare(`INSERT INTO golf_courses (id, club_id, name, pars_json, created_by) VALUES (?, ?, ?, ?, ?)`)
-    .bind(id, clubId, name, JSON.stringify(pars), userId).run()
+  await db.batch([
+    db.prepare(`INSERT INTO golf_courses (id, club_id, name, pars_json, created_by) VALUES (?, ?, ?, ?, ?)`)
+      .bind(id, clubId, name, JSON.stringify(pars), userId),
+    clearStatsCacheStmt(db),
+  ])
   return id
 }
 
 export async function updateCoursePars(db: D1Database, courseId: string, body: any): Promise<void> {
   const pars = parsePars(body?.pars)
-  const res = await db.prepare(`UPDATE golf_courses SET pars_json = ? WHERE id = ?`)
-    .bind(JSON.stringify(pars), courseId).run()
+  const [res] = await db.batch([
+    db.prepare(`UPDATE golf_courses SET pars_json = ? WHERE id = ?`).bind(JSON.stringify(pars), courseId),
+    clearStatsCacheStmt(db),
+  ])
   if (!res.meta.changes) throw new GolfError('코스를 찾을 수 없습니다.', 404)
 }
 
@@ -123,7 +157,7 @@ export async function deleteCourse(db: D1Database, courseId: string): Promise<vo
     `SELECT 1 FROM golf_rounds WHERE front_course_id = ? OR back_course_id = ? LIMIT 1`
   ).bind(courseId, courseId).first()
   if (used) throw new GolfError('라운드 기록에서 사용 중인 코스는 삭제할 수 없습니다.', 409)
-  await db.prepare(`DELETE FROM golf_courses WHERE id = ?`).bind(courseId).run()
+  await db.batch([db.prepare(`DELETE FROM golf_courses WHERE id = ?`).bind(courseId), clearStatsCacheStmt(db)])
 }
 
 /** 코스가 남아 있거나 라운드에서 사용 중이면 삭제 불가 */
@@ -132,7 +166,7 @@ export async function deleteClub(db: D1Database, clubId: string): Promise<void> 
     `SELECT 1 FROM golf_courses WHERE club_id = ? UNION ALL SELECT 1 FROM golf_rounds WHERE club_id = ? LIMIT 1`
   ).bind(clubId, clubId).first()
   if (used) throw new GolfError('코스가 있거나 라운드에서 사용 중인 골프장은 삭제할 수 없습니다.', 409)
-  await db.prepare(`DELETE FROM golf_clubs WHERE id = ?`).bind(clubId).run()
+  await db.batch([db.prepare(`DELETE FROM golf_clubs WHERE id = ?`).bind(clubId), clearStatsCacheStmt(db)])
 }
 
 // ───────────────────────── 플레이어 ─────────────────────────
@@ -152,8 +186,10 @@ export async function ensureSelfPlayer(db: D1Database, ownerId: string): Promise
     .bind(ownerId, name).first(); i++) name = `나(${i})`
 
   const id = uuid()
-  await db.prepare(`INSERT INTO golf_players (id, owner_user_id, display_name, is_self) VALUES (?, ?, ?, 1)`)
-    .bind(id, ownerId, name).run()
+  await db.batch([
+    db.prepare(`INSERT INTO golf_players (id, owner_user_id, display_name, is_self) VALUES (?, ?, ?, 1)`).bind(id, ownerId, name),
+    clearStatsCacheStmt(db),
+  ])
   return { id, display_name: name, is_self: 1 }
 }
 
@@ -189,7 +225,7 @@ export function parseRoundSort(v: string | null | undefined): RoundSort {
 }
 
 /** clubId: 주면 그 골프장 라운드만 */
-export async function listRounds(db: D1Database, ownerId: string, limit = 200, year?: string, sort: RoundSort = 'new', clubId?: string): Promise<RoundListItem[]> {
+async function listRoundsRaw(db: D1Database, ownerId: string, limit = 200, year?: string, sort: RoundSort = 'new', clubId?: string): Promise<RoundListItem[]> {
   const { results } = await db.prepare(
     `SELECT r.id, r.played_on, c.name AS club_name, c.country_code, c.region,
             fc.name AS front_course, bc.name AS back_course, r.memo,
@@ -210,7 +246,7 @@ export async function listRounds(db: D1Database, ownerId: string, limit = 200, y
 }
 
 /** 내가 그 골프장에서 친 라운드 수 */
-export async function countClubRounds(db: D1Database, ownerId: string, clubId: string): Promise<number> {
+async function countClubRoundsRaw(db: D1Database, ownerId: string, clubId: string): Promise<number> {
   const row = await db.prepare(
     `SELECT count(*) AS n FROM golf_rounds WHERE owner_user_id = ? AND club_id = ?`
   ).bind(ownerId, clubId).first<{ n: number }>()
@@ -220,7 +256,7 @@ export async function countClubRounds(db: D1Database, ownerId: string, clubId: s
 export interface YearCount { year: string; rounds: number }
 
 /** 라운드가 있는 연도 목록 (최신순) */
-export async function listRoundYears(db: D1Database, ownerId: string): Promise<YearCount[]> {
+async function listRoundYearsRaw(db: D1Database, ownerId: string): Promise<YearCount[]> {
   const { results } = await db.prepare(
     `SELECT substr(played_on, 1, 4) AS year, count(*) AS rounds
        FROM golf_rounds WHERE owner_user_id = ?
@@ -232,7 +268,7 @@ export async function listRoundYears(db: D1Database, ownerId: string): Promise<Y
 export interface PeriodSummary { rounds: number; full_rounds: number; avg: number | null; best: number | null; best_on: string | null }
 
 /** 기간 요약 — 평균·베스트는 18홀 라운드(본인) 기준. year 없으면 전체 */
-export async function periodSummary(db: D1Database, ownerId: string, year?: string): Promise<PeriodSummary> {
+async function periodSummaryRaw(db: D1Database, ownerId: string, year?: string): Promise<PeriodSummary> {
   const row = await db.prepare(
     `WITH mine AS (
        SELECT r.played_on, r.back_course_id IS NOT NULL AS full18, rp.total
@@ -454,6 +490,7 @@ export async function saveRound(db: D1Database, ownerId: string, body: any, roun
     }
   }
 
+  stmts.push(clearStatsCacheStmt(db))
   await db.batch(stmts)
   return id
 }
@@ -465,6 +502,7 @@ export async function deleteRound(db: D1Database, ownerId: string, roundId: stri
     db.prepare(`DELETE FROM golf_hole_scores WHERE round_id = ?`).bind(roundId),
     db.prepare(`DELETE FROM golf_round_players WHERE round_id = ?`).bind(roundId),
     db.prepare(`DELETE FROM golf_rounds WHERE id = ? AND owner_user_id = ?`).bind(roundId, ownerId),
+    clearStatsCacheStmt(db),
   ])
 }
 
@@ -496,7 +534,7 @@ const isFull = <T extends { full18: number; total: number | null }>(r: T): r is 
   !!r.full18 && r.total != null
 
 /** 18홀 라운드 기준 요약 */
-export async function homeSummary(db: D1Database, ownerId: string, year: string): Promise<HomeSummary> {
+async function homeSummaryRaw(db: D1Database, ownerId: string, year: string): Promise<HomeSummary> {
   const rows = await myRoundRows(db, ownerId)
   const full = rows.filter(isFull)
   const yearTotals = full.filter((r) => r.played_on.startsWith(year)).map((r) => r.total)
@@ -561,7 +599,7 @@ function buddyStats(id: string, display_name: string, all: BuddyPair[], recent: 
  * minRounds: 이 횟수 이상 함께한 사람만 (조인 1회성 동반자 제외용, 전체 라운드 기준)
  * recent: 동반자별 최근 N라운드만 집계 (null 이면 전체). 정렬은 전체 라운드 수 기준 그대로
  */
-export async function listBuddies(db: D1Database, ownerId: string, minRounds = 1, recent: number | null = null): Promise<Buddy[]> {
+async function listBuddiesRaw(db: D1Database, ownerId: string, minRounds = 1, recent: number | null = null): Promise<Buddy[]> {
   // 윈도 함수·GROUP BY 를 SQL 에서 돌리면 임시 B-tree 까지 읽기로 잡혀 호출당 1.8만 행이 나온다.
   // (나, 동반자) 쌍만 읽고(약 4.5천 행) 집계는 JS 에서 한다.
   const [pairsRes, namesRes] = await db.batch([
@@ -605,7 +643,7 @@ export interface BuddyRound {
 }
 
 /** 특정 동반자와 함께 친 라운드 (최근순) + 동반자 정보. recent: 최근 N라운드만 (null 이면 전체) */
-export async function getBuddy(db: D1Database, ownerId: string, buddyId: string, recent: number | null = null): Promise<{ buddy: Buddy; self_name: string; rounds: BuddyRound[] } | null> {
+async function getBuddyRaw(db: D1Database, ownerId: string, buddyId: string, recent: number | null = null): Promise<{ buddy: Buddy; self_name: string; rounds: BuddyRound[] } | null> {
   // 전체 동반자 집계(listBuddies)를 돌리지 않고, 이 동반자와 친 라운드만 읽는다.
   // 동반자 인덱스(player_id)에서 시작해 함께 친 라운드 수만큼만 읽는다. 전적 집계·정렬·자르기는 JS 에서 한다.
   const [selfRes, buddyRes, roundsRes] = await db.batch([
@@ -650,7 +688,7 @@ export interface SearchIndex {
 }
 
 /** 헤더 검색 자동완성용 — 내가 라운드한 골프장, 함께 친 동반자만 (라운드 수 많은 순) */
-export async function searchIndex(db: D1Database, ownerId: string): Promise<SearchIndex> {
+async function searchIndexRaw(db: D1Database, ownerId: string): Promise<SearchIndex> {
   const [clubs, players] = await db.batch([
     db.prepare(
       `SELECT c.id, c.name, count(*) AS rounds
@@ -677,7 +715,7 @@ export interface YearStat { year: string; rounds: number; avg: number | null }
 export interface MonthStat { month: number; rounds: number }
 
 /** 랭킹 페이지용 — 골프장별 방문 수, 연도별·월별 라운드 수. 평균은 18홀 본인 타수 기준 */
-export async function rankingStats(db: D1Database, ownerId: string): Promise<{ clubs: ClubStat[]; years: YearStat[]; months: MonthStat[] }> {
+async function rankingStatsRaw(db: D1Database, ownerId: string): Promise<{ clubs: ClubStat[]; years: YearStat[]; months: MonthStat[] }> {
   // 같은 CTE 를 쿼리 3개가 각각 훑던 것을 1번 읽기 + JS 집계로 바꿈 (약 8천 → 1.7천 행)
   const [rows, clubRes] = await Promise.all([
     myRoundRows(db, ownerId),
@@ -715,4 +753,44 @@ export async function rankingStats(db: D1Database, ownerId: string): Promise<{ c
     years: [...yearMap].sort((a, b) => cmpStr(a[0], b[0])).map(([year, y]) => ({ year, rounds: y.rounds, avg: avg1(y.totals) })),
     months: [...monthMap].sort((a, b) => a[0] - b[0]).map(([month, rounds]) => ({ month, rounds })),
   }
+}
+
+// ───────────────────────── 캐시된 조회 (페이지·API 는 이 함수들만 쓴다) ─────────────────────────
+// 키는 함수 이름 + 인자. 원본 계산은 위의 *Raw 함수에 있다.
+
+/** clubId: 주면 그 골프장 라운드만 */
+export function listRounds(db: D1Database, ownerId: string, limit = 200, year?: string, sort: RoundSort = 'new', clubId?: string) {
+  return cached(db, ownerId, `rounds:${limit}:${year ?? ''}:${sort}:${clubId ?? ''}`, () => listRoundsRaw(db, ownerId, limit, year, sort, clubId))
+}
+/** 내가 그 골프장에서 친 라운드 수 */
+export function countClubRounds(db: D1Database, ownerId: string, clubId: string) {
+  return cached(db, ownerId, `club-count:${clubId}`, () => countClubRoundsRaw(db, ownerId, clubId))
+}
+/** 라운드가 있는 연도 목록 (최신순) */
+export function listRoundYears(db: D1Database, ownerId: string) {
+  return cached(db, ownerId, 'years', () => listRoundYearsRaw(db, ownerId))
+}
+/** 기간 요약 — 평균·베스트는 18홀 라운드(본인) 기준. year 없으면 전체 */
+export function periodSummary(db: D1Database, ownerId: string, year?: string) {
+  return cached(db, ownerId, `period:${year ?? 'all'}`, () => periodSummaryRaw(db, ownerId, year))
+}
+/** 18홀 라운드 기준 요약 */
+export function homeSummary(db: D1Database, ownerId: string, year: string) {
+  return cached(db, ownerId, `home:${year}`, () => homeSummaryRaw(db, ownerId, year))
+}
+/** 나와 함께 친 동반자 목록 (함께한 라운드 수 많은 순) — 자세한 규칙은 listBuddiesRaw */
+export function listBuddies(db: D1Database, ownerId: string, minRounds = 1, recent: number | null = null) {
+  return cached(db, ownerId, `buddies:${minRounds}:${recent ?? 'all'}`, () => listBuddiesRaw(db, ownerId, minRounds, recent))
+}
+/** 특정 동반자와 함께 친 라운드 (최근순) + 동반자 정보. recent: 최근 N라운드만 (null 이면 전체) */
+export function getBuddy(db: D1Database, ownerId: string, buddyId: string, recent: number | null = null) {
+  return cached(db, ownerId, `buddy:${buddyId}:${recent ?? 'all'}`, () => getBuddyRaw(db, ownerId, buddyId, recent))
+}
+/** 헤더 검색 자동완성용 — 내가 라운드한 골프장, 함께 친 동반자만 (라운드 수 많은 순) */
+export function searchIndex(db: D1Database, ownerId: string) {
+  return cached(db, ownerId, 'search', () => searchIndexRaw(db, ownerId))
+}
+/** 랭킹 페이지용 — 골프장별 방문 수, 연도별·월별 라운드 수. 평균은 18홀 본인 타수 기준 */
+export function rankingStats(db: D1Database, ownerId: string) {
+  return cached(db, ownerId, 'ranking', () => rankingStatsRaw(db, ownerId))
 }
