@@ -526,6 +526,35 @@ export interface Buddy {
   my_avg: number | null; their_avg: number | null
 }
 
+/** 나와 한 동반자가 같이 친 라운드 1개 */
+interface BuddyPair { played_on: string; created_at: string; full18: number; my: number; their: number }
+
+const cmpStr = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0)
+
+/** 최근 라운드 먼저 (played_on DESC, created_at DESC) */
+function sortRecentFirst<T extends { played_on: string; created_at: string }>(list: T[]): T[] {
+  return list.sort((a, b) => cmpStr(b.played_on, a.played_on) || cmpStr(b.created_at, a.created_at))
+}
+
+/** all: 최근순 정렬된 전체 라운드. recent 로 잘린 범위가 비면 null */
+function buddyStats(id: string, display_name: string, all: BuddyPair[], recent: number | null): Buddy | null {
+  const list = recent == null ? all : all.slice(0, Math.max(recent, 0))
+  if (!list.length) return null
+  const full = list.filter((p) => p.full18)
+  return {
+    id,
+    display_name,
+    rounds: list.length,
+    total_rounds: all.length,
+    wins: list.filter((p) => p.my < p.their).length,
+    losses: list.filter((p) => p.my > p.their).length,
+    draws: list.filter((p) => p.my === p.their).length,
+    last_on: list[0].played_on,
+    my_avg: avg1(full.map((p) => p.my)),
+    their_avg: avg1(full.map((p) => p.their)),
+  }
+}
+
 /**
  * 나와 함께 친 동반자 목록 (함께한 라운드 수 많은 순).
  * 승패는 같은 라운드에서 본인 타수와 비교 — 적게 친 쪽이 승.
@@ -547,11 +576,10 @@ export async function listBuddies(db: D1Database, ownerId: string, minRounds = 1
     ).bind(ownerId),
     db.prepare(`SELECT id, display_name FROM golf_players WHERE owner_user_id = ? AND is_self = 0`).bind(ownerId),
   ])
-  type Pair = { opp: string; played_on: string; created_at: string; full18: number; my: number; their: number }
   const names = new Map((namesRes.results as { id: string; display_name: string }[]).map((p) => [p.id, p.display_name]))
 
-  const byOpp = new Map<string, Pair[]>()
-  for (const p of pairsRes.results as Pair[]) {
+  const byOpp = new Map<string, BuddyPair[]>()
+  for (const p of pairsRes.results as (BuddyPair & { opp: string })[]) {
     if (!names.has(p.opp)) continue
     const list = byOpp.get(p.opp)
     if (list) list.push(p)
@@ -561,28 +589,11 @@ export async function listBuddies(db: D1Database, ownerId: string, minRounds = 1
   const buddies: Buddy[] = []
   for (const [opp, all] of byOpp) {
     if (all.length < minRounds) continue
-    all.sort((a, b) =>
-      a.played_on !== b.played_on ? (a.played_on < b.played_on ? 1 : -1)
-        : a.created_at < b.created_at ? 1 : a.created_at > b.created_at ? -1 : 0)
-    const list = recent == null ? all : all.slice(0, recent)
-    if (!list.length) continue
-    const full = list.filter((p) => p.full18)
-    buddies.push({
-      id: opp,
-      display_name: names.get(opp)!,
-      rounds: list.length,
-      total_rounds: all.length,
-      wins: list.filter((p) => p.my < p.their).length,
-      losses: list.filter((p) => p.my > p.their).length,
-      draws: list.filter((p) => p.my === p.their).length,
-      last_on: list[0].played_on,
-      my_avg: avg1(full.map((p) => p.my)),
-      their_avg: avg1(full.map((p) => p.their)),
-    })
+    const b = buddyStats(opp, names.get(opp)!, sortRecentFirst(all), recent)
+    if (b) buddies.push(b)
   }
-  const cmp = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0)
   return buddies.sort((a, b) =>
-    b.total_rounds - a.total_rounds || cmp(b.last_on, a.last_on) || cmp(a.display_name, b.display_name))
+    b.total_rounds - a.total_rounds || cmpStr(b.last_on, a.last_on) || cmpStr(a.display_name, b.display_name))
 }
 
 export interface BuddyRound {
@@ -595,29 +606,40 @@ export interface BuddyRound {
 
 /** 특정 동반자와 함께 친 라운드 (최근순) + 동반자 정보. recent: 최근 N라운드만 (null 이면 전체) */
 export async function getBuddy(db: D1Database, ownerId: string, buddyId: string, recent: number | null = null): Promise<{ buddy: Buddy; self_name: string; rounds: BuddyRound[] } | null> {
-  const buddy = (await listBuddies(db, ownerId, 1, recent)).find((b) => b.id === buddyId)
+  // 전체 동반자 집계(listBuddies)를 돌리지 않고, 이 동반자와 친 라운드만 읽는다.
+  // 동반자 인덱스(player_id)에서 시작해 함께 친 라운드 수만큼만 읽는다. 전적 집계·정렬·자르기는 JS 에서 한다.
+  const [selfRes, buddyRes, roundsRes] = await db.batch([
+    db.prepare(`SELECT display_name FROM golf_players WHERE owner_user_id = ? AND is_self = 1`).bind(ownerId),
+    db.prepare(`SELECT display_name FROM golf_players WHERE id = ? AND owner_user_id = ? AND is_self = 0`).bind(buddyId, ownerId),
+    db.prepare(
+      `SELECT r.id, r.played_on, c.name AS club_name, c.country_code, c.region,
+              fc.name AS front_course, bc.name AS back_course,
+              m.total AS my, o.total AS their,
+              (SELECT group_concat(xp.display_name, ', ')
+                 FROM golf_round_players x JOIN golf_players xp ON xp.id = x.player_id
+                WHERE x.round_id = r.id AND x.player_id NOT IN (m.player_id, o.player_id)) AS others,
+              r.created_at, r.back_course_id IS NOT NULL AS full18
+         FROM golf_round_players o
+         JOIN golf_rounds r ON r.id = o.round_id
+         JOIN golf_round_players m ON m.round_id = o.round_id
+          AND m.player_id = (SELECT id FROM golf_players WHERE owner_user_id = ?1 AND is_self = 1)
+         JOIN golf_clubs c ON c.id = r.club_id
+         JOIN golf_courses fc ON fc.id = r.front_course_id
+         LEFT JOIN golf_courses bc ON bc.id = r.back_course_id
+        WHERE o.player_id = ?2 AND r.owner_user_id = ?1`
+    ).bind(ownerId, buddyId),
+  ])
+  const name = (buddyRes.results[0] as { display_name: string } | undefined)?.display_name
+  if (name == null) return null
+  const all = sortRecentFirst(roundsRes.results as (BuddyRound & BuddyPair)[])
+  const buddy = buddyStats(buddyId, name, all, recent)
   if (!buddy) return null
-  const self = await db.prepare(`SELECT display_name FROM golf_players WHERE owner_user_id = ? AND is_self = 1`)
-    .bind(ownerId).first<{ display_name: string }>()
-  const { results } = await db.prepare(
-    `SELECT r.id, r.played_on, c.name AS club_name, c.country_code, c.region,
-            fc.name AS front_course, bc.name AS back_course,
-            m.total AS my, o.total AS their,
-            (SELECT group_concat(xp.display_name, ', ')
-               FROM golf_round_players x JOIN golf_players xp ON xp.id = x.player_id
-              WHERE x.round_id = r.id AND x.player_id NOT IN (m.player_id, o.player_id)) AS others
-       FROM golf_rounds r
-       JOIN golf_clubs c ON c.id = r.club_id
-       JOIN golf_courses fc ON fc.id = r.front_course_id
-       LEFT JOIN golf_courses bc ON bc.id = r.back_course_id
-       JOIN golf_round_players m ON m.round_id = r.id
-        AND m.player_id = (SELECT id FROM golf_players WHERE owner_user_id = ?1 AND is_self = 1)
-       JOIN golf_round_players o ON o.round_id = r.id AND o.player_id = ?2
-      WHERE r.owner_user_id = ?1
-      ORDER BY r.played_on DESC, r.created_at DESC
-      LIMIT ?3`
-  ).bind(ownerId, buddyId, recent ?? -1).all<BuddyRound>()
-  return { buddy, self_name: self?.display_name ?? '나', rounds: results }
+  const shown = recent == null ? all : all.slice(0, buddy.rounds)
+  return {
+    buddy,
+    self_name: (selfRes.results[0] as { display_name: string } | undefined)?.display_name ?? '나',
+    rounds: shown.map(({ created_at, full18, ...r }) => r),
+  }
 }
 
 // ───────────────────────── 검색 ─────────────────────────
@@ -662,7 +684,6 @@ export async function rankingStats(db: D1Database, ownerId: string): Promise<{ c
     db.prepare(`SELECT id, name FROM golf_clubs`).all<{ id: string; name: string }>(),
   ])
   const clubNames = new Map(clubRes.results.map((c) => [c.id, c.name]))
-  const cmp = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0)
 
   const clubMap = new Map<string, { last: string; totals: number[]; rounds: number }>()
   const yearMap = new Map<string, { totals: number[]; rounds: number }>()
@@ -688,10 +709,10 @@ export async function rankingStats(db: D1Database, ownerId: string): Promise<{ c
   const clubs: (ClubStat & { last: string })[] = [...clubMap].map(([id, c]) => ({
     id, name: clubNames.get(id)!, rounds: c.rounds, avg: avg1(c.totals), full_rounds: c.totals.length, last: c.last,
   }))
-  clubs.sort((a, b) => b.rounds - a.rounds || cmp(b.last, a.last) || cmp(a.name, b.name))
+  clubs.sort((a, b) => b.rounds - a.rounds || cmpStr(b.last, a.last) || cmpStr(a.name, b.name))
   return {
     clubs: clubs.map(({ last, ...c }) => c),
-    years: [...yearMap].sort((a, b) => cmp(a[0], b[0])).map(([year, y]) => ({ year, rounds: y.rounds, avg: avg1(y.totals) })),
+    years: [...yearMap].sort((a, b) => cmpStr(a[0], b[0])).map(([year, y]) => ({ year, rounds: y.rounds, avg: avg1(y.totals) })),
     months: [...monthMap].sort((a, b) => a[0] - b[0]).map(([month, rounds]) => ({ month, rounds })),
   }
 }
