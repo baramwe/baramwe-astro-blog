@@ -122,6 +122,20 @@ if (authed) {
       .chip:hover .chip-x, .chip:focus-visible .chip-x { opacity: 1; }
     }
     .chip-hidden { border-style: dashed; color: #6A7FA0; }
+    /* 배우 칩: 줄에는 '전체 보기' 버튼 + 고른 배우만, 전체 목록은 레이어 팝업에 줄바꿈으로 펼친다 */
+    .ap-row { position: relative; }
+    .ap-btn { flex: 0 0 auto; border-color: #3A5275; color: #CAD3E2; }
+    .ap-btn[aria-expanded="true"] { border-color: #61A2FF; color: #E3E8F2; background: rgba(97, 162, 255, .12); }
+    .ap-btn .caret { font-size: .62rem; opacity: .75; transition: transform .12s; }
+    .ap-btn[aria-expanded="true"] .caret { transform: rotate(180deg); }
+    .ap-none { font-size: .74rem; color: #4A5D7A; white-space: nowrap; }
+    .ap { position: absolute; top: calc(100% + 6px); left: 0; z-index: 25; width: max-content; max-width: min(760px, 100%); padding: .55rem .6rem .6rem; background: #0B1628; border: 1px solid #2B394F; border-radius: 10px; box-shadow: 0 3px 10px rgba(0,0,0,.52), 0 6px 14px rgba(0,0,0,.28); }
+    .ap-head { display: flex; align-items: center; gap: .5rem; margin-bottom: .45rem; font-size: .74rem; color: #98A8C3; }
+    .ap-head .ap-title { flex: 1; }
+    .ap-head .n { color: #6A7FA0; font-variant-numeric: tabular-nums; }
+    .ap-close { display: inline-grid; place-items: center; width: 1.5rem; height: 1.5rem; border: none; border-radius: 6px; background: transparent; color: #6A7FA0; font-size: 1rem; line-height: 1; cursor: pointer; }
+    .ap-close:hover { background: #13223A; color: #E3E8F2; }
+    .ap-chips { display: flex; flex-wrap: wrap; gap: .35rem; max-height: min(60vh, 420px); overflow-y: auto; padding: 1px; overscroll-behavior: contain; }
     .mh { width: 280px; }
     .mh-row { display: flex; align-items: center; gap: .5rem; padding: .4rem 0; border-top: 1px solid #1C2A40; }
     .mh-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #E3E8F2; }
@@ -228,7 +242,7 @@ if (authed) {
     @media (max-width: 640px) {
       body { padding: 0 0 5.5rem; font-size: 1rem; }
       .wrap { padding: 0 .85rem; }
-      header { position: static; padding-top: .65rem; }
+      header { position: relative; padding-top: .65rem; } /* 배우 팝업이 카드 위로 뜨도록 z-index 는 유지 */
       .top { flex-wrap: wrap; gap: .5rem; }
       h1 { flex: 1 1 auto; }
       .stats { order: 2; }
@@ -289,7 +303,14 @@ if (authed) {
       </div>
       <div class="chip-row"><span class="chip-label">메모</span><div class="chips" id="chips-memo"></div></div>
       <div class="chip-row"><span class="chip-label">사이트</span><div class="chips" id="chips-site"></div></div>
-      <div class="chip-row"><span class="chip-label">배우</span><div class="chips" id="chips-actor"></div></div>
+      <div class="chip-row ap-row"><span class="chip-label">배우</span>
+        <button class="chip ap-btn" id="ap-btn" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="ap">전체 보기<span class="n" id="ap-btn-n"></span><span class="caret" aria-hidden="true">▼</span></button>
+        <div class="chips" id="chips-actor-sel"></div>
+        <div class="ap" id="ap" role="dialog" aria-label="배우 선택" hidden>
+          <div class="ap-head"><span class="ap-title">배우 TOP <span class="n" id="ap-n"></span> · 여러 명 선택 가능</span><button class="ap-close" type="button" aria-label="닫기">×</button></div>
+          <div class="ap-chips" id="chips-actor"></div>
+        </div>
+      </div>
     </div>
   </header>
 
@@ -646,6 +667,16 @@ if (authed) {
         var v = state[c.dataset.kind];
         c.setAttribute('aria-pressed', String(Array.isArray(v) ? (c.dataset.k ? v.indexOf(c.dataset.k) !== -1 : !v.length) : v === c.dataset.k));
       });
+      syncActorBar();
+    }
+    // 배우 줄: 팝업에서 고른 배우만 칩으로 보여 준다 (누르면 선택 해제)
+    function syncActorBar() {
+      var cnt = {};
+      countActors().forEach(function (e) { cnt[e[0]] = e[1]; });
+      document.getElementById('chips-actor-sel').innerHTML = state.actor.length
+        ? state.actor.map(function (a) { return chip('actor', a, a, cnt[a] != null ? cnt[a] : null); }).join('')
+        : '<span class="ap-none">선택 안 함</span>';
+      document.querySelectorAll('#chips-actor-sel .chip').forEach(function (c) { c.setAttribute('aria-pressed', 'true'); });
     }
 
     function render() {
@@ -932,6 +963,8 @@ if (authed) {
       document.getElementById('chips-actor').innerHTML = (actors.length
         ? chip('actor', '', '전체', null) + actors.map(function (e) { return chip('actor', e[0], e[0], e[1], true); }).join('')
         : '<span class="chip-empty">노출할 배우가 없습니다</span>') + hiddenBtn('actor');
+      document.getElementById('ap-btn-n').textContent = actors.length;
+      document.getElementById('ap-n').textContent = actors.length;
     }
     var toastTimer = null;
     function toast(t) {
@@ -1013,7 +1046,25 @@ if (authed) {
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !mh.hidden) mhClose(); });
     window.addEventListener('resize', function () { if (!mh.hidden) mhOpen(mhKind); });
 
+    // 배우 전체 목록 레이어 팝업 — 칩은 줄바꿈으로 한눈에, 크기는 칩 개수·화면 폭에 맞춰 늘고 준다
+    var ap = document.getElementById('ap'), apBtn = document.getElementById('ap-btn');
+    function apOpen() { ap.hidden = false; apBtn.setAttribute('aria-expanded', 'true'); }
+    function apClose() {
+      ap.hidden = true;
+      apBtn.setAttribute('aria-expanded', 'false');
+      if (!mh.hidden && mhKind === 'actor') mhClose();
+    }
+    document.addEventListener('mousedown', function (e) {
+      if (ap.hidden) return;
+      if (ap.contains(e.target) || apBtn.contains(e.target) || mh.contains(e.target) || e.target.closest('#chips-actor-sel')) return;
+      apClose();
+    });
+    // 숨김 관리 팝업이 떠 있으면 Esc 는 그쪽부터 닫는다 (capture 로 mh 핸들러보다 먼저 본다)
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !ap.hidden && mh.hidden) apClose(); }, true);
+
     document.querySelector('header').addEventListener('click', function (e) {
+      if (e.target.closest('#ap-btn')) { if (ap.hidden) apOpen(); else apClose(); return; }
+      if (e.target.closest('.ap-close')) { apClose(); return; }
       var x = e.target.closest('.chip-x');
       if (x) { e.preventDefault(); e.stopPropagation(); setHidden(x.closest('.chip').dataset.kind, x.dataset.hide, true); return; }
       var hb = e.target.closest('.chip-hidden');
