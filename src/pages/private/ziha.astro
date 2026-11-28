@@ -567,6 +567,10 @@ if (authed) {
     // '고정' 섹션 접힘 상태는 이 브라우저에만 기억한다
     var fixedFolded = false;
     try { fixedFolded = localStorage.getItem('ziha-fixed-folded') === '1'; } catch (e) {}
+    // 메모·사이트·배우 칩을 고르면 '고정' 섹션은 걸러지지 않고 자동으로 접힌다. 그때 펼친 건 기억하지 않는다(칩을 다 풀면 초기화).
+    var fixedPeek = false;
+    function chipFiltered() { return !!(state.site.length || state.memo.length || state.actor.length); }
+    function fixedIsFolded() { return chipFiltered() ? !fixedPeek : fixedFolded; }
     var qeOrderDirty = false;
     function sortKey(v) { return v === 0 ? '0' : v === 1 ? '1' : ''; } // 기본은 null
     // 서버와 같은 순서: 고정 → 즐겨찾기 → 기본, 그 안에서는 최근 등록순
@@ -591,7 +595,8 @@ if (authed) {
     function displayTitle(t) { var s = String(t || '').split('🔳').join('').trim(); return s || String(t || ''); }
 
     // 검색어는 API 와 같은 규칙: '&&' 로 나누면 AND, 각 단어는 제목·메모에서 찾는다.
-    function matches(r) {
+    // skipChips: 메모·사이트·배우 칩 조건은 보지 않는다 (고정 섹션 유지용)
+    function matches(r, skipChips) {
       if (state.q) {
         var terms = state.q.indexOf('&&') !== -1 ? state.q.split('&&') : [state.q];
         var hay = (String(r.title || '') + ' ' + memoOf(r)).toLowerCase();
@@ -605,6 +610,7 @@ if (authed) {
         var p = state.star.split('_'), n = Number(p[0]);
         if (p[1] === 'eq' ? r.star !== n : r.star < n) return false;
       }
+      if (skipChips) return true;
       if (state.site.length && state.site.indexOf(r.site || 'none') === -1) return false; // 'none' = 사이트 태그 없음(기타)
       if (state.memo.length) { // 고른 메모 중 하나라도 있으면 보인다
         var ms = memosOf(r);
@@ -682,11 +688,15 @@ if (authed) {
     function render() {
       qeOrderDirty = false; // 지금 전체를 다시 그리니 대기 중인 재정렬은 필요 없다
       qeClose();
-      current = ALL.filter(matches);
-      listEl.innerHTML = groupsOf(current).map(function (g) {
+      if (!chipFiltered()) fixedPeek = false;
+      current = ALL.filter(function (r) { return matches(r); }); // 실제 검색 결과 (열기·개수 기준)
+      // 정렬순 보기에서 칩으로 거를 땐 고정 북마크를 빼지 않고 (검색어·별점만 적용) 접힌 섹션으로 둔다
+      var keepFixed = state.group === 'sort' && chipFiltered();
+      var shown = keepFixed ? ALL.filter(function (r) { return matches(r) || (r.sort === 0 && matches(r, true)); }) : current;
+      listEl.innerHTML = groupsOf(shown).map(function (g) {
         // 정렬순 보기의 '고정' 섹션은 접었다 펼 수 있다
         var foldable = state.group === 'sort' && g.key === '0';
-        var folded = foldable && fixedFolded;
+        var folded = foldable && fixedIsFolded();
         return '<section' + (folded ? ' class="folded"' : '') + '><h2>' + esc(g.label) + '<span class="cnt">' + g.rows.length + '</span>' +
           (foldable ? '<button class="sec-toggle" type="button" aria-expanded="' + !folded + '">' + (folded ? '펼치기' : '접기') +
             '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button>' : '') +
@@ -803,18 +813,22 @@ if (authed) {
     listEl.addEventListener('click', function (e) {
       var tg = e.target.closest('.sec-toggle');
       if (tg) {
-        fixedFolded = !fixedFolded;
-        try { localStorage.setItem('ziha-fixed-folded', fixedFolded ? '1' : '0'); } catch (err) {}
+        if (chipFiltered()) fixedPeek = !fixedPeek; // 칩 필터 중에는 잠깐 펼치기만 (저장 안 함)
+        else {
+          fixedFolded = !fixedFolded;
+          try { localStorage.setItem('ziha-fixed-folded', fixedFolded ? '1' : '0'); } catch (err) {}
+        }
+        var nowFolded = fixedIsFolded();
         var sec = tg.closest('section');
-        if (fixedFolded && qeBtn && sec.contains(qeBtn)) qeClose(); // 접히는 카드의 팝업은 닫는다
+        if (nowFolded && qeBtn && sec.contains(qeBtn)) qeClose(); // 접히는 카드의 팝업은 닫는다
         // 팝업을 닫으며 목록이 다시 그려졌을 수 있으니 현재 DOM 에서 다시 찾는다 (다시 그려졌다면 이미 접힘 상태로 그려짐)
         var cur = listEl.querySelector('.sec-toggle');
         if (!cur) return;
         sec = cur.closest('section');
-        sec.classList.toggle('folded', fixedFolded);
+        sec.classList.toggle('folded', nowFolded);
         var t = sec.querySelector('.sec-toggle');
-        t.setAttribute('aria-expanded', String(!fixedFolded));
-        t.firstChild.textContent = fixedFolded ? '펼치기' : '접기';
+        t.setAttribute('aria-expanded', String(!nowFolded));
+        t.firstChild.textContent = nowFolded ? '펼치기' : '접기';
         return;
       }
       var btn = e.target.closest('.card-edit');
