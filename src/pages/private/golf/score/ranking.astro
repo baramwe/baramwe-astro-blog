@@ -202,14 +202,14 @@ const medal = (_i: number) => 'bg-kb-sunken text-kb-subdued border border-kb-bor
         <div class="flex h-40 items-end gap-1">
           {stats.years.map((y) => (
             <div class="flex h-full min-w-0 flex-1 flex-col items-center justify-end">
-              <span class:list={['mb-1 text-[13px] font-semibold tabular-nums', y.rounds === maxYear ? 'text-kb-success' : 'text-kb-primary']}>{y.rounds}</span>
+              <span class:list={['mb-1 text-[14px] font-semibold tabular-nums', y.rounds === maxYear ? 'text-kb-success' : 'text-kb-primary']}>{y.rounds}</span>
               <div class="w-full max-w-10 rounded-t bg-kb-primary" style={`height:${(y.rounds / maxYear) * 85}%`}></div>
             </div>
           ))}
         </div>
         <div class="mt-1.5 flex gap-1 border-t border-kb-border pt-1.5">
           {stats.years.map((y) => (
-            <div class:list={['min-w-0 flex-1 text-center text-[13px] tabular-nums', y.rounds === maxYear ? 'font-semibold text-kb-success' : 'text-kb-text']}>{y.year.slice(2)}</div>
+            <div class:list={['min-w-0 flex-1 text-center text-[14px] tabular-nums', y.rounds === maxYear ? 'font-semibold text-kb-success' : 'text-kb-text']}>{y.year.slice(2)}</div>
           ))}
         </div>
       </div>
@@ -224,7 +224,7 @@ const medal = (_i: number) => 'bg-kb-sunken text-kb-subdued border border-kb-bor
           {/* 가로 눈금선 */}
           {avgGrid.map((v) => (
             <div class="absolute left-7 right-0 border-t border-dashed border-kb-border" style={`top:${avgY(v)}%`}>
-              <span class="absolute -left-7 -top-[5px] w-6 text-right text-[11px] leading-none tabular-nums text-kb-muted">{v}</span>
+              <span class="absolute -left-7 -top-[6px] w-6 text-right text-[12px] leading-none tabular-nums text-kb-muted">{v}</span>
             </div>
           ))}
           <div class="absolute inset-y-0 left-7 right-0">
@@ -238,7 +238,7 @@ const medal = (_i: number) => 'bg-kb-sunken text-kb-subdued border border-kb-bor
             return (
               <div class="absolute -translate-x-1/2 -translate-y-1/2" style={`left:${avgX(i)}%;top:${avgY(y.avg)}%`} title={`${y.year}년 평균 ${y.avg}`}>
                 <span class:list={[
-                  'absolute left-1/2 -translate-x-1/2 whitespace-nowrap rounded-sm bg-kb-panel px-0.5 text-[11px] font-semibold leading-tight tabular-nums sm:text-[13px]',
+                  'absolute left-1/2 -translate-x-1/2 whitespace-nowrap rounded-sm bg-kb-panel px-0.5 text-[12px] font-semibold leading-tight tabular-nums sm:text-[14px]',
                   below ? 'top-full mt-1' : 'bottom-full mb-1',
                   best ? 'text-kb-success' : 'text-kb-primary',
                 ]}>{y.avg}</span>
@@ -249,7 +249,7 @@ const medal = (_i: number) => 'bg-kb-sunken text-kb-subdued border border-kb-bor
           </div>
         </div>
         <div class="mt-1.5 ml-7 flex border-t border-kb-border pt-1.5">
-          {avgYears.map((y) => <div class:list={['min-w-0 flex-1 text-center text-[13px] tabular-nums', y.avg === bestAvg ? 'font-semibold text-kb-success' : 'text-kb-text']}>{y.year.slice(2)}</div>)}
+          {avgYears.map((y) => <div class:list={['min-w-0 flex-1 text-center text-[14px] tabular-nums', y.avg === bestAvg ? 'font-semibold text-kb-success' : 'text-kb-text']}>{y.year.slice(2)}</div>)}
         </div>
       </div>
     </section>
